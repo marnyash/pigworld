@@ -1,6 +1,10 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../providers/onboarding_provider.dart';
 import '../widgets/language_card.dart';
@@ -29,7 +33,7 @@ class _LanguagePageState extends ConsumerState<LanguagePage> {
       TextField(onChanged: (value) => setState(() => query = value), decoration: const InputDecoration(prefixIcon: Icon(Icons.search), hintText: 'Search languages')),
       const SizedBox(height: 16),
       ...languages.map((item) => LanguageCard(
-        flag: item.flag,
+        flag: item.code.toUpperCase(),
         nativeName: item.nativeName,
         translation: item.name,
         selected: selected == item.name,
@@ -39,8 +43,20 @@ class _LanguagePageState extends ConsumerState<LanguagePage> {
       bottomNavigationBar: SafeArea(child: Padding(padding: const EdgeInsets.all(16), child: Row(children: [
         TextButton(onPressed: () => context.go(AppRoutes.permissions), child: const Text('Back')),
         const Spacer(),
-        FilledButton(onPressed: () => context.go(AppRoutes.country), child: const Text('Continue')),
+        FilledButton(onPressed: () {
+          final isMobile = !kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS);
+          if (isMobile) unawaited(_requestRuntimePermissions());
+          context.go(AppRoutes.country);
+        }, child: const Text('Continue')),
       ]))),
     );
+  }
+
+  Future<void> _requestRuntimePermissions() async {
+    try {
+      await [Permission.notification, Permission.location].request();
+    } on Exception {
+      // A denied or unavailable permission must not block onboarding.
+    }
   }
 }

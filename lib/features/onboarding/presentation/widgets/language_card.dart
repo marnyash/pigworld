@@ -17,7 +17,7 @@ class LanguageCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           child: Padding(
             padding: const EdgeInsets.all(16),
-            child: Row(children: [Text(flag, style: const TextStyle(fontSize: 30)), const SizedBox(width: 16), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(nativeName, style: Theme.of(context).textTheme.titleMedium), Text(translation)])), if (selected) Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary)]),
+            child: Row(children: [Container(width: 52, height: 34, alignment: Alignment.center, decoration: BoxDecoration(color: Theme.of(context).colorScheme.primaryContainer, borderRadius: BorderRadius.circular(8)), child: Text(flag, style: Theme.of(context).textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w800))), const SizedBox(width: 16), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(nativeName, style: Theme.of(context).textTheme.titleMedium), Text(translation)])), if (selected) Icon(Icons.check_circle, color: Theme.of(context).colorScheme.primary)]),
           ),
         ),
       );
