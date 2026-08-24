@@ -15,11 +15,36 @@ class _SplashPageState extends ConsumerState<SplashPage> {
   @override
   void initState() {
     super.initState();
-    Future<void>.delayed(const Duration(milliseconds: 2200), () {
+    Future<void>.delayed(const Duration(milliseconds: 2200), () async {
       if (!mounted) return;
       final session = ref.read(authProvider).valueOrNull;
-      context.go(session?.selectedFarm == null ? AppRoutes.permissions : AppRoutes.home);
+      if (session?.selectedFarm != null) {
+        context.go(AppRoutes.home);
+        return;
+      }
+      await _showPermissionDialog();
     });
+  }
+
+  Future<void> _showPermissionDialog() async {
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Stay in the loop'),
+        content: const Text('Allow notifications and location to receive farm reminders and keep reports relevant.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Not now')),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              context.go(AppRoutes.language);
+            },
+            child: const Text('Continue'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -42,7 +67,7 @@ class _SplashPageState extends ConsumerState<SplashPage> {
               const SizedBox(height: 8),
               Text('Version 1.0.0', style: Theme.of(context).textTheme.bodySmall),
               const SizedBox(height: 32),
-              const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2)),
+              Icon(Icons.more_horiz, color: Theme.of(context).colorScheme.primary),
             ],
           ),
         ),

@@ -6,7 +6,7 @@ class CountryRadioTile extends StatelessWidget {
   final String country;
 
   @override
-  Widget build(BuildContext context) => Card(
-        child: RadioListTile<String>(value: country, title: Text(country), secondary: const Icon(Icons.public_outlined)),
+    Widget build(BuildContext context) => Card(
+      child: RadioListTile<String>(value: country.substring(country.indexOf('  ') + 2), title: Text(country), secondary: const Icon(Icons.public_outlined)),
       );
 }
