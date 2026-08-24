@@ -17,7 +17,13 @@ class CountryPage extends ConsumerWidget {
     return Scaffold(body: SafeArea(child: ListView(padding: const EdgeInsets.fromLTRB(24, 32, 24, 24), children: [
       const OnboardingHeader(title: 'Select your country', subtitle: 'This helps us set currency, dates, phone codes, and regional reports.'),
       const SizedBox(height: 24),
-      ...countries.map((country) => CountryRadioTile(country: country, selected: selected == country, onChanged: () => ref.read(onboardingProvider.notifier).setCountry(country))),
+      RadioGroup<String>(
+        groupValue: selected,
+        onChanged: (country) {
+          if (country != null) ref.read(onboardingProvider.notifier).setCountry(country);
+        },
+        child: Column(children: countries.map((country) => CountryRadioTile(country: country)).toList()),
+      ),
       const SizedBox(height: 16),
       FilledButton(onPressed: selected == null ? null : () => context.go(AppRoutes.login), child: const Text('Continue')),
       TextButton(onPressed: () => context.go(AppRoutes.language), child: const Text('Back')),

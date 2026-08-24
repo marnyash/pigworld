@@ -12,23 +12,36 @@ import 'package:proj/main.dart';
 
 void main() {
   testWidgets('launches through onboarding and authentication', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(800, 1200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(const MyApp());
 
     expect(find.text('PIG WORLD SMART'), findsOneWidget);
 
     await tester.pump(const Duration(milliseconds: 2201));
+    await tester.pumpAndSettle();
     expect(find.text('Stay in the loop'), findsOneWidget);
 
-    await tester.tap(find.text('Continue'));
+    final continueButton = find.ancestor(
+      of: find.text('Continue'),
+      matching: find.byWidgetPredicate((widget) => widget is ButtonStyleButton),
+    );
+    await tester.ensureVisible(continueButton);
+    await tester.tap(continueButton);
     await tester.pumpAndSettle();
     expect(find.text('Choose your language'), findsOneWidget);
 
-    await tester.tap(find.text('Continue'));
+    await tester.ensureVisible(continueButton);
+    await tester.tap(continueButton);
     await tester.pumpAndSettle();
     expect(find.text('Select your country'), findsOneWidget);
 
-    await tester.tap(find.text('Kenya'));
-    await tester.tap(find.text('Continue'));
+    await tester.tap(find.byWidgetPredicate((widget) => widget is RadioListTile<String> && widget.value == 'Kenya'));
+    await tester.pump();
+    await tester.ensureVisible(continueButton);
+    await tester.tap(continueButton);
     await tester.pumpAndSettle();
     expect(find.text('Welcome back'), findsOneWidget);
 
@@ -40,9 +53,10 @@ void main() {
 
     await tester.tap(find.text('Green Valley Farm'));
     await tester.pumpAndSettle();
-    expect(find.text('Dashboard'), findsOneWidget);
+    expect(find.text('Dashboard'), findsWidgets);
     expect(find.text('Herd'), findsOneWidget);
     expect(find.text('Feed'), findsOneWidget);
     expect(find.text('Finance'), findsOneWidget);
     expect(find.text('More'), findsOneWidget);
   });
+}

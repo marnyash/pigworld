@@ -15,7 +15,6 @@ import '../../features/onboarding/presentation/pages/language_page.dart';
 import '../../features/onboarding/presentation/pages/permissions_page.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../shared/components/bottom_navigation.dart';
-import '../app.dart';
 import 'app_routes.dart';
 import 'route_guard.dart';
 

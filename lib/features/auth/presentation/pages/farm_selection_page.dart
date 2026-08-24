@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../../domain/entities/farm.dart';
+import '../../domain/entities/session.dart';
 import '../widgets/farm_card.dart';
 import '../providers/auth_provider.dart';
 

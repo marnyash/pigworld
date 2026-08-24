@@ -13,7 +13,7 @@ import '../widgets/login_form.dart';
 class LoginPage extends ConsumerWidget {
   const LoginPage({super.key});
   @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(BuildContext context, WidgetRef ref) => Scaffold(
         body: SafeArea(child: Center(child: SingleChildScrollView(padding: const EdgeInsets.all(24), child: ConstrainedBox(constraints: const BoxConstraints(maxWidth: 440), child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
           Image.asset('assets/images/logo.jpeg', height: 96),
           const SizedBox(height: 24),
@@ -41,7 +41,7 @@ class LoginPage extends ConsumerWidget {
           BiometricButton(onPressed: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Biometric sign-in is not available yet.')))),
           const SizedBox(height: 8),
           TextButton(onPressed: () => context.go(AppRoutes.forgotPassword), child: const Text('Forgot password?')),
-          Row(mainAxisAlignment: MainAxisAlignment.center, children: [const Text('New to Pig World?'), TextButton(onPressed: () => context.go(AppRoutes.createAccount), child: const Text('Create account'))]),
+          Wrap(alignment: WrapAlignment.center, crossAxisAlignment: WrapCrossAlignment.center, children: [const Text('New to Pig World?'), TextButton(onPressed: () => context.go(AppRoutes.createAccount), child: const Text('Create account'))]),
         ]))))),
       );
 }
