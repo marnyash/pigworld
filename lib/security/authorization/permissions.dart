@@ -1,6 +1,18 @@
 import 'roles.dart';
 
-enum AppPermission { viewDashboard, manageHerd, manageBreeding, manageFeed, manageFinance, manageSales, viewReports, manageSettings }
+enum AppPermission {
+	viewDashboard,
+	manageHerd,
+	manageBreeding,
+	manageFeed,
+	manageFinance,
+	manageSales,
+	viewReports,
+	manageSettings,
+	manageMembers,
+	managePolicies,
+	linkFarmManager,
+}
 
 abstract final class RolePermissions {
 	static final Map<UserRole, Set<AppPermission>> all = {

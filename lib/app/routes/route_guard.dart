@@ -14,6 +14,7 @@ abstract final class RouteGuard {
 		'/country',
 		'/account-type',
 		'/create-account',
+		'/manager-identity',
 	};
 
 	static bool isPublic(String location) => publicRoutes.contains(location);

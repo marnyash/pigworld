@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../../../../security/authorization/roles.dart';
+import '../../../onboarding/presentation/providers/onboarding_provider.dart';
 import '../../domain/entities/farm.dart';
 import '../../domain/entities/session.dart';
 import '../../domain/entities/user.dart';
@@ -26,16 +27,24 @@ class LoginPage extends ConsumerWidget {
               ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Enter your email and password.')));
               return;
             }
-            ref.read(authProvider.notifier).setSession(const Session(
+            final selectedRoles = ref.read(onboardingProvider).roles;
+            final role = selectedRoles.contains(UserRole.farmOwner)
+                ? UserRole.farmOwner
+                : selectedRoles.contains(UserRole.farmManager)
+                    ? UserRole.farmManager
+                    : UserRole.farmWorker;
+            ref.read(authProvider.notifier).setSession(Session(
               accessToken: 'demo-access-token',
               refreshToken: 'demo-refresh-token',
-              user: User(id: 'demo-user', name: 'Farm manager', email: 'manager@pigworld.farm', role: UserRole.farmManager),
-              farms: [
+              user: User(id: 'demo-user', name: role == UserRole.farmOwner ? 'Farm owner' : role == UserRole.farmWorker ? 'Farm worker' : 'Farm manager', email: email, role: role),
+              farms: const [
                 Farm(id: 'green-valley', name: 'Green Valley Farm', location: 'Lancashire, UK'),
                 Farm(id: 'sunrise-acres', name: 'Sunrise Acres', location: 'Yorkshire, UK'),
               ],
             ));
-            if (context.mounted) context.go(AppRoutes.farmSelection);
+            if (context.mounted) {
+              context.go(role == UserRole.farmManager && !selectedRoles.contains(UserRole.farmOwner) ? AppRoutes.managerIdentity : AppRoutes.farmSelection);
+            }
           }),
           const SizedBox(height: 12),
           BiometricButton(onPressed: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Biometric sign-in is not available yet.')))),

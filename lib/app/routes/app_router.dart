@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/herd/presentation/pages/herd_page.dart';
 import '../../features/feed/presentation/pages/feed_page.dart';
@@ -9,6 +10,7 @@ import '../../features/notifications/presentation/pages/notifications_page.dart'
 import '../../features/support/presentation/pages/support_page.dart';
 import '../../features/auth/presentation/pages/forgot_password_page.dart';
 import '../../features/auth/presentation/pages/farm_selection_page.dart';
+import '../../features/auth/presentation/pages/manager_identity_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/session_expired_page.dart';
 import '../../features/auth/presentation/pages/splash_page.dart';
@@ -17,6 +19,11 @@ import '../../features/onboarding/presentation/pages/country_page.dart';
 import '../../features/onboarding/presentation/pages/account_type_page.dart';
 import '../../features/onboarding/presentation/pages/language_page.dart';
 import '../../features/onboarding/presentation/pages/permissions_page.dart';
+import '../../features/settings/presentation/pages/farm_management_page.dart';
+import '../../features/auth/presentation/providers/auth_provider.dart';
+import '../../features/settings/presentation/providers/farm_access_provider.dart';
+import '../../security/authorization/roles.dart';
+import '../../security/authorization/permissions.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../shared/components/bottom_navigation.dart';
 import 'app_routes.dart';
@@ -35,6 +42,7 @@ abstract final class AppRouter {
 			GoRoute(path: AppRoutes.login, builder: (context, state) => const LoginPage()),
 			GoRoute(path: AppRoutes.createAccount, builder: (context, state) => const CreateAccountPage()),
 			GoRoute(path: AppRoutes.farmSelection, builder: (context, state) => const FarmSelectionPage()),
+			GoRoute(path: AppRoutes.managerIdentity, builder: (context, state) => const ManagerIdentityPage()),
 			GoRoute(path: AppRoutes.forgotPassword, builder: (context, state) => const ForgotPasswordPage()),
 			GoRoute(path: AppRoutes.sessionExpired, builder: (context, state) => SessionExpiredPage(onSignIn: () => context.go(AppRoutes.login))),
 			ShellRoute(
@@ -57,6 +65,7 @@ abstract final class AppRouter {
 					GoRoute(path: AppRoutes.notifications, builder: (context, state) => const NotificationsPage()),
 					GoRoute(path: AppRoutes.profile, builder: (context, state) => const MorePage()),
 					GoRoute(path: AppRoutes.settings, builder: (context, state) => const SettingsPage()),
+					GoRoute(path: AppRoutes.farmManagement, builder: (context, state) => const FarmManagementPage()),
 					GoRoute(path: AppRoutes.support, builder: (context, state) => const SupportPage()),
 				],
 			),
@@ -103,23 +112,32 @@ class NavigationShell extends StatelessWidget {
 
 }
 
-class _AppDrawer extends StatelessWidget {
+class _AppDrawer extends ConsumerWidget {
 	const _AppDrawer();
 
 	@override
-	Widget build(BuildContext context) => Drawer(
+	Widget build(BuildContext context, WidgetRef ref) {
+		final session = ref.watch(authProvider).valueOrNull;
+		final role = session?.user.role;
+		final access = ref.watch(farmAccessProvider);
+		return Drawer(
 			child: SafeArea(
 				child: ListView(
 					padding: EdgeInsets.zero,
 					children: [
 						const DrawerHeader(child: Text('Pig World Smart')),
-						_ListTile(icon: Icons.account_balance_wallet_outlined, title: 'Finance', route: AppRoutes.finance),
+						if (role == UserRole.farmOwner || (role == UserRole.farmManager && access.managerCanAddWorkers))
+							_ListTile(icon: Icons.group_outlined, title: 'Farm members', route: AppRoutes.farmManagement),
+						if (role != null && RolePermissions.can(role, AppPermission.manageFinance))
+							_ListTile(icon: Icons.account_balance_wallet_outlined, title: 'Finance', route: AppRoutes.finance),
 						_ListTile(icon: Icons.notifications_outlined, title: 'Notifications', route: AppRoutes.notifications),
-						_ListTile(icon: Icons.settings_outlined, title: 'Settings', route: AppRoutes.settings),
+						if (role != null && RolePermissions.can(role, AppPermission.manageSettings))
+							_ListTile(icon: Icons.settings_outlined, title: 'Settings', route: AppRoutes.settings),
 					],
 				),
 			),
 		);
+	}
 }
 
 class _ListTile extends StatelessWidget {
