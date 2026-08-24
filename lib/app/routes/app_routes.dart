@@ -8,7 +8,6 @@ abstract final class AppRoutes {
   static const feed = '/feed';
   static const finance = '/finance';
   static const crm = '/crm';
-  static const crmAddCustomer = '/crm/add';
   static const notifications = '/notifications';
   static const profile = '/profile';
   static const support = '/support';

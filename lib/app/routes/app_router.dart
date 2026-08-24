@@ -25,9 +25,7 @@ import '../../features/settings/presentation/providers/farm_access_provider.dart
 import '../../security/authorization/roles.dart';
 import '../../security/authorization/permissions.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
-import '../../features/crm/presentation/pages/crm_page.dart';
-import '../../features/crm/presentation/pages/add_customer_page.dart';
-import '../../features/crm/presentation/pages/customer_details_page.dart';
+import 'package:crm/crm.dart';
 import '../../shared/components/bottom_navigation.dart';
 import 'app_routes.dart';
 import 'route_guard.dart';
@@ -107,16 +105,10 @@ abstract final class AppRouter {
           ),
           GoRoute(
             path: AppRoutes.crm,
-            builder: (context, state) => const CrmPage(),
-          ),
-          GoRoute(
-            path: AppRoutes.crmAddCustomer,
-            builder: (context, state) => const AddCustomerPage(),
-          ),
-          GoRoute(
-            path: '${AppRoutes.crm}/:id',
-            builder: (context, state) =>
-                CustomerDetailsPage(customerId: state.pathParameters['id']!),
+            builder: (context, state) => CrmPage(
+              onOpenMenu: () =>
+                  navigationScaffoldKey.currentState?.openDrawer(),
+            ),
           ),
           GoRoute(
             path: AppRoutes.notifications,

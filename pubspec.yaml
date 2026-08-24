@@ -39,6 +39,8 @@ dependencies:
   local_auth: ^2.3.0
   crypto: ^3.0.7
   permission_handler: ^11.3.1
+  crm:
+    path: ../crm
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
