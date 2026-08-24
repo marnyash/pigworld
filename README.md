@@ -88,6 +88,59 @@ flutter test
 ```
 
 Both commands pass for the current Phase 2 foundation.
+
+## Phase 3 Authentication Foundation
+
+Phase 3 adds authentication and session-management boundaries without
+implementing herd, breeding, feed, finance, or other business workflows.
+
+### Auth Architecture
+
+`lib/features/auth` follows Clean Architecture:
+
+- `data`: Laravel-ready request/response DTOs, remote/local datasource
+	contracts, and `AuthRepositoryImpl`.
+- `domain`: immutable `User`, `Farm`, and `Session` entities; the repository
+	contract; and login, logout, refresh, farm-selection, and forgot-password
+	use cases.
+- `presentation`: splash, login, password-reset, farm-selection, and expired
+	session screens plus form, password, farm, and biometric widgets.
+
+`UnconfiguredAuthRemoteDataSource` deliberately throws for network login and
+refresh until the Laravel endpoints are connected. This keeps offline builds
+honest: no credential is accepted locally as a successful remote login.
+`AuthLocalDataSourceImpl` persists access token, refresh token, user profile,
+and selected farm through `flutter_secure_storage`.
+
+### Security
+
+`AuthService` centralizes secure-storage keys and remember-me/session timestamp
+operations. `SessionManager` applies the session lifetime, while
+`RefreshTokenLifecycle` identifies expired sessions. `BiometricAuth` wraps
+`local_auth`; `PinAuth` provides a device PIN boundary; `InactivityTimer`
+performs automatic expiry callbacks; and the audit classes record security
+activity. `TokenValidator` provides a minimal non-empty token check.
+
+Roles and permissions are defined in `lib/security/authorization`. The seven
+SRS roles map to feature permissions through `RolePermissions`, and
+`PermissionGuard` provides route or feature-level checks. `RouteGuard` marks
+public auth paths and is the integration point for the authenticated Riverpod
+session state when the API session bootstrap is connected.
+
+### Routing
+
+`GoRouter` exposes public splash/login/reset/expired routes and a nested shell
+for the application sections. Protected-route classification is centralized
+in `RouteGuard`; dashboard and business screens remain available as the
+offline Phase 2 shell until authentication bootstrap is connected to a real
+session provider.
+
+### Important Security Boundary
+
+`AesEncryption` and `TokenCipher` are compatibility boundaries only and do not
+replace cryptographic key management. Production token confidentiality is
+provided by `flutter_secure_storage`; any server-side encrypted payload needs
+to use the Laravel key-management contract before release.
 # pigworld
 # pigworld
 # pigworld

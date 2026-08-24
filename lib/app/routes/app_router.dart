@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/herd/presentation/pages/herd_page.dart';
+import '../../features/auth/presentation/pages/forgot_password_page.dart';
+import '../../features/auth/presentation/pages/login_page.dart';
+import '../../features/auth/presentation/pages/session_expired_page.dart';
+import '../../features/auth/presentation/pages/splash_page.dart';
 import '../app.dart';
 import 'app_routes.dart';
 import 'route_guard.dart';
@@ -10,6 +14,10 @@ abstract final class AppRouter {
 		initialLocation: AppRoutes.home,
 		redirect: RouteGuard.redirect,
 		routes: [
+			GoRoute(path: AppRoutes.splash, builder: (context, state) => const SplashPage()),
+			GoRoute(path: AppRoutes.login, builder: (context, state) => const LoginPage()),
+			GoRoute(path: AppRoutes.forgotPassword, builder: (context, state) => const ForgotPasswordPage()),
+			GoRoute(path: AppRoutes.sessionExpired, builder: (context, state) => SessionExpiredPage(onSignIn: () => context.go(AppRoutes.login))),
 			ShellRoute(
 				builder: (context, state, child) => NavigationShell(child: child),
 				routes: [
