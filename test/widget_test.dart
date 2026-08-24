@@ -11,12 +11,25 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:proj/main.dart';
 
 void main() {
-  testWidgets('launches through auth and farm selection', (WidgetTester tester) async {
+  testWidgets('launches through onboarding and authentication', (WidgetTester tester) async {
     await tester.pumpWidget(const MyApp());
 
-    expect(find.text('PIG WORLD'), findsOneWidget);
+    expect(find.text('PIG WORLD SMART'), findsOneWidget);
 
-    await tester.pump(const Duration(milliseconds: 901));
+    await tester.pump(const Duration(milliseconds: 2201));
+    expect(find.text('Stay in the loop'), findsOneWidget);
+
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    expect(find.text('Choose your language'), findsOneWidget);
+
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    expect(find.text('Select your country'), findsOneWidget);
+
+    await tester.tap(find.text('Kenya'));
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
     expect(find.text('Welcome back'), findsOneWidget);
 
     await tester.enterText(find.byType(TextField).at(0), 'manager@pigworld.farm');

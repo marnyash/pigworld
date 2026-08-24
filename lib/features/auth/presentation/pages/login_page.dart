@@ -38,7 +38,10 @@ class LoginPage extends ConsumerWidget {
             if (context.mounted) context.go(AppRoutes.farmSelection);
           }),
           const SizedBox(height: 12),
-          BiometricButton(onPressed: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Biometric sign-in is not configured yet.')))),
+          BiometricButton(onPressed: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Biometric sign-in is not available yet.')))),
+          const SizedBox(height: 8),
+          TextButton(onPressed: () => context.go(AppRoutes.forgotPassword), child: const Text('Forgot password?')),
+          Row(mainAxisAlignment: MainAxisAlignment.center, children: [const Text('New to Pig World?'), TextButton(onPressed: () => context.go(AppRoutes.createAccount), child: const Text('Create account'))]),
         ]))))),
       );
 }
