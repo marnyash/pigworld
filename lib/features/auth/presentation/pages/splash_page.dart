@@ -15,10 +15,10 @@ class _SplashPageState extends ConsumerState<SplashPage> {
   @override
   void initState() {
     super.initState();
-    Future<void>.delayed(const Duration(milliseconds: 900), () {
+    Future<void>.delayed(const Duration(milliseconds: 2200), () {
       if (!mounted) return;
       final session = ref.read(authProvider).valueOrNull;
-      context.go(session?.selectedFarm == null ? AppRoutes.login : AppRoutes.home);
+      context.go(session?.selectedFarm == null ? AppRoutes.permissions : AppRoutes.home);
     });
   }
 
@@ -34,9 +34,13 @@ class _SplashPageState extends ConsumerState<SplashPage> {
                 child: Icon(Icons.pets, size: 52, color: Theme.of(context).colorScheme.onPrimary),
               ),
               const SizedBox(height: 20),
-              Text('PIG WORLD', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800, letterSpacing: 1.5)),
+              Image.asset('assets/images/logo.jpeg', width: 120, height: 120),
+              const SizedBox(height: 20),
+              Text('PIG WORLD SMART', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800, letterSpacing: 1.5)),
               const SizedBox(height: 8),
-              Text('Smart farm management', style: Theme.of(context).textTheme.bodyMedium),
+              Text('Smart Pig Farm Management', style: Theme.of(context).textTheme.bodyMedium),
+              const SizedBox(height: 8),
+              Text('Version 1.0.0', style: Theme.of(context).textTheme.bodySmall),
               const SizedBox(height: 32),
               const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2)),
             ],

@@ -13,4 +13,8 @@ abstract final class AppRoutes {
 	static const forgotPassword = '/forgot-password';
 	static const farmSelection = '/farm-selection';
 	static const sessionExpired = '/session-expired';
+	static const permissions = '/permissions';
+	static const language = '/language';
+	static const country = '/country';
+	static const createAccount = '/create-account';
 }

@@ -9,6 +9,10 @@ import '../../features/auth/presentation/pages/farm_selection_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/session_expired_page.dart';
 import '../../features/auth/presentation/pages/splash_page.dart';
+import '../../features/auth/presentation/pages/create_account_page.dart';
+import '../../features/onboarding/presentation/pages/country_page.dart';
+import '../../features/onboarding/presentation/pages/language_page.dart';
+import '../../features/onboarding/presentation/pages/permissions_page.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../shared/components/bottom_navigation.dart';
 import '../app.dart';
@@ -21,7 +25,11 @@ abstract final class AppRouter {
 		redirect: RouteGuard.redirect,
 		routes: [
 			GoRoute(path: AppRoutes.splash, builder: (context, state) => const SplashPage()),
+			GoRoute(path: AppRoutes.permissions, builder: (context, state) => const PermissionsPage()),
+			GoRoute(path: AppRoutes.language, builder: (context, state) => const LanguagePage()),
+			GoRoute(path: AppRoutes.country, builder: (context, state) => const CountryPage()),
 			GoRoute(path: AppRoutes.login, builder: (context, state) => const LoginPage()),
+			GoRoute(path: AppRoutes.createAccount, builder: (context, state) => const CreateAccountPage()),
 			GoRoute(path: AppRoutes.farmSelection, builder: (context, state) => const FarmSelectionPage()),
 			GoRoute(path: AppRoutes.forgotPassword, builder: (context, state) => const ForgotPasswordPage()),
 			GoRoute(path: AppRoutes.sessionExpired, builder: (context, state) => SessionExpiredPage(onSignIn: () => context.go(AppRoutes.login))),

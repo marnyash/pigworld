@@ -9,6 +9,10 @@ abstract final class RouteGuard {
 		'/login',
 		'/forgot-password',
 		'/session-expired',
+		'/permissions',
+		'/language',
+		'/country',
+		'/create-account',
 	};
 
 	static bool isPublic(String location) => publicRoutes.contains(location);
