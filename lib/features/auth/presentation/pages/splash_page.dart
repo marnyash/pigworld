@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../providers/auth_provider.dart';
 
@@ -22,29 +26,22 @@ class _SplashPageState extends ConsumerState<SplashPage> {
         context.go(AppRoutes.home);
         return;
       }
-      await _showPermissionDialog();
+        final isMobile = !kIsWeb &&
+          (defaultTargetPlatform == TargetPlatform.android ||
+            defaultTargetPlatform == TargetPlatform.iOS);
+        if (isMobile) unawaited(_requestRuntimePermissions());
+        if (mounted) context.go(AppRoutes.language);
     });
   }
 
-  Future<void> _showPermissionDialog() async {
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Stay in the loop'),
-        content: const Text('Allow notifications and location to receive farm reminders and keep reports relevant.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(dialogContext), child: const Text('Not now')),
-          FilledButton(
-            onPressed: () {
-              Navigator.pop(dialogContext);
-              context.go(AppRoutes.language);
-            },
-            child: const Text('Continue'),
-          ),
-        ],
-      ),
-    );
+  Future<void> _requestRuntimePermissions() async {
+    final isMobile = !kIsWeb && (defaultTargetPlatform == TargetPlatform.android || defaultTargetPlatform == TargetPlatform.iOS);
+    if (!isMobile) return;
+    try {
+      await [Permission.notification, Permission.location].request();
+    } on Exception {
+      // Unsupported or denied permissions must not block first launch.
+    }
   }
 
   @override

@@ -21,8 +21,8 @@ void main() {
     expect(find.text('PIG WORLD SMART'), findsOneWidget);
 
     await tester.pump(const Duration(milliseconds: 2201));
-    await tester.pumpAndSettle();
-    expect(find.text('Stay in the loop'), findsOneWidget);
+    await tester.pump();
+    expect(find.text('Choose your language'), findsOneWidget);
 
     final continueButton = find.ancestor(
       of: find.text('Continue'),
