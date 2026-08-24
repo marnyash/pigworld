@@ -69,9 +69,10 @@ class NavigationShell extends StatelessWidget {
 	Widget build(BuildContext context) {
 		final location = GoRouterState.of(context).uri.path;
 		final selectedIndex = switch (location) {
-			AppRoutes.feed => 1,
-			AppRoutes.finance => 2,
-			AppRoutes.more => 3,
+			AppRoutes.herd => 1,
+			AppRoutes.feed => 2,
+			AppRoutes.finance => 3,
+			AppRoutes.more => 4,
 			_ => 0,
 		};
 		return Scaffold(
@@ -79,6 +80,7 @@ class NavigationShell extends StatelessWidget {
 			bottomNavigationBar: AppBottomNavigation(
 				selectedIndex: selectedIndex,
 				onSelected: (index) => context.go([
+					AppRoutes.home,
 					AppRoutes.herd,
 					AppRoutes.feed,
 					AppRoutes.finance,

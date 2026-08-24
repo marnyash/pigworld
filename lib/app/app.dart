@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'routes/app_router.dart';
 import '../shared/providers/theme_provider.dart';
+import '../features/onboarding/presentation/providers/onboarding_provider.dart';
 import 'theme/app_theme.dart';
 
 class MyApp extends StatelessWidget {
@@ -26,8 +28,9 @@ class _AppRoot extends ConsumerWidget {
 			darkTheme: AppTheme.dark,
 			themeMode: ref.watch(themeModeProvider),
 			debugShowCheckedModeBanner: false,
-			supportedLocales: const [Locale('en')],
-			localizationsDelegates: const [],
+			locale: Locale(ref.watch(onboardingProvider).languageCode),
+			supportedLocales: const [Locale('en'), Locale('sw'), Locale('fr'), Locale('de'), Locale('es'), Locale('pt'), Locale('ar'), Locale('zh'), Locale('hi'), Locale('ru'), Locale('ja'), Locale('ko'), Locale('tr'), Locale('it'), Locale('nl')],
+			localizationsDelegates: GlobalMaterialLocalizations.delegates,
 			routerConfig: AppRouter.router,
 		);
 	}

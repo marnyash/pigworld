@@ -11,6 +11,7 @@ class AppBottomNavigation extends StatelessWidget {
 			selectedIndex: selectedIndex,
 			onDestinationSelected: onSelected,
 			destinations: const [
+				NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard), label: 'Dashboard'),
 				NavigationDestination(icon: Icon(Icons.pets_outlined), label: 'Herd'),
 				NavigationDestination(icon: Icon(Icons.grass_outlined), label: 'Feed'),
 				NavigationDestination(icon: Icon(Icons.account_balance_wallet_outlined), label: 'Finance'),
