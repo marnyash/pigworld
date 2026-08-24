@@ -43,6 +43,13 @@ void main() {
     await tester.ensureVisible(continueButton);
     await tester.tap(continueButton);
     await tester.pumpAndSettle();
+    expect(find.text('Choose your account type'), findsOneWidget);
+
+    await tester.tap(find.text('Farm owner'));
+    await tester.tap(find.text('Farm manager'));
+    await tester.ensureVisible(continueButton);
+    await tester.tap(continueButton);
+    await tester.pumpAndSettle();
     expect(find.text('Welcome back'), findsOneWidget);
 
     await tester.enterText(find.byType(TextField).at(0), 'manager@pigworld.farm');
@@ -53,10 +60,15 @@ void main() {
 
     await tester.tap(find.text('Green Valley Farm'));
     await tester.pumpAndSettle();
-    expect(find.text('Dashboard'), findsWidgets);
+    expect(find.text('Home'), findsWidgets);
     expect(find.text('Herd'), findsOneWidget);
     expect(find.text('Feed'), findsOneWidget);
+    expect(find.text('Profile'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Open menu'));
+    await tester.pumpAndSettle();
     expect(find.text('Finance'), findsOneWidget);
-    expect(find.text('More'), findsOneWidget);
+    expect(find.text('Notifications'), findsOneWidget);
+    expect(find.text('Settings'), findsOneWidget);
   });
 }

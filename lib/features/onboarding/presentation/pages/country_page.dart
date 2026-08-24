@@ -46,7 +46,7 @@ class _CountryPageState extends ConsumerState<CountryPage> {
       bottomNavigationBar: SafeArea(child: Padding(padding: const EdgeInsets.all(16), child: Row(children: [
         TextButton(onPressed: () => context.go(AppRoutes.language), child: const Text('Back')),
         const Spacer(),
-        FilledButton(onPressed: selected == null ? null : () => context.go(AppRoutes.login), child: const Text('Continue')),
+        FilledButton(onPressed: selected == null ? null : () => context.go(AppRoutes.accountType), child: const Text('Continue')),
       ]))),
     );
   }

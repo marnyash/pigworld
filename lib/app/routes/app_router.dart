@@ -4,6 +4,9 @@ import '../../features/herd/presentation/pages/herd_page.dart';
 import '../../features/feed/presentation/pages/feed_page.dart';
 import '../../features/finance/presentation/pages/finance_page.dart';
 import '../../features/settings/presentation/pages/more_page.dart';
+import '../../features/settings/presentation/pages/settings_page.dart';
+import '../../features/notifications/presentation/pages/notifications_page.dart';
+import '../../features/support/presentation/pages/support_page.dart';
 import '../../features/auth/presentation/pages/forgot_password_page.dart';
 import '../../features/auth/presentation/pages/farm_selection_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
@@ -11,6 +14,7 @@ import '../../features/auth/presentation/pages/session_expired_page.dart';
 import '../../features/auth/presentation/pages/splash_page.dart';
 import '../../features/auth/presentation/pages/create_account_page.dart';
 import '../../features/onboarding/presentation/pages/country_page.dart';
+import '../../features/onboarding/presentation/pages/account_type_page.dart';
 import '../../features/onboarding/presentation/pages/language_page.dart';
 import '../../features/onboarding/presentation/pages/permissions_page.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
@@ -27,6 +31,7 @@ abstract final class AppRouter {
 			GoRoute(path: AppRoutes.permissions, builder: (context, state) => const PermissionsPage()),
 			GoRoute(path: AppRoutes.language, builder: (context, state) => const LanguagePage()),
 			GoRoute(path: AppRoutes.country, builder: (context, state) => const CountryPage()),
+			GoRoute(path: AppRoutes.accountType, builder: (context, state) => const AccountTypePage()),
 			GoRoute(path: AppRoutes.login, builder: (context, state) => const LoginPage()),
 			GoRoute(path: AppRoutes.createAccount, builder: (context, state) => const CreateAccountPage()),
 			GoRoute(path: AppRoutes.farmSelection, builder: (context, state) => const FarmSelectionPage()),
@@ -49,11 +54,10 @@ abstract final class AppRouter {
 					),
 					GoRoute(path: AppRoutes.feed, builder: (context, state) => const FeedPage()),
 					GoRoute(path: AppRoutes.finance, builder: (context, state) => const FinancePage()),
-					GoRoute(path: AppRoutes.more, builder: (context, state) => const MorePage()),
-					GoRoute(
-						path: AppRoutes.settings,
-						builder: (context, state) => const _SectionPage(title: 'Settings'),
-					),
+					GoRoute(path: AppRoutes.notifications, builder: (context, state) => const NotificationsPage()),
+					GoRoute(path: AppRoutes.profile, builder: (context, state) => const MorePage()),
+					GoRoute(path: AppRoutes.settings, builder: (context, state) => const SettingsPage()),
+					GoRoute(path: AppRoutes.support, builder: (context, state) => const SupportPage()),
 				],
 			),
 		],
@@ -71,24 +75,69 @@ class NavigationShell extends StatelessWidget {
 		final selectedIndex = switch (location) {
 			AppRoutes.herd => 1,
 			AppRoutes.feed => 2,
-			AppRoutes.finance => 3,
-			AppRoutes.more => 4,
+			AppRoutes.profile => 3,
 			_ => 0,
 		};
 		return Scaffold(
+			key: navigationScaffoldKey,
+			drawer: const _AppDrawer(),
 			body: child,
+			floatingActionButton: location == AppRoutes.support
+				? null
+				: FloatingActionButton.extended(
+					onPressed: () => context.go(AppRoutes.support),
+					icon: const Icon(Icons.support_agent_outlined),
+					label: const Text('Support'),
+				),
 			bottomNavigationBar: AppBottomNavigation(
 				selectedIndex: selectedIndex,
 				onSelected: (index) => context.go([
 					AppRoutes.home,
 					AppRoutes.herd,
 					AppRoutes.feed,
-					AppRoutes.finance,
-					AppRoutes.more,
+					AppRoutes.profile,
 				][index]),
 			),
 		);
 	}
+
+}
+
+class _AppDrawer extends StatelessWidget {
+	const _AppDrawer();
+
+	@override
+	Widget build(BuildContext context) => Drawer(
+			child: SafeArea(
+				child: ListView(
+					padding: EdgeInsets.zero,
+					children: [
+						const DrawerHeader(child: Text('Pig World Smart')),
+						_ListTile(icon: Icons.account_balance_wallet_outlined, title: 'Finance', route: AppRoutes.finance),
+						_ListTile(icon: Icons.notifications_outlined, title: 'Notifications', route: AppRoutes.notifications),
+						_ListTile(icon: Icons.settings_outlined, title: 'Settings', route: AppRoutes.settings),
+					],
+				),
+			),
+		);
+}
+
+class _ListTile extends StatelessWidget {
+	const _ListTile({required this.icon, required this.title, required this.route});
+
+	final IconData icon;
+	final String title;
+	final String route;
+
+	@override
+	Widget build(BuildContext context) => ListTile(
+			leading: Icon(icon),
+			title: Text(title),
+			onTap: () {
+				Navigator.pop(context);
+				context.go(route);
+			},
+		);
 }
 
 class _SectionPage extends StatelessWidget {

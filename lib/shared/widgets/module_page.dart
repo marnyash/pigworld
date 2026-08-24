@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../components/bottom_navigation.dart';
 
 class ModulePage extends StatelessWidget {
   const ModulePage({required this.title, required this.description, this.icon = Icons.dashboard_outlined, super.key});
@@ -10,7 +11,14 @@ class ModulePage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(title)),
+      appBar: AppBar(
+        title: Text(title),
+        leading: IconButton(
+          tooltip: 'Open menu',
+          icon: const Icon(Icons.menu),
+          onPressed: () => navigationScaffoldKey.currentState?.openDrawer(),
+        ),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [

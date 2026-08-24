@@ -12,6 +12,7 @@ abstract final class RouteGuard {
 		'/permissions',
 		'/language',
 		'/country',
+		'/account-type',
 		'/create-account',
 	};
 

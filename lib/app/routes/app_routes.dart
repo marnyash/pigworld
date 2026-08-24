@@ -7,7 +7,9 @@ abstract final class AppRoutes {
 	static const settings = '/settings';
 	static const feed = '/feed';
 	static const finance = '/finance';
-	static const more = '/more';
+	static const notifications = '/notifications';
+	static const profile = '/profile';
+	static const support = '/support';
 	static const splash = '/splash';
 	static const login = '/login';
 	static const forgotPassword = '/forgot-password';
@@ -16,5 +18,6 @@ abstract final class AppRoutes {
 	static const permissions = '/permissions';
 	static const language = '/language';
 	static const country = '/country';
+	static const accountType = '/account-type';
 	static const createAccount = '/create-account';
 }

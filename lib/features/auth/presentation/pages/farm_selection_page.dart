@@ -21,7 +21,7 @@ class FarmSelectionPage extends ConsumerWidget {
         children: [
           Text('Where are we working today?', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
           const SizedBox(height: 8),
-          const Text('Select a farm to open its dashboard.'),
+          const Text('Select a farm to open its home page.'),
           const SizedBox(height: 24),
           ...farms.map((farm) => Padding(
                 padding: const EdgeInsets.only(bottom: 12),
