@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes/app_routes.dart';
+import '../../domain/entities/session.dart';
+import '../providers/auth_provider.dart';
 import '../../../settings/presentation/providers/farm_access_provider.dart';
 
 class ManagerIdentityPage extends ConsumerStatefulWidget {
@@ -40,7 +42,17 @@ class _ManagerIdentityPageState extends ConsumerState<ManagerIdentityPage> {
                 setState(() => error = 'That identity number was not found.');
                 return;
               }
-              context.go(AppRoutes.farmSelection);
+              final session = ref.read(authProvider).valueOrNull;
+              if (session != null && session.farms.isNotEmpty) {
+                ref.read(authProvider.notifier).setSession(Session(
+                  accessToken: session.accessToken,
+                  refreshToken: session.refreshToken,
+                  user: session.user,
+                  farms: session.farms,
+                  selectedFarm: session.farms.first,
+                ));
+              }
+              context.go(AppRoutes.home);
             },
             child: const Text('Connect farm'),
           ),
