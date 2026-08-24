@@ -5,20 +5,24 @@ import '../../features/feed/presentation/pages/feed_page.dart';
 import '../../features/finance/presentation/pages/finance_page.dart';
 import '../../features/settings/presentation/pages/more_page.dart';
 import '../../features/auth/presentation/pages/forgot_password_page.dart';
+import '../../features/auth/presentation/pages/farm_selection_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/session_expired_page.dart';
 import '../../features/auth/presentation/pages/splash_page.dart';
+import '../../features/dashboard/presentation/pages/dashboard_page.dart';
+import '../../shared/components/bottom_navigation.dart';
 import '../app.dart';
 import 'app_routes.dart';
 import 'route_guard.dart';
 
 abstract final class AppRouter {
 	static final router = GoRouter(
-		initialLocation: AppRoutes.home,
+		initialLocation: AppRoutes.splash,
 		redirect: RouteGuard.redirect,
 		routes: [
 			GoRoute(path: AppRoutes.splash, builder: (context, state) => const SplashPage()),
 			GoRoute(path: AppRoutes.login, builder: (context, state) => const LoginPage()),
+			GoRoute(path: AppRoutes.farmSelection, builder: (context, state) => const FarmSelectionPage()),
 			GoRoute(path: AppRoutes.forgotPassword, builder: (context, state) => const ForgotPasswordPage()),
 			GoRoute(path: AppRoutes.sessionExpired, builder: (context, state) => SessionExpiredPage(onSignIn: () => context.go(AppRoutes.login))),
 			ShellRoute(
@@ -26,7 +30,7 @@ abstract final class AppRouter {
 				routes: [
 					GoRoute(
 						path: AppRoutes.home,
-						builder: (context, state) => const MyHomePage(title: 'Pig World'),
+						builder: (context, state) => const DashboardPage(),
 					),
 					GoRoute(
 						path: AppRoutes.herd,
@@ -58,30 +62,21 @@ class NavigationShell extends StatelessWidget {
 	Widget build(BuildContext context) {
 		final location = GoRouterState.of(context).uri.path;
 		final selectedIndex = switch (location) {
-			AppRoutes.herd => 1,
-			AppRoutes.feed => 2,
-			AppRoutes.finance => 3,
-			AppRoutes.more => 4,
+			AppRoutes.feed => 1,
+			AppRoutes.finance => 2,
+			AppRoutes.more => 3,
 			_ => 0,
 		};
 		return Scaffold(
 			body: child,
-			bottomNavigationBar: NavigationBar(
+			bottomNavigationBar: AppBottomNavigation(
 				selectedIndex: selectedIndex,
-				onDestinationSelected: (index) => context.go([
-					AppRoutes.home,
+				onSelected: (index) => context.go([
 					AppRoutes.herd,
 					AppRoutes.feed,
 					AppRoutes.finance,
 					AppRoutes.more,
 				][index]),
-				destinations: const [
-					NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard), label: 'Home'),
-					NavigationDestination(icon: Icon(Icons.pets_outlined), selectedIcon: Icon(Icons.pets), label: 'Herd'),
-					NavigationDestination(icon: Icon(Icons.grass_outlined), selectedIcon: Icon(Icons.grass), label: 'Feed'),
-					NavigationDestination(icon: Icon(Icons.account_balance_wallet_outlined), selectedIcon: Icon(Icons.account_balance_wallet), label: 'Finance'),
-					NavigationDestination(icon: Icon(Icons.more_horiz), label: 'More'),
-				],
 			),
 		);
 	}

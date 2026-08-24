@@ -11,20 +11,25 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:proj/main.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
+  testWidgets('launches through auth and farm selection', (WidgetTester tester) async {
     await tester.pumpWidget(const MyApp());
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    expect(find.text('PIG WORLD'), findsOneWidget);
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 901));
+    expect(find.text('Welcome back'), findsOneWidget);
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    await tester.enterText(find.byType(TextField).at(0), 'manager@pigworld.farm');
+    await tester.enterText(find.byType(TextField).at(1), 'password');
+    await tester.tap(find.text('Sign in'));
+    await tester.pumpAndSettle();
+    expect(find.text('Where are we working today?'), findsOneWidget);
+
+    await tester.tap(find.text('Green Valley Farm'));
+    await tester.pumpAndSettle();
+    expect(find.text('Dashboard'), findsOneWidget);
+    expect(find.text('Herd'), findsOneWidget);
+    expect(find.text('Feed'), findsOneWidget);
+    expect(find.text('Finance'), findsOneWidget);
+    expect(find.text('More'), findsOneWidget);
   });
-}
