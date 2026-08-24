@@ -1,1 +1,1 @@
-library;
+enum Environment { development, staging, production }

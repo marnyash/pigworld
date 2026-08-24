@@ -16,6 +16,78 @@ For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
 # pigworld
+
+## Phase 2 Foundation
+
+Pig World uses a layered Flutter structure. Phase 2 provides the application
+shell, navigation, design system, environment configuration, reusable UI, and
+Riverpod state-management foundation. Authentication and feature business
+logic are intentionally deferred.
+
+### Startup
+
+`lib/main.dart` is the only application entry point. It calls
+`WidgetsFlutterBinding.ensureInitialized()` before `runApp`, which gives
+plugins and platform services a safe initialization boundary. `MyApp` in
+`lib/app/app.dart` owns the Riverpod `ProviderScope` and the Material 3 app
+shell.
+
+### Application Shell
+
+- `lib/app/app.dart`: `MyApp` creates `ProviderScope`; `_AppMaterial` creates
+	`MaterialApp.router`, applies the theme, disables the debug banner, and
+	exposes the English localization placeholder.
+- `lib/app/routes/app_routes.dart`: central route-name constants.
+- `lib/app/routes/app_router.dart`: the `GoRouter` instance, nested
+	`ShellRoute`, section routes, and bottom-navigation shell.
+- `lib/app/routes/route_guard.dart`: authentication-free redirect boundary;
+	it currently returns `null` and is ready for a future auth provider.
+
+### Design System
+
+- `app_colors.dart`: SRS brand colors, including primary/deep green, pig pink,
+	background, text, success, warning, and danger.
+- `app_typography.dart`: shared Material text styles and weights.
+- `app_dimensions.dart`: shared spacing, radius, page padding, and control
+	dimensions.
+- `app_theme.dart`: Material 3 `ThemeData`, AppBar, Card, input, and button
+	defaults.
+
+### Environment
+
+`lib/app/config/environment.dart` defines Development, Staging, and
+Production. `api_config.dart` maps each environment to its API base URL.
+`AppConfig` exposes the selected environment, URL, and convenience flags.
+The default is Development and no network call is made by Phase 2.
+
+### Shared UI and State
+
+`lib/shared/widgets/` contains reusable buttons, cards, fields, loading,
+empty, error, and confirmation components. `shared/components/` contains the
+custom AppBar and bottom-navigation component. `shared/layouts/` is reserved
+for responsive layout implementations.
+
+`theme_provider.dart` provides a Riverpod `ThemeModeNotifier` with light/dark
+mode operations. `connectivity_provider.dart` defines an offline-safe
+connectivity state with an initial `unknown` value; a platform connectivity
+adapter can be added later without changing UI consumers.
+
+### Clean Architecture Boundaries
+
+Feature modules are split into `data`, `domain`, and `presentation`. Data owns
+datasources, DTOs, and repository implementations. Domain owns entities,
+repository contracts, and use cases. Presentation owns pages, providers, and
+widgets. Core contains cross-feature services, storage, sync, errors, and
+utilities. Security is isolated under `lib/security/` for later phases.
+
+### Validation
+
+```text
+flutter analyze
+flutter test
+```
+
+Both commands pass for the current Phase 2 foundation.
 # pigworld
 # pigworld
 # pigworld
