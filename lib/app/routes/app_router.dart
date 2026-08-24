@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/herd/presentation/pages/herd_page.dart';
+import '../../features/feed/presentation/pages/feed_page.dart';
+import '../../features/finance/presentation/pages/finance_page.dart';
+import '../../features/settings/presentation/pages/more_page.dart';
 import '../../features/auth/presentation/pages/forgot_password_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/session_expired_page.dart';
@@ -33,6 +36,9 @@ abstract final class AppRouter {
 						path: AppRoutes.breeding,
 						builder: (context, state) => const _SectionPage(title: 'Breeding'),
 					),
+					GoRoute(path: AppRoutes.feed, builder: (context, state) => const FeedPage()),
+					GoRoute(path: AppRoutes.finance, builder: (context, state) => const FinancePage()),
+					GoRoute(path: AppRoutes.more, builder: (context, state) => const MorePage()),
 					GoRoute(
 						path: AppRoutes.settings,
 						builder: (context, state) => const _SectionPage(title: 'Settings'),
@@ -53,7 +59,9 @@ class NavigationShell extends StatelessWidget {
 		final location = GoRouterState.of(context).uri.path;
 		final selectedIndex = switch (location) {
 			AppRoutes.herd => 1,
-			AppRoutes.breeding => 2,
+			AppRoutes.feed => 2,
+			AppRoutes.finance => 3,
+			AppRoutes.more => 4,
 			_ => 0,
 		};
 		return Scaffold(
@@ -63,12 +71,16 @@ class NavigationShell extends StatelessWidget {
 				onDestinationSelected: (index) => context.go([
 					AppRoutes.home,
 					AppRoutes.herd,
-					AppRoutes.breeding,
+					AppRoutes.feed,
+					AppRoutes.finance,
+					AppRoutes.more,
 				][index]),
 				destinations: const [
 					NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard), label: 'Home'),
 					NavigationDestination(icon: Icon(Icons.pets_outlined), selectedIcon: Icon(Icons.pets), label: 'Herd'),
-					NavigationDestination(icon: Icon(Icons.favorite_outline), selectedIcon: Icon(Icons.favorite), label: 'Breeding'),
+					NavigationDestination(icon: Icon(Icons.grass_outlined), selectedIcon: Icon(Icons.grass), label: 'Feed'),
+					NavigationDestination(icon: Icon(Icons.account_balance_wallet_outlined), selectedIcon: Icon(Icons.account_balance_wallet), label: 'Finance'),
+					NavigationDestination(icon: Icon(Icons.more_horiz), label: 'More'),
 				],
 			),
 		);
