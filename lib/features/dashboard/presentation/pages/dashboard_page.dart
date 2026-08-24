@@ -105,6 +105,11 @@ class DashboardPage extends ConsumerWidget {
                 onTap: () => context.go(AppRoutes.finance),
               ),
               _QuickAction(
+                icon: Icons.groups_outlined,
+                label: 'Customers',
+                onTap: () => context.go(AppRoutes.crm),
+              ),
+              _QuickAction(
                 icon: Icons.support_agent_outlined,
                 label: 'Support',
                 onTap: () => context.go(AppRoutes.support),
