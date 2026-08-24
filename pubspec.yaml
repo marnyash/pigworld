@@ -50,18 +50,18 @@ dev_dependencies:
 flutter_launcher_icons:
   android: true
   ios: true
-  image_path: assests/images/logo.jpeg
+  image_path: assets/images/logo.jpeg
   web:
     generate: true
-    image_path: assests/images/logo.jpeg
+    image_path: assets/images/logo.jpeg
     background_color: "#ffffff"
     theme_color: "#0b6b3a"
   windows:
     generate: true
-    image_path: assests/images/logo.jpeg
+    image_path: assets/images/logo.jpeg
   macos:
     generate: true
-    image_path: assests/images/logo.jpeg
+    image_path: assets/images/logo.jpeg
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
@@ -74,7 +74,7 @@ flutter:
   # the material Icons class.
   uses-material-design: true
   assets:
-    - assests/images/logo.jpeg
+    - assets/images/logo.jpeg
 
   # To add assets to your application, add an assets section, like this:
   # assets:
