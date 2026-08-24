@@ -18,24 +18,39 @@ class AuthRepositoryImpl implements AuthRepository {
   final AuthLocalDataSource local;
 
   @override
-  Future<Session> login(String email, String password, {bool rememberMe = false}) async {
+  Future<Session> login(
+    String email,
+    String password, {
+    bool rememberMe = false,
+  }) async {
     if (email.trim().toLowerCase() == _demoEmail && password == _demoPassword) {
       final session = _demoSession();
       await local.saveSession(session);
       return session;
     }
-    final response = await remote.login(LoginRequest(email: email, password: password, rememberMe: rememberMe));
+    final response = await remote.login(
+      LoginRequest(email: email, password: password, rememberMe: rememberMe),
+    );
     final session = response.toEntity();
     await local.saveSession(session);
     return session;
   }
 
   Session _demoSession() {
-    const farm = Farm(id: 'demo-farm', name: 'Demo Farm', location: 'Demo Location');
+    const farm = Farm(
+      id: 'demo-farm',
+      name: 'Demo Farm',
+      location: 'Demo Location',
+    );
     return const Session(
       accessToken: 'demo-access-token',
       refreshToken: 'demo-refresh-token',
-      user: User(id: 'demo-user', name: 'Demo User', email: _demoEmail, role: UserRole.farmOwner),
+      user: User(
+        id: 'demo-user',
+        name: 'Demo User',
+        email: _demoEmail,
+        role: UserRole.farmOwner,
+      ),
       farms: [farm],
       selectedFarm: farm,
     );
@@ -58,7 +73,13 @@ class AuthRepositoryImpl implements AuthRepository {
   Future<Session> selectFarm(Farm farm) async {
     final session = await local.readSession();
     if (session == null) throw StateError('No authenticated session.');
-    final selected = Session(accessToken: session.accessToken, refreshToken: session.refreshToken, user: session.user, farms: session.farms, selectedFarm: farm);
+    final selected = Session(
+      accessToken: session.accessToken,
+      refreshToken: session.refreshToken,
+      user: session.user,
+      farms: session.farms,
+      selectedFarm: farm,
+    );
     await local.saveSelectedFarm(farm);
     await local.saveSession(selected);
     return selected;
