@@ -5,6 +5,7 @@ import '../../../../app/routes/app_routes.dart';
 import '../../../../security/authorization/roles.dart';
 import '../providers/auth_provider.dart';
 import '../providers/auth_providers.dart';
+import '../widgets/server_settings_dialog.dart';
 import '../../../onboarding/presentation/providers/onboarding_provider.dart';
 
 class CreateAccountPage extends ConsumerStatefulWidget {
@@ -101,7 +102,16 @@ class _CreateAccountPageState extends ConsumerState<CreateAccountPage> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Create account')),
+    appBar: AppBar(
+      title: const Text('Create account'),
+      actions: [
+        IconButton(
+          tooltip: 'Server address',
+          icon: const Icon(Icons.settings_ethernet),
+          onPressed: () => showServerSettingsDialog(context, ref),
+        ),
+      ],
+    ),
     body: SafeArea(
       child: Form(
         key: _formKey,
