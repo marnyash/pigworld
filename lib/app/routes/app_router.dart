@@ -179,9 +179,13 @@ class _AppDrawer extends ConsumerWidget {
     final session = ref.watch(authProvider).valueOrNull;
     final role = session?.user.role;
     final access = ref.watch(farmAccessProvider).valueOrNull;
-    final canManageMembers = role == UserRole.farmOwner ||
+    final canManageMembers =
+        role == UserRole.farmOwner ||
         (role == UserRole.farmManager &&
-            (access?.permissionsFor(session?.user.id ?? '').contains(AppPermission.manageMembers) ?? false));
+            (access
+                    ?.permissionsFor(session?.user.id ?? '')
+                    .contains(AppPermission.manageMembers) ??
+                false));
     return Drawer(
       child: SafeArea(
         child: ListView(

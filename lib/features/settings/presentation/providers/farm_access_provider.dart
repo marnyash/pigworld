@@ -6,9 +6,14 @@ import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../data/farm_members_api.dart';
 import '../../domain/entities/farm_member.dart';
 
-final farmMembersApiProvider = Provider<FarmMembersApi>((ref) => FarmMembersApi(ref.watch(dioProvider)));
+final farmMembersApiProvider = Provider<FarmMembersApi>(
+  (ref) => FarmMembersApi(ref.watch(dioProvider)),
+);
 
-final farmAccessProvider = AsyncNotifierProvider<FarmAccessNotifier, FarmAccessState>(FarmAccessNotifier.new);
+final farmAccessProvider =
+    AsyncNotifierProvider<FarmAccessNotifier, FarmAccessState>(
+      FarmAccessNotifier.new,
+    );
 
 class FarmAccessState {
   const FarmAccessState({required this.members});
@@ -29,25 +34,43 @@ class FarmAccessNotifier extends AsyncNotifier<FarmAccessState> {
   Future<FarmAccessState> build() async {
     final farmId = ref.watch(authProvider).valueOrNull?.selectedFarm?.id;
     if (farmId == null) return const FarmAccessState(members: []);
-    final members = await ref.watch(farmMembersApiProvider).fetchMembers(farmId);
+    final members = await ref
+        .watch(farmMembersApiProvider)
+        .fetchMembers(farmId);
     return FarmAccessState(members: members);
   }
 
-  Future<void> togglePermission(String memberId, AppPermission permission, bool allowed) async {
+  Future<void> togglePermission(
+    String memberId,
+    AppPermission permission,
+    bool allowed,
+  ) async {
     final farmId = ref.read(authProvider).valueOrNull?.selectedFarm?.id;
     final current = state.valueOrNull;
     if (farmId == null || current == null) return;
 
-    final member = current.members.firstWhere((member) => member.id == memberId);
-    final updatedPermissions = allowed ? {...member.permissions, permission} : member.permissions.difference({permission});
+    final member = current.members.firstWhere(
+      (member) => member.id == memberId,
+    );
+    final updatedPermissions = allowed
+        ? {...member.permissions, permission}
+        : member.permissions.difference({permission});
 
-    state = AsyncData(FarmAccessState(members: [
-      for (final existing in current.members)
-        existing.id == memberId ? existing.copyWith(permissions: updatedPermissions) : existing,
-    ]));
+    state = AsyncData(
+      FarmAccessState(
+        members: [
+          for (final existing in current.members)
+            existing.id == memberId
+                ? existing.copyWith(permissions: updatedPermissions)
+                : existing,
+        ],
+      ),
+    );
 
     try {
-      await ref.read(farmMembersApiProvider).updatePermissions(farmId, memberId, updatedPermissions);
+      await ref
+          .read(farmMembersApiProvider)
+          .updatePermissions(farmId, memberId, updatedPermissions);
     } catch (_) {
       // Roll back optimistic update on failure by refetching from the server.
       state = AsyncData(current);
@@ -59,6 +82,9 @@ class FarmAccessNotifier extends AsyncNotifier<FarmAccessState> {
     if (role == UserRole.farmOwner) return true;
     final myId = ref.read(authProvider).valueOrNull?.user.id;
     if (role != UserRole.farmManager || myId == null) return false;
-    return state.valueOrNull?.permissionsFor(myId).contains(AppPermission.manageMembers) ?? false;
+    return state.valueOrNull
+            ?.permissionsFor(myId)
+            .contains(AppPermission.manageMembers) ??
+        false;
   }
 }
