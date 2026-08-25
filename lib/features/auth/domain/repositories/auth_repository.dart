@@ -1,8 +1,21 @@
+import '../../../../security/authorization/roles.dart';
 import '../entities/farm.dart';
 import '../entities/session.dart';
 
 abstract interface class AuthRepository {
-  Future<Session> login(String email, String password, {bool rememberMe = false});
+  Future<Session> login(
+    String email,
+    String password, {
+    bool rememberMe = false,
+  });
+  Future<Session> register({
+    required String name,
+    required String email,
+    required String password,
+    required UserRole role,
+    String? farmName,
+    String? inviteCode,
+  });
   Future<void> logout();
   Future<Session?> refreshSession();
   Future<Session> selectFarm(Farm farm);

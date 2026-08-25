@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import '../../../../core/errors/error_handler.dart';
 import '../models/login_request.dart';
 import '../models/login_response.dart';
+import '../models/register_request.dart';
 import 'auth_remote_datasource.dart';
 
 class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
@@ -13,6 +14,10 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   @override
   Future<LoginResponse> login(LoginRequest request) =>
       _postForSession('/auth/login', request.toJson());
+
+  @override
+  Future<LoginResponse> register(RegisterRequest request) =>
+      _postForSession('/auth/register', request.toJson());
 
   @override
   Future<LoginResponse> refresh(String refreshToken) =>

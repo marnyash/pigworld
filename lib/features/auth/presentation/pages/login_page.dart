@@ -3,15 +3,26 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes/app_routes.dart';
-import '../../../../security/authorization/roles.dart';
 import '../providers/auth_provider.dart';
 import '../providers/auth_providers.dart';
 import '../widgets/login_form.dart';
+import '../widgets/server_settings_dialog.dart';
 
 class LoginPage extends ConsumerWidget {
   const LoginPage({super.key});
   @override
   Widget build(BuildContext context, WidgetRef ref) => Scaffold(
+    appBar: AppBar(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      actions: [
+        IconButton(
+          tooltip: 'Server address',
+          icon: const Icon(Icons.settings_ethernet),
+          onPressed: () => showServerSettingsDialog(context, ref),
+        ),
+      ],
+    ),
     body: SafeArea(
       child: Center(
         child: SingleChildScrollView(
@@ -52,13 +63,7 @@ class LoginPage extends ConsumerWidget {
                       rememberMe: rememberMe,
                     );
                     ref.read(authProvider.notifier).setSession(session);
-                    if (context.mounted) {
-                      context.go(
-                        session.user.role == UserRole.farmManager
-                            ? AppRoutes.managerIdentity
-                            : AppRoutes.home,
-                      );
-                    }
+                    if (context.mounted) context.go(AppRoutes.home);
                   },
                 ),
                 const SizedBox(height: 12),

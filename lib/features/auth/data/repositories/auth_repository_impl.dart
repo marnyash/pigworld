@@ -6,6 +6,7 @@ import '../../domain/repositories/auth_repository.dart';
 import '../datasource/auth_local_datasource.dart';
 import '../datasource/auth_remote_datasource.dart';
 import '../models/login_request.dart';
+import '../models/register_request.dart';
 
 // TODO(temporary): remove once backend auth is available; allows offline testing.
 const _demoEmail = 'demo@gmail.com';
@@ -30,6 +31,30 @@ class AuthRepositoryImpl implements AuthRepository {
     }
     final response = await remote.login(
       LoginRequest(email: email, password: password, rememberMe: rememberMe),
+    );
+    final session = response.toEntity();
+    await local.saveSession(session);
+    return session;
+  }
+
+  @override
+  Future<Session> register({
+    required String name,
+    required String email,
+    required String password,
+    required UserRole role,
+    String? farmName,
+    String? inviteCode,
+  }) async {
+    final response = await remote.register(
+      RegisterRequest(
+        name: name,
+        email: email,
+        password: password,
+        role: role,
+        farmName: farmName,
+        inviteCode: inviteCode,
+      ),
     );
     final session = response.toEntity();
     await local.saveSession(session);
