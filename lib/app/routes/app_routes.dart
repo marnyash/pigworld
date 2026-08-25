@@ -15,7 +15,6 @@ abstract final class AppRoutes {
   static const login = '/login';
   static const forgotPassword = '/forgot-password';
   static const farmSelection = '/farm-selection';
-  static const managerIdentity = '/manager-identity';
   static const farmManagement = '/farm-management';
   static const sessionExpired = '/session-expired';
   static const permissions = '/permissions';

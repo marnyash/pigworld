@@ -4,27 +4,28 @@ import 'package:go_router/go_router.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 
 abstract final class RouteGuard {
-	static const publicRoutes = {
-		'/splash',
-		'/login',
-		'/forgot-password',
-		'/session-expired',
-		'/permissions',
-		'/language',
-		'/country',
-		'/account-type',
-		'/create-account',
-		'/manager-identity',
-	};
+  static const publicRoutes = {
+    '/splash',
+    '/login',
+    '/forgot-password',
+    '/session-expired',
+    '/permissions',
+    '/language',
+    '/country',
+    '/account-type',
+    '/create-account',
+  };
 
-	static bool isPublic(String location) => publicRoutes.contains(location);
+  static bool isPublic(String location) => publicRoutes.contains(location);
 
-	/// Splash owns the asynchronous session check before entering the shell.
-	static String? redirect(BuildContext context, GoRouterState state) {
-		if (isPublic(state.uri.path)) return null;
-		final session = ProviderScope.containerOf(context).read(authProvider).valueOrNull;
-		if (session == null) return '/splash';
-		if (session.selectedFarm == null) return '/farm-selection';
-		return null;
-	}
+  /// Splash owns the asynchronous session check before entering the shell.
+  static String? redirect(BuildContext context, GoRouterState state) {
+    if (isPublic(state.uri.path)) return null;
+    final session = ProviderScope.containerOf(
+      context,
+    ).read(authProvider).valueOrNull;
+    if (session == null) return '/splash';
+    if (session.selectedFarm == null) return '/farm-selection';
+    return null;
+  }
 }

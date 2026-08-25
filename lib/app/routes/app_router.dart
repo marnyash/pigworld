@@ -10,7 +10,6 @@ import '../../features/notifications/presentation/pages/notifications_page.dart'
 import '../../features/support/presentation/pages/support_page.dart';
 import '../../features/auth/presentation/pages/forgot_password_page.dart';
 import '../../features/auth/presentation/pages/farm_selection_page.dart';
-import '../../features/auth/presentation/pages/manager_identity_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/session_expired_page.dart';
 import '../../features/auth/presentation/pages/splash_page.dart';
@@ -66,10 +65,6 @@ abstract final class AppRouter {
       GoRoute(
         path: AppRoutes.farmSelection,
         builder: (context, state) => const FarmSelectionPage(),
-      ),
-      GoRoute(
-        path: AppRoutes.managerIdentity,
-        builder: (context, state) => const ManagerIdentityPage(),
       ),
       GoRoute(
         path: AppRoutes.forgotPassword,
@@ -183,15 +178,17 @@ class _AppDrawer extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final session = ref.watch(authProvider).valueOrNull;
     final role = session?.user.role;
-    final access = ref.watch(farmAccessProvider);
+    final access = ref.watch(farmAccessProvider).valueOrNull;
+    final canManageMembers = role == UserRole.farmOwner ||
+        (role == UserRole.farmManager &&
+            (access?.permissionsFor(session?.user.id ?? '').contains(AppPermission.manageMembers) ?? false));
     return Drawer(
       child: SafeArea(
         child: ListView(
           padding: EdgeInsets.zero,
           children: [
             const DrawerHeader(child: Text('Pig World Smart')),
-            if (role == UserRole.farmOwner ||
-                (role == UserRole.farmManager && access.managerCanAddWorkers))
+            if (canManageMembers)
               _ListTile(
                 icon: Icons.group_outlined,
                 title: 'Farm members',

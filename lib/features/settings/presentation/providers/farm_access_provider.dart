@@ -1,81 +1,64 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../security/authorization/permissions.dart';
 import '../../../../security/authorization/roles.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
+import '../../data/farm_members_api.dart';
 import '../../domain/entities/farm_member.dart';
 
-final farmAccessProvider = NotifierProvider<FarmAccessNotifier, FarmAccessState>(FarmAccessNotifier.new);
+final farmMembersApiProvider = Provider<FarmMembersApi>((ref) => FarmMembersApi(ref.watch(dioProvider)));
+
+final farmAccessProvider = AsyncNotifierProvider<FarmAccessNotifier, FarmAccessState>(FarmAccessNotifier.new);
 
 class FarmAccessState {
-  const FarmAccessState({
-    required this.members,
-    this.connectedOwner = false,
-    this.managerCanAddWorkers = false,
-  });
+  const FarmAccessState({required this.members});
 
   final List<FarmMember> members;
-  final bool connectedOwner;
-  final bool managerCanAddWorkers;
 
-  FarmAccessState copyWith({List<FarmMember>? members, bool? connectedOwner, bool? managerCanAddWorkers}) => FarmAccessState(
-        members: members ?? this.members,
-        connectedOwner: connectedOwner ?? this.connectedOwner,
-        managerCanAddWorkers: managerCanAddWorkers ?? this.managerCanAddWorkers,
-      );
+  /// The effective permissions for a member: the farm owner's overrides, or their role's defaults.
+  Set<AppPermission> permissionsFor(String userId) {
+    for (final member in members) {
+      if (member.id == userId) return member.permissions;
+    }
+    return const {};
+  }
 }
 
-class FarmAccessNotifier extends Notifier<FarmAccessState> {
+class FarmAccessNotifier extends AsyncNotifier<FarmAccessState> {
   @override
-  FarmAccessState build() => const FarmAccessState(members: [
-        FarmMember(
-          id: 'owner-1',
-          name: 'Amina Otieno',
-          email: 'amina@greenvalley.farm',
-          role: UserRole.farmOwner,
-          identityNumber: 'KE-OWNER-1042',
-        ),
-        FarmMember(
-          id: 'manager-1',
-          name: 'Farm manager',
-          email: 'manager@pigworld.farm',
-          role: UserRole.farmManager,
-          identityNumber: 'KE-MGR-2048',
-          permissions: {AppPermission.manageMembers},
-        ),
-      ], connectedOwner: true, managerCanAddWorkers: true);
+  Future<FarmAccessState> build() async {
+    final farmId = ref.watch(authProvider).valueOrNull?.selectedFarm?.id;
+    if (farmId == null) return const FarmAccessState(members: []);
+    final members = await ref.watch(farmMembersApiProvider).fetchMembers(farmId);
+    return FarmAccessState(members: members);
+  }
 
-  void connectManager(String identityNumber) {
-    if (identityNumber.trim().toUpperCase() == 'KE-OWNER-1042') {
-      state = state.copyWith(connectedOwner: true);
+  Future<void> togglePermission(String memberId, AppPermission permission, bool allowed) async {
+    final farmId = ref.read(authProvider).valueOrNull?.selectedFarm?.id;
+    final current = state.valueOrNull;
+    if (farmId == null || current == null) return;
+
+    final member = current.members.firstWhere((member) => member.id == memberId);
+    final updatedPermissions = allowed ? {...member.permissions, permission} : member.permissions.difference({permission});
+
+    state = AsyncData(FarmAccessState(members: [
+      for (final existing in current.members)
+        existing.id == memberId ? existing.copyWith(permissions: updatedPermissions) : existing,
+    ]));
+
+    try {
+      await ref.read(farmMembersApiProvider).updatePermissions(farmId, memberId, updatedPermissions);
+    } catch (_) {
+      // Roll back optimistic update on failure by refetching from the server.
+      state = AsyncData(current);
+      ref.invalidateSelf();
     }
   }
 
-  void setManagerCanAddWorkers(bool allowed) {
-    state = state.copyWith(
-      managerCanAddWorkers: allowed,
-      members: [
-        for (final member in state.members)
-          member.role == UserRole.farmManager
-              ? member.copyWith(permissions: allowed ? {...member.permissions, AppPermission.manageMembers} : member.permissions.difference({AppPermission.manageMembers}))
-              : member,
-      ],
-    );
+  bool canManageMembers(UserRole role) {
+    if (role == UserRole.farmOwner) return true;
+    final myId = ref.read(authProvider).valueOrNull?.user.id;
+    if (role != UserRole.farmManager || myId == null) return false;
+    return state.valueOrNull?.permissionsFor(myId).contains(AppPermission.manageMembers) ?? false;
   }
-
-  void addMember({required String name, required String email, required UserRole role, required String identityNumber}) {
-    final member = FarmMember(id: '${role.name}-${state.members.length}', name: name, email: email, role: role, identityNumber: identityNumber);
-    state = state.copyWith(members: [...state.members, member]);
-  }
-
-  void togglePermission(String memberId, AppPermission permission, bool allowed) {
-    if (permission == AppPermission.manageMembers) state = state.copyWith(managerCanAddWorkers: allowed);
-    state = state.copyWith(members: [
-      for (final member in state.members)
-        if (member.id == memberId)
-          member.copyWith(permissions: allowed ? {...member.permissions, permission} : member.permissions.difference({permission}))
-        else
-          member,
-    ]);
-  }
-
-  bool canManageMembers(UserRole role) => role == UserRole.farmOwner || (role == UserRole.farmManager && state.managerCanAddWorkers);
 }
