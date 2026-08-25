@@ -1,12 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:crm/crm.dart';
 import 'routes/app_router.dart';
 import '../shared/providers/theme_provider.dart';
 import '../features/onboarding/presentation/providers/onboarding_provider.dart';
-import '../features/auth/presentation/providers/auth_provider.dart';
-import '../features/auth/presentation/providers/auth_providers.dart';
 import 'theme/app_theme.dart';
 
 class MyApp extends StatelessWidget {
@@ -14,14 +11,8 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ProviderScope(
-      overrides: [
-        crmDioProvider.overrideWith((ref) => ref.watch(dioProvider)),
-        crmFarmIdProvider.overrideWith(
-          (ref) => ref.watch(authProvider).valueOrNull?.selectedFarm?.id,
-        ),
-      ],
-      child: const _AppRoot(),
+    return const ProviderScope(
+      child: _AppRoot(),
     );
   }
 }

@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
+import '../../../../security/authorization/permissions.dart';
+import '../../../../security/authorization/roles.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../../shared/components/bottom_navigation.dart';
 
@@ -16,6 +18,8 @@ class DashboardPage extends ConsumerWidget {
     final session = ref.watch(authProvider).valueOrNull;
     final firstName = session?.user.name.split(' ').first ?? 'there';
     final farmName = session?.selectedFarm?.name ?? 'Pig World Smart';
+    final role = session?.user.role;
+    final isAdmin = role == UserRole.farmOwner;
 
     return Scaffold(
       appBar: AppBar(
@@ -99,21 +103,33 @@ class DashboardPage extends ConsumerWidget {
                 label: 'Feed',
                 onTap: () => context.go(AppRoutes.feed),
               ),
-              _QuickAction(
-                icon: Icons.account_balance_wallet_outlined,
-                label: 'Finance',
-                onTap: () => context.go(AppRoutes.finance),
-              ),
-              _QuickAction(
-                icon: Icons.groups_outlined,
-                label: 'Customers',
-                onTap: () => context.go(AppRoutes.crm),
-              ),
+              if (isAdmin ||
+                  (role != null &&
+                      RolePermissions.can(role, AppPermission.manageFinance)))
+                _QuickAction(
+                  icon: Icons.account_balance_wallet_outlined,
+                  label: 'Finance',
+                  onTap: () => context.go(AppRoutes.finance),
+                ),
+              if (isAdmin ||
+                  (role != null &&
+                      RolePermissions.can(role, AppPermission.manageSales)))
+                _QuickAction(
+                  icon: Icons.groups_outlined,
+                  label: 'Customers',
+                  onTap: () => context.go(AppRoutes.crm),
+                ),
               _QuickAction(
                 icon: Icons.support_agent_outlined,
                 label: 'Support',
                 onTap: () => context.go(AppRoutes.support),
               ),
+              if (isAdmin)
+                _QuickAction(
+                  icon: Icons.group_outlined,
+                  label: 'Team & policies',
+                  onTap: () => context.go(AppRoutes.farmManagement),
+                ),
             ],
           ),
           const SizedBox(height: AppDimensions.spacingLarge),
