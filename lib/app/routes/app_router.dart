@@ -102,7 +102,8 @@ abstract final class AppRouter {
             path: AppRoutes.crm,
             builder: (context, state) => const ModulePage(
               title: 'Customers',
-              description: 'Customer relationship management now lives in the standalone CRM web app.',
+              description:
+                  'Customer relationship management now lives in the standalone CRM web app.',
               icon: Icons.groups_outlined,
             ),
           ),

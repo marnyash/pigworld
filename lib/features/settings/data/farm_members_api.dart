@@ -3,7 +3,7 @@ import 'package:dio/dio.dart';
 import '../../../../core/errors/error_handler.dart';
 import '../../../../security/authorization/permissions.dart';
 import '../../../../security/authorization/roles.dart';
-import '../../domain/entities/farm_member.dart';
+import '../domain/entities/farm_member.dart';
 
 /// Talks to `farms/{farm}/members` so the farm owner can see who has access
 /// to the farm and control the policies granted to farm managers/workers.
