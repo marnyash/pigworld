@@ -41,10 +41,11 @@ class _SubscriptionPageState extends ConsumerState<SubscriptionPage> {
           .patch('/farms/$farmId/subscription', data: {'plan': _plan});
       if (mounted) context.go(AppRoutes.home);
     } on DioException catch (error) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('Could not save subscription: $error')),
         );
+      }
     } finally {
       if (mounted) setState(() => _saving = false);
     }

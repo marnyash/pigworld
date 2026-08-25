@@ -40,7 +40,7 @@ class AccountTypePage extends ConsumerWidget {
           children: [
             const OnboardingHeader(
               title: 'Choose your account type',
-              subtitle: 'Select every role that applies to you.',
+              subtitle: 'Choose the role for this account.',
             ),
             const SizedBox(height: 24),
             ...accountTypes.map((accountType) {
@@ -50,11 +50,13 @@ class AccountTypePage extends ConsumerWidget {
                 child: RadioListTile<UserRole>(
                   value: role,
                   // ignore: deprecated_member_use
-                  groupValue: selectedRoles.isEmpty ? null : selectedRoles.first,
+                  groupValue: selectedRoles.isEmpty
+                      ? null
+                      : selectedRoles.first,
                   // ignore: deprecated_member_use
                   onChanged: (selected) => ref
                       .read(onboardingProvider.notifier)
-                      .toggleRole(role, selected ?? false),
+                      .toggleRole(role, selected != null),
                   secondary: Icon(icon),
                   title: Text(title),
                   subtitle: Text(description),
