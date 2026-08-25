@@ -79,12 +79,18 @@ class _CreateAccountPageState extends ConsumerState<CreateAccountPage> {
         farmName: _role == UserRole.farmOwner ? _farmName.text.trim() : null,
         inviteCode: _needsInviteCode ? _inviteCode.text.trim() : null,
         motherPigCount: ref.read(onboardingProvider).motherPigCount,
-        pigletGroups: ref.read(onboardingProvider).pigletGroups.map((group) => group.toJson()).toList(),
+        pigletGroups: ref
+            .read(onboardingProvider)
+            .pigletGroups
+            .map((group) => group.toJson())
+            .toList(),
         pregnantPigCount: ref.read(onboardingProvider).pregnantPigCount,
       );
       ref.read(authProvider.notifier).setSession(session);
       if (mounted) {
-        context.go(_role == UserRole.farmOwner ? AppRoutes.subscription : AppRoutes.home);
+        context.go(
+          _role == UserRole.farmOwner ? AppRoutes.subscription : AppRoutes.home,
+        );
       }
     } catch (error) {
       setState(() => _error = error.toString());

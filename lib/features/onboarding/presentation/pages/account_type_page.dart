@@ -10,9 +10,24 @@ class AccountTypePage extends ConsumerWidget {
   const AccountTypePage({super.key});
 
   static const accountTypes = [
-    (UserRole.farmOwner, 'Farm owner', 'Own and oversee one or more farms.', Icons.business_outlined),
-    (UserRole.farmManager, 'Farm manager', 'Coordinate daily operations and teams.', Icons.manage_accounts_outlined),
-    (UserRole.farmWorker, 'Farm worker', 'Complete tasks and care for the herd.', Icons.agriculture_outlined),
+    (
+      UserRole.farmOwner,
+      'Farm owner',
+      'Own and oversee one or more farms.',
+      Icons.business_outlined,
+    ),
+    (
+      UserRole.farmManager,
+      'Farm manager',
+      'Coordinate daily operations and teams.',
+      Icons.manage_accounts_outlined,
+    ),
+    (
+      UserRole.farmWorker,
+      'Farm worker',
+      'Complete tasks and care for the herd.',
+      Icons.agriculture_outlined,
+    ),
   ];
 
   @override
@@ -32,9 +47,14 @@ class AccountTypePage extends ConsumerWidget {
               final (role, title, description, icon) = accountType;
               return Card(
                 margin: const EdgeInsets.only(bottom: 12),
-                child: CheckboxListTile(
-                  value: selectedRoles.contains(role),
-                  onChanged: (selected) => ref.read(onboardingProvider.notifier).toggleRole(role, selected ?? false),
+                child: RadioListTile<UserRole>(
+                  value: role,
+                  // ignore: deprecated_member_use
+                  groupValue: selectedRoles.isEmpty ? null : selectedRoles.first,
+                  // ignore: deprecated_member_use
+                  onChanged: (selected) => ref
+                      .read(onboardingProvider.notifier)
+                      .toggleRole(role, selected ?? false),
                   secondary: Icon(icon),
                   title: Text(title),
                   subtitle: Text(description),
@@ -50,16 +70,19 @@ class AccountTypePage extends ConsumerWidget {
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
-              TextButton(onPressed: () => context.go(AppRoutes.country), child: const Text('Back')),
+              TextButton(
+                onPressed: () => context.go(AppRoutes.country),
+                child: const Text('Back'),
+              ),
               const Spacer(),
               FilledButton(
                 onPressed: selectedRoles.isEmpty
-                  ? null
-                  : () => context.go(
-                    selectedRoles.contains(UserRole.farmOwner)
-                      ? AppRoutes.herdSetup
-                      : AppRoutes.createAccount,
-                    ),
+                    ? null
+                    : () => context.go(
+                        selectedRoles.contains(UserRole.farmOwner)
+                            ? AppRoutes.herdSetup
+                            : AppRoutes.createAccount,
+                      ),
                 child: const Text('Continue'),
               ),
             ],

@@ -24,7 +24,9 @@ abstract final class RouteGuard {
   /// Splash owns the asynchronous session check before entering the shell.
   static String? redirect(BuildContext context, GoRouterState state) {
     if (state.uri.path == '/subscription') {
-      final role = ProviderScope.containerOf(context).read(authProvider).valueOrNull?.user.role;
+      final role = ProviderScope.containerOf(
+        context,
+      ).read(authProvider).valueOrNull?.user.role;
       if (role != UserRole.farmOwner) return '/';
     }
     if (isPublic(state.uri.path)) return null;

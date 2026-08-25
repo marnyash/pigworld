@@ -31,10 +31,10 @@ class RegisterRequest {
     'role': role.name,
     if (farmName != null) 'farm_name': farmName,
     if (inviteCode != null) 'invite_code': inviteCode,
-        if (role == UserRole.farmOwner) ...{
-          'mother_pig_count': motherPigCount,
-          'piglet_groups': pigletGroups,
-          if (pregnantPigCount != null) 'pregnant_pig_count': pregnantPigCount,
-        },
+    if (role == UserRole.farmOwner) ...{
+      'mother_pig_count': motherPigCount,
+      'piglet_groups': pigletGroups,
+      if (pregnantPigCount != null) 'pregnant_pig_count': pregnantPigCount,
+    },
   };
 }
