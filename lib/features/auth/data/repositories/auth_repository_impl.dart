@@ -1,16 +1,11 @@
 import '../../../../security/authorization/roles.dart';
 import '../../domain/entities/farm.dart';
 import '../../domain/entities/session.dart';
-import '../../domain/entities/user.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasource/auth_local_datasource.dart';
 import '../datasource/auth_remote_datasource.dart';
 import '../models/login_request.dart';
 import '../models/register_request.dart';
-
-// TODO(temporary): remove once backend auth is available; allows offline testing.
-const _demoEmail = 'demo@gmail.com';
-const _demoPassword = 'testpassword';
 
 class AuthRepositoryImpl implements AuthRepository {
   const AuthRepositoryImpl({required this.remote, required this.local});
@@ -24,11 +19,6 @@ class AuthRepositoryImpl implements AuthRepository {
     String password, {
     bool rememberMe = false,
   }) async {
-    if (email.trim().toLowerCase() == _demoEmail && password == _demoPassword) {
-      final session = _demoSession();
-      await local.saveSession(session);
-      return session;
-    }
     final response = await remote.login(
       LoginRequest(email: email, password: password, rememberMe: rememberMe),
     );
@@ -65,26 +55,6 @@ class AuthRepositoryImpl implements AuthRepository {
     final session = response.toEntity();
     await local.saveSession(session);
     return session;
-  }
-
-  Session _demoSession() {
-    const farm = Farm(
-      id: 'demo-farm',
-      name: 'Demo Farm',
-      location: 'Demo Location',
-    );
-    return const Session(
-      accessToken: 'demo-access-token',
-      refreshToken: 'demo-refresh-token',
-      user: User(
-        id: 'demo-user',
-        name: 'Demo User',
-        email: _demoEmail,
-        role: UserRole.farmOwner,
-      ),
-      farms: [farm],
-      selectedFarm: farm,
-    );
   }
 
   @override

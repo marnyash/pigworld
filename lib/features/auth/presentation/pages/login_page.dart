@@ -40,12 +40,6 @@ class LoginPage extends ConsumerWidget {
                 ),
                 const SizedBox(height: 8),
                 const Text('Sign in to manage your Pig World farm.'),
-                const SizedBox(height: 8),
-                // TODO(temporary): remove once backend auth is available.
-                const Text(
-                  'Demo login: demo@gmail.com / testpassword',
-                  style: TextStyle(fontStyle: FontStyle.italic, fontSize: 12),
-                ),
                 const SizedBox(height: 24),
                 LoginForm(
                   onSubmit: (email, password, rememberMe) async {
@@ -62,6 +56,10 @@ class LoginPage extends ConsumerWidget {
                       password,
                       rememberMe: rememberMe,
                     );
+                    await ref
+                        .read(authServiceProvider)
+                        .setRememberMe(rememberMe);
+                    await ref.read(sessionManagerProvider).markActive();
                     ref.read(authProvider.notifier).setSession(session);
                     if (context.mounted) context.go(AppRoutes.home);
                   },

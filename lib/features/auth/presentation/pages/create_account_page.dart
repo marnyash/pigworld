@@ -87,6 +87,9 @@ class _CreateAccountPageState extends ConsumerState<CreateAccountPage> {
             .toList(),
         pregnantPigCount: ref.read(onboardingProvider).pregnantPigCount,
       );
+      await ref.read(authServiceProvider).setRememberMe(true);
+      await ref.read(sessionManagerProvider).markActive();
+      await ref.read(onboardingStorageProvider).markCompleted();
       ref.read(authProvider.notifier).setSession(session);
       if (mounted) {
         context.go(

@@ -1,5 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../security/authorization/roles.dart';
+import '../../data/onboarding_storage.dart';
+
+final onboardingStorageProvider = Provider<OnboardingStorage>(
+  (ref) => OnboardingStorage(),
+);
+
+final onboardingCompletedProvider = FutureProvider<bool>(
+  (ref) => ref.watch(onboardingStorageProvider).completed,
+);
 
 class OnboardingState {
   const OnboardingState({

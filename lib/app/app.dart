@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'routes/app_router.dart';
 import '../shared/providers/theme_provider.dart';
+import '../shared/providers/connectivity_provider.dart';
 import '../features/onboarding/presentation/providers/onboarding_provider.dart';
 import 'theme/app_theme.dart';
 
@@ -46,6 +47,44 @@ class _AppRoot extends ConsumerWidget {
       ],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
       routerConfig: AppRouter.router,
+      builder: (context, child) => _OfflineBannerOverlay(child: child),
+    );
+  }
+}
+
+class _OfflineBannerOverlay extends ConsumerWidget {
+  const _OfflineBannerOverlay({required this.child});
+
+  final Widget? child;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final isOffline =
+        ref.watch(connectivityProvider).valueOrNull ==
+        ConnectivityStatus.offline;
+    return Column(
+      children: [
+        if (isOffline)
+          Material(
+            color: Theme.of(context).colorScheme.error,
+            child: SafeArea(
+              bottom: false,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                child: Center(
+                  child: Text(
+                    'No internet connection',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onError,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        Expanded(child: child ?? const SizedBox.shrink()),
+      ],
     );
   }
 }

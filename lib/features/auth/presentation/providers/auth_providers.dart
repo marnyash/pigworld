@@ -5,9 +5,11 @@ import '../../../../core/network/api_config.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/storage/secure_storage.dart';
 import '../../../../security/authentication/auth_service.dart';
+import '../../../../security/session/session_manager.dart';
 import '../../data/datasource/auth_local_datasource_impl.dart';
 import '../../data/datasource/auth_remote_datasource_impl.dart';
 import '../../data/repositories/auth_repository_impl.dart';
+import '../../domain/entities/session.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/forgot_password.dart';
 import '../../domain/usecases/login.dart';
@@ -18,6 +20,9 @@ import '../../domain/usecases/select_farm.dart';
 import 'auth_provider.dart';
 
 final authServiceProvider = Provider<AuthService>((ref) => AuthService());
+final sessionManagerProvider = Provider<SessionManager>(
+  (ref) => SessionManager(ref.watch(authServiceProvider)),
+);
 
 /// The server address the user configured in-app, falling back to the build-time default.
 /// Lets the app be pointed at a different network (LAN IP, tunnel, or domain) without a rebuild.
@@ -66,3 +71,37 @@ final selectFarmUseCaseProvider = Provider(
 final forgotPasswordUseCaseProvider = Provider(
   (ref) => ForgotPassword(ref.watch(authRepositoryProvider)),
 );
+
+/// Restores a persisted session on cold start, refreshing it if the 12h session window has lapsed.
+/// Returns null (and wipes storage) whenever the user isn't recoverable, so the splash can fall
+/// back to onboarding/login instead of leaving the app stuck on a partially-restored session.
+final sessionRestoreProvider = FutureProvider<Session?>((ref) async {
+  final authService = ref.watch(authServiceProvider);
+  final local = AuthLocalDataSourceImpl();
+  if (!await authService.rememberMe) {
+    await local.clear();
+    return null;
+  }
+  final stored = await local.readSession();
+  if (stored == null) return null;
+
+  final sessionManager = ref.watch(sessionManagerProvider);
+  var session = stored;
+  if (!await sessionManager.isValid()) {
+    try {
+      final refreshed = await ref.read(refreshSessionUseCaseProvider)();
+      if (refreshed == null) {
+        await local.clear();
+        return null;
+      }
+      session = refreshed;
+    } on DioException {
+      await local.clear();
+      return null;
+    }
+  }
+
+  await sessionManager.markActive();
+  ref.read(authProvider.notifier).setSession(session);
+  return session;
+});
