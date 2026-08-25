@@ -5,6 +5,7 @@ import '../../../../app/routes/app_routes.dart';
 import '../../../../security/authorization/roles.dart';
 import '../providers/auth_provider.dart';
 import '../providers/auth_providers.dart';
+import '../../../onboarding/presentation/providers/onboarding_provider.dart';
 
 class CreateAccountPage extends ConsumerStatefulWidget {
   const CreateAccountPage({super.key});
@@ -43,6 +44,15 @@ class _CreateAccountPageState extends ConsumerState<CreateAccountPage> {
   String? _error;
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final selectedRoles = ref.read(onboardingProvider).roles;
+    if (selectedRoles.isNotEmpty) {
+      _role = selectedRoles.first;
+    }
+  }
+
+  @override
   void dispose() {
     _name.dispose();
     _email.dispose();
@@ -68,9 +78,14 @@ class _CreateAccountPageState extends ConsumerState<CreateAccountPage> {
         role: _role,
         farmName: _role == UserRole.farmOwner ? _farmName.text.trim() : null,
         inviteCode: _needsInviteCode ? _inviteCode.text.trim() : null,
+        motherPigCount: ref.read(onboardingProvider).motherPigCount,
+        pigletGroups: ref.read(onboardingProvider).pigletGroups.map((group) => group.toJson()).toList(),
+        pregnantPigCount: ref.read(onboardingProvider).pregnantPigCount,
       );
       ref.read(authProvider.notifier).setSession(session);
-      if (mounted) context.go(AppRoutes.home);
+      if (mounted) {
+        context.go(_role == UserRole.farmOwner ? AppRoutes.subscription : AppRoutes.home);
+      }
     } catch (error) {
       setState(() => _error = error.toString());
     } finally {

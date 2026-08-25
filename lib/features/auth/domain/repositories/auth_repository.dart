@@ -15,6 +15,9 @@ abstract interface class AuthRepository {
     required UserRole role,
     String? farmName,
     String? inviteCode,
+    int motherPigCount = 0,
+    List<Map<String, dynamic>> pigletGroups = const [],
+    int? pregnantPigCount,
   });
   Future<void> logout();
   Future<Session?> refreshSession();

@@ -45,6 +45,9 @@ class AuthRepositoryImpl implements AuthRepository {
     required UserRole role,
     String? farmName,
     String? inviteCode,
+    int motherPigCount = 0,
+    List<Map<String, dynamic>> pigletGroups = const [],
+    int? pregnantPigCount,
   }) async {
     final response = await remote.register(
       RegisterRequest(
@@ -54,6 +57,9 @@ class AuthRepositoryImpl implements AuthRepository {
         role: role,
         farmName: farmName,
         inviteCode: inviteCode,
+        motherPigCount: motherPigCount,
+        pigletGroups: pigletGroups,
+        pregnantPigCount: pregnantPigCount,
       ),
     );
     final session = response.toEntity();

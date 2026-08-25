@@ -21,5 +21,7 @@ abstract final class AppRoutes {
   static const language = '/language';
   static const country = '/country';
   static const accountType = '/account-type';
+  static const herdSetup = '/herd-setup';
+  static const subscription = '/subscription';
   static const createAccount = '/create-account';
 }

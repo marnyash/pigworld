@@ -53,7 +53,13 @@ class AccountTypePage extends ConsumerWidget {
               TextButton(onPressed: () => context.go(AppRoutes.country), child: const Text('Back')),
               const Spacer(),
               FilledButton(
-                onPressed: selectedRoles.isEmpty ? null : () => context.go(AppRoutes.login),
+                onPressed: selectedRoles.isEmpty
+                  ? null
+                  : () => context.go(
+                    selectedRoles.contains(UserRole.farmOwner)
+                      ? AppRoutes.herdSetup
+                      : AppRoutes.createAccount,
+                    ),
                 child: const Text('Continue'),
               ),
             ],

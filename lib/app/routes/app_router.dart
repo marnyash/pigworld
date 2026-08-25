@@ -16,6 +16,8 @@ import '../../features/auth/presentation/pages/splash_page.dart';
 import '../../features/auth/presentation/pages/create_account_page.dart';
 import '../../features/onboarding/presentation/pages/country_page.dart';
 import '../../features/onboarding/presentation/pages/account_type_page.dart';
+import '../../features/onboarding/presentation/pages/herd_setup_page.dart';
+import '../../features/onboarding/presentation/pages/subscription_page.dart';
 import '../../features/onboarding/presentation/pages/language_page.dart';
 import '../../features/onboarding/presentation/pages/permissions_page.dart';
 import '../../features/settings/presentation/pages/farm_management_page.dart';
@@ -55,12 +57,20 @@ abstract final class AppRouter {
         builder: (context, state) => const AccountTypePage(),
       ),
       GoRoute(
+        path: AppRoutes.herdSetup,
+        builder: (context, state) => const HerdSetupPage(),
+      ),
+      GoRoute(
         path: AppRoutes.login,
         builder: (context, state) => const LoginPage(),
       ),
       GoRoute(
         path: AppRoutes.createAccount,
         builder: (context, state) => const CreateAccountPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.subscription,
+        builder: (context, state) => const SubscriptionPage(),
       ),
       GoRoute(
         path: AppRoutes.farmSelection,

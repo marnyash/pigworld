@@ -13,6 +13,9 @@ class Register {
     required UserRole role,
     String? farmName,
     String? inviteCode,
+    int motherPigCount = 0,
+    List<Map<String, dynamic>> pigletGroups = const [],
+    int? pregnantPigCount,
   }) => repository.register(
     name: name,
     email: email,
@@ -20,5 +23,8 @@ class Register {
     role: role,
     farmName: farmName,
     inviteCode: inviteCode,
+    motherPigCount: motherPigCount,
+    pigletGroups: pigletGroups,
+    pregnantPigCount: pregnantPigCount,
   );
 }
