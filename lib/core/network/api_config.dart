@@ -3,7 +3,7 @@ abstract final class ApiConfig {
   // 10.0.2.2 is the Android emulator's alias for the host machine, used as the local dev default.
   static const baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://10.0.2.2/api/v1',
+    defaultValue: 'http://10.0.2.2:8000/api/v1',
   );
 
   static const connectTimeout = Duration(seconds: 15);
