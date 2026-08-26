@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../features/herd/presentation/pages/herd_page.dart';
 import '../../features/feed/presentation/pages/feed_page.dart';
 import '../../features/finance/presentation/pages/finance_page.dart';
-import '../../features/settings/presentation/pages/more_page.dart';
+import '../../features/settings/presentation/pages/profile_page.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
 import '../../features/notifications/presentation/pages/notifications_page.dart';
 import '../../features/support/presentation/pages/support_page.dart';
@@ -28,6 +28,7 @@ import '../../security/authorization/permissions.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../shared/components/bottom_navigation.dart';
 import '../../shared/widgets/module_page.dart';
+import '../../app/theme/app_colors.dart';
 import 'app_routes.dart';
 import 'route_guard.dart';
 
@@ -123,7 +124,7 @@ abstract final class AppRouter {
           ),
           GoRoute(
             path: AppRoutes.profile,
-            builder: (context, state) => const MorePage(),
+            builder: (context, state) => const ProfilePage(),
           ),
           GoRoute(
             path: AppRoutes.settings,
@@ -163,10 +164,8 @@ class NavigationShell extends StatelessWidget {
       body: child,
       floatingActionButton: location == AppRoutes.support
           ? null
-          : FloatingActionButton.extended(
+          : _MovableCustomerCareButton(
               onPressed: () => context.go(AppRoutes.support),
-              icon: const Icon(Icons.support_agent_outlined),
-              label: const Text('Support'),
             ),
       bottomNavigationBar: AppBottomNavigation(
         selectedIndex: selectedIndex,
@@ -181,6 +180,37 @@ class NavigationShell extends StatelessWidget {
       ),
     );
   }
+}
+
+class _MovableCustomerCareButton extends StatefulWidget {
+  const _MovableCustomerCareButton({required this.onPressed});
+
+  final VoidCallback onPressed;
+
+  @override
+  State<_MovableCustomerCareButton> createState() =>
+      _MovableCustomerCareButtonState();
+}
+
+class _MovableCustomerCareButtonState
+    extends State<_MovableCustomerCareButton> {
+  Offset offset = Offset.zero;
+
+  @override
+  Widget build(BuildContext context) => GestureDetector(
+    onPanUpdate: (details) => setState(() => offset += details.delta),
+    onTap: widget.onPressed,
+    child: Transform.translate(
+      offset: offset,
+      child: FloatingActionButton(
+        heroTag: 'customer-care-fab',
+        onPressed: widget.onPressed,
+        tooltip: 'Customer Care',
+        shape: const CircleBorder(),
+        child: const Icon(Icons.support_agent_outlined, size: 28),
+      ),
+    ),
+  );
 }
 
 class _AppDrawer extends ConsumerWidget {
@@ -198,44 +228,98 @@ class _AppDrawer extends ConsumerWidget {
                     ?.permissionsFor(session?.user.id ?? '')
                     .contains(AppPermission.manageMembers) ??
                 false));
+    final farmName = session?.selectedFarm?.name ?? 'Pig World Smart';
     return Drawer(
+      width: 310,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.only(
+          topRight: Radius.circular(28),
+          bottomRight: Radius.circular(28),
+        ),
+      ),
       child: SafeArea(
-        child: ListView(
-          padding: EdgeInsets.zero,
+        child: Column(
           children: [
-            const DrawerHeader(child: Text('Pig World Smart')),
-            if (canManageMembers)
-              _ListTile(
-                icon: Icons.group_outlined,
-                title: 'Farm members',
-                route: AppRoutes.farmManagement,
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(20, 24, 20, 18),
+              decoration: const BoxDecoration(
+                color: AppColors.deepGreen,
+                borderRadius: BorderRadius.only(
+                  bottomRight: Radius.circular(28),
+                ),
               ),
-            if (role != null &&
-                RolePermissions.can(role, AppPermission.manageFinance))
-              _ListTile(
-                icon: Icons.account_balance_wallet_outlined,
-                title: 'Finance',
-                route: AppRoutes.finance,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.agriculture_outlined,
+                      color: Colors.white,
+                      size: 28,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Pig World Smart',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.titleLarge?.copyWith(color: Colors.white),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    farmName,
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(color: Colors.white70),
+                  ),
+                ],
               ),
-            if (role != null &&
-                RolePermissions.can(role, AppPermission.manageSales))
-              _ListTile(
-                icon: Icons.groups_outlined,
-                title: 'Customers',
-                route: AppRoutes.crm,
-              ),
-            _ListTile(
-              icon: Icons.notifications_outlined,
-              title: 'Notifications',
-              route: AppRoutes.notifications,
             ),
-            if (role != null &&
-                RolePermissions.can(role, AppPermission.manageSettings))
-              _ListTile(
-                icon: Icons.settings_outlined,
-                title: 'Settings',
-                route: AppRoutes.settings,
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  if (canManageMembers)
+                    _ListTile(
+                      icon: Icons.group_outlined,
+                      title: 'Farm members',
+                      route: AppRoutes.farmManagement,
+                    ),
+                  if (role != null &&
+                      RolePermissions.can(role, AppPermission.manageFinance))
+                    _ListTile(
+                      icon: Icons.account_balance_wallet_outlined,
+                      title: 'Finance',
+                      route: AppRoutes.finance,
+                    ),
+                  if (role != null &&
+                      RolePermissions.can(role, AppPermission.manageSales))
+                    _ListTile(
+                      icon: Icons.groups_outlined,
+                      title: 'Customers',
+                      route: AppRoutes.crm,
+                    ),
+                  _ListTile(
+                    icon: Icons.notifications_outlined,
+                    title: 'Notifications',
+                    route: AppRoutes.notifications,
+                  ),
+                  if (role != null &&
+                      RolePermissions.can(role, AppPermission.manageSettings))
+                    _ListTile(
+                      icon: Icons.settings_outlined,
+                      title: 'Settings',
+                      route: AppRoutes.settings,
+                    ),
+                ],
               ),
+            ),
           ],
         ),
       ),
@@ -255,13 +339,28 @@ class _ListTile extends StatelessWidget {
   final String route;
 
   @override
-  Widget build(BuildContext context) => ListTile(
-    leading: Icon(icon),
-    title: Text(title),
-    onTap: () {
-      Navigator.pop(context);
-      context.go(route);
-    },
+  Widget build(BuildContext context) => Container(
+    margin: const EdgeInsets.only(bottom: 8),
+    decoration: BoxDecoration(
+      color: AppColors.background,
+      borderRadius: BorderRadius.circular(16),
+    ),
+    child: ListTile(
+      leading: Container(
+        padding: const EdgeInsets.all(8),
+        decoration: BoxDecoration(
+          color: AppColors.primaryGreen.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(icon, color: AppColors.primaryGreen),
+      ),
+      title: Text(title),
+      trailing: const Icon(Icons.chevron_right, size: 20),
+      onTap: () {
+        Navigator.pop(context);
+        context.go(route);
+      },
+    ),
   );
 }
 

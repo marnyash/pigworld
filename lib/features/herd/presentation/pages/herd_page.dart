@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../app/theme/app_colors.dart';
+import '../../../../app/theme/app_dimensions.dart';
+import '../../../../shared/components/bottom_navigation.dart';
+import '../../domain/entities/animal.dart';
 import '../providers/herd_provider.dart';
 
 class HerdPage extends ConsumerWidget {
@@ -12,6 +16,11 @@ class HerdPage extends ConsumerWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Herd'),
+        leading: IconButton(
+          tooltip: 'Open menu',
+          icon: const Icon(Icons.menu),
+          onPressed: () => navigationScaffoldKey.currentState?.openDrawer(),
+        ),
         actions: [
           IconButton(
             tooltip: 'Refresh herd',
@@ -34,33 +43,71 @@ class HerdPage extends ConsumerWidget {
             label: Text('Could not load herd: $error'),
           ),
         ),
-        data: (animals) => animals.isEmpty
-            ? const Center(
-                child: Text('No animals recorded yet. Add your first sow.'),
-              )
-            : RefreshIndicator(
-                onRefresh: () async => ref.invalidate(herdProvider),
-                child: ListView.separated(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
-                  itemCount: animals.length,
-                  separatorBuilder: (_, index) => const Divider(height: 1),
-                  itemBuilder: (context, index) {
-                    final animal = animals[index];
-                    return ListTile(
-                      leading: const CircleAvatar(
-                        child: Icon(Icons.pets_outlined),
-                      ),
-                      title: Text(animal.tag),
-                      subtitle: Text('${animal.type} · ${animal.status}'),
-                      trailing: animal.birthDate == null
-                          ? null
-                          : Text(
-                              '${animal.birthDate!.day}/${animal.birthDate!.month}/${animal.birthDate!.year}',
-                            ),
-                    );
-                  },
-                ),
+        data: (animals) => RefreshIndicator(
+          onRefresh: () async => ref.invalidate(herdProvider),
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(
+              AppDimensions.pagePadding,
+              AppDimensions.pagePadding,
+              AppDimensions.pagePadding,
+              96,
+            ),
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: _HerdSummary(
+                      label: 'Total animals',
+                      value: '${animals.length}',
+                      icon: Icons.pets_outlined,
+                      color: AppColors.primaryGreen,
+                    ),
+                  ),
+                  const SizedBox(width: AppDimensions.spacingMedium),
+                  Expanded(
+                    child: _HerdSummary(
+                      label: 'Active',
+                      value:
+                          '${animals.where((animal) => animal.status == 'active').length}',
+                      icon: Icons.favorite_border,
+                      color: AppColors.success,
+                    ),
+                  ),
+                ],
               ),
+              const SizedBox(height: AppDimensions.spacingLarge),
+              Text(
+                'Your animals',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: AppDimensions.spacingMedium),
+              if (animals.isEmpty)
+                const Card(
+                  child: Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Column(
+                      children: [
+                        Icon(
+                          Icons.pets_outlined,
+                          size: 40,
+                          color: AppColors.primaryGreen,
+                        ),
+                        SizedBox(height: 12),
+                        Text('No animals recorded yet'),
+                        SizedBox(height: 4),
+                        Text(
+                          'Add your first sow to start tracking the herd.',
+                          textAlign: TextAlign.center,
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              else
+                ...animals.map((animal) => _AnimalCard(animal: animal)),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -153,5 +200,60 @@ class HerdPage extends ConsumerWidget {
       tagController.dispose();
       notesController.dispose();
     }
+  }
+}
+
+class _HerdSummary extends StatelessWidget {
+  const _HerdSummary({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Card(
+    child: Padding(
+      padding: const EdgeInsets.all(AppDimensions.spacingMedium),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color),
+          const SizedBox(height: 12),
+          Text(value, style: Theme.of(context).textTheme.headlineMedium),
+          Text(label, style: Theme.of(context).textTheme.bodySmall),
+        ],
+      ),
+    ),
+  );
+}
+
+class _AnimalCard extends StatelessWidget {
+  const _AnimalCard({required this.animal});
+  final Animal animal;
+
+  @override
+  Widget build(BuildContext context) {
+    final active = animal.status == 'active';
+    return Card(
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: AppColors.pigPink.withValues(alpha: 0.25),
+          child: const Icon(Icons.pets_outlined, color: AppColors.deepGreen),
+        ),
+        title: Text(animal.tag),
+        subtitle: Text('${animal.type} · ${animal.sex}'),
+        trailing: Chip(
+          label: Text(animal.status),
+          side: BorderSide.none,
+          backgroundColor: (active ? AppColors.success : AppColors.warning)
+              .withValues(alpha: 0.14),
+        ),
+      ),
+    );
   }
 }

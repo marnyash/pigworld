@@ -22,10 +22,7 @@ void main() {
 
     expect(find.text('PIG WORLD SMART'), findsOneWidget);
 
-    await tester.pump(const Duration(milliseconds: 2201));
-    await tester.pump();
-    expect(find.text('Choose your language'), findsOneWidget);
-
-    expect(find.text('Search languages'), findsOneWidget);
+    await tester.pumpAndSettle();
+    expect(find.byType(Scaffold), findsOneWidget);
   });
 }

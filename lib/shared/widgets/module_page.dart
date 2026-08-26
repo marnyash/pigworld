@@ -2,7 +2,12 @@ import 'package:flutter/material.dart';
 import '../components/bottom_navigation.dart';
 
 class ModulePage extends StatelessWidget {
-  const ModulePage({required this.title, required this.description, this.icon = Icons.dashboard_outlined, super.key});
+  const ModulePage({
+    required this.title,
+    required this.description,
+    this.icon = Icons.dashboard_outlined,
+    super.key,
+  });
 
   final String title;
   final String description;
@@ -23,16 +28,59 @@ class ModulePage extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         children: [
           Card(
+            color: const Color(0xFF1B5E20),
             child: Padding(
               padding: const EdgeInsets.all(24),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(14),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(icon, size: 28, color: Colors.white),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          style: Theme.of(context).textTheme.headlineSmall
+                              ?.copyWith(color: Colors.white),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          description,
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(color: Colors.white70),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Icon(icon, size: 40, color: Theme.of(context).colorScheme.primary),
-                  const SizedBox(height: 16),
-                  Text(title, style: Theme.of(context).textTheme.headlineMedium),
-                  const SizedBox(height: 8),
-                  Text(description),
+                  Text(
+                    'Overview',
+                    style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: 12),
+                  const _SummaryRow(label: 'Status', value: 'Ready'),
+                  const SizedBox(height: 10),
+                  const _SummaryRow(label: 'Last sync', value: 'Just now'),
+                  const SizedBox(height: 10),
+                  const _SummaryRow(label: 'Priority', value: 'High'),
                 ],
               ),
             ),
@@ -41,4 +89,25 @@ class ModulePage extends StatelessWidget {
       ),
     );
   }
+}
+
+class _SummaryRow extends StatelessWidget {
+  const _SummaryRow({required this.label, required this.value});
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    children: [
+      Text(label, style: Theme.of(context).textTheme.bodyMedium),
+      Text(
+        value,
+        style: Theme.of(
+          context,
+        ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+      ),
+    ],
+  );
 }

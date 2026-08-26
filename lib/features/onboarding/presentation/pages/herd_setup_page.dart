@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../providers/onboarding_provider.dart';
+import '../widgets/onboarding_header.dart';
+import '../widgets/onboarding_scaffold.dart';
 
 class HerdSetupPage extends ConsumerStatefulWidget {
   const HerdSetupPage({super.key});
@@ -28,8 +30,10 @@ class _HerdSetupPageState extends ConsumerState<HerdSetupPage> {
     super.dispose();
   }
 
-  int? _number(TextEditingController controller) =>
-      int.tryParse(controller.text.trim());
+  int? _number(TextEditingController controller) {
+    final value = int.tryParse(controller.text.trim());
+    return value != null && value >= 0 ? value : null;
+  }
 
   void _next() {
     if (_step == 0 && _number(_motherPigs) == null) {
@@ -72,41 +76,38 @@ class _HerdSetupPageState extends ConsumerState<HerdSetupPage> {
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: Text('Farm setup ${_step + 1} of 3')),
-    body: SafeArea(
+  Widget build(BuildContext context) => OnboardingScaffold(
+    progress: (_step + 1) / 3,
+    body: OnboardingEntry(
       child: ListView(
         padding: const EdgeInsets.all(24),
         children: [
-          LinearProgressIndicator(value: (_step + 1) / 3),
-          const SizedBox(height: 24),
+          OnboardingHeader(
+            eyebrow: 'Farm setup • Step ${_step + 1} of 3',
+            title: _step == 0
+                ? 'Start with your herd'
+                : _step == 1
+                ? 'Track your piglets'
+                : 'Add pregnancy records',
+            subtitle: _step == 0
+                ? 'A quick snapshot helps Pig World Smart personalize your dashboard.'
+                : _step == 1
+                ? 'Group piglets by age. You can add these details later.'
+                : 'This optional detail helps keep your breeding picture current.',
+          ),
+          const SizedBox(height: 28),
           if (_step == 0) ...[
-            Text(
-              'Mother pigs',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'How many adult mother pigs are currently on your farm?',
-            ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 4),
             TextField(
               controller: _motherPigs,
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(
                 labelText: 'Number of mother pigs',
+                prefixIcon: Icon(Icons.pets_outlined),
               ),
             ),
           ] else if (_step == 1) ...[
-            Text(
-              'Piglets by age',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Add each group of piglets with its current age. You can skip this section.',
-            ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 4),
             for (final group in _groups)
               ListTile(
                 leading: const Icon(Icons.pets_outlined),
@@ -143,15 +144,7 @@ class _HerdSetupPageState extends ConsumerState<HerdSetupPage> {
               label: const Text('Add another age group'),
             ),
           ] else ...[
-            Text(
-              'Pregnancy records',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Do you have mother pigs that are pregnant? This is optional and can be added later.',
-            ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 4),
             TextField(
               controller: _pregnantPigs,
               keyboardType: TextInputType.number,
@@ -163,25 +156,20 @@ class _HerdSetupPageState extends ConsumerState<HerdSetupPage> {
         ],
       ),
     ),
-    bottomNavigationBar: SafeArea(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            TextButton(
-              onPressed: _step == 0
-                  ? () => context.go(AppRoutes.accountType)
-                  : () => setState(() => _step--),
-              child: const Text('Back'),
-            ),
-            const Spacer(),
-            FilledButton(
-              onPressed: _next,
-              child: Text(_step == 2 ? 'Continue to account' : 'Continue'),
-            ),
-          ],
+    actions: Row(
+      children: [
+        TextButton(
+          onPressed: _step == 0
+              ? () => context.go(AppRoutes.accountType)
+              : () => setState(() => _step--),
+          child: const Text('Back'),
         ),
-      ),
+        const Spacer(),
+        FilledButton(
+          onPressed: _next,
+          child: Text(_step == 2 ? 'Continue to account' : 'Continue'),
+        ),
+      ],
     ),
   );
 }

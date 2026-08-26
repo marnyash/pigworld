@@ -128,26 +128,31 @@ class _CreateAccountPageState extends ConsumerState<CreateAccountPage> {
             const SizedBox(height: 8),
             const Text('Set up your account to start managing your farm.'),
             const SizedBox(height: 24),
-            Text(
-              'Account type',
-              style: Theme.of(context).textTheme.titleMedium,
+            DropdownButtonFormField<UserRole>(
+              initialValue: _role,
+              decoration: const InputDecoration(
+                labelText: 'Account type',
+                prefixIcon: Icon(Icons.badge_outlined),
+              ),
+              items: [
+                for (final entry in _roles)
+                  DropdownMenuItem(value: entry.$1, child: Text(entry.$2)),
+              ],
+              onChanged: (value) {
+                if (value != null) setState(() => _role = value);
+              },
+              validator: (value) =>
+                  value == null ? 'Choose an account type.' : null,
             ),
             const SizedBox(height: 8),
-            ..._roles.map((entry) {
-              final (role, title, description) = entry;
-              return Card(
-                margin: const EdgeInsets.only(bottom: 8),
-                child: RadioListTile<UserRole>(
-                  value: role,
-                  // ignore: deprecated_member_use
-                  groupValue: _role,
-                  // ignore: deprecated_member_use
-                  onChanged: (value) => setState(() => _role = value ?? _role),
-                  title: Text(title),
-                  subtitle: Text(description),
-                ),
-              );
-            }),
+            AnimatedSwitcher(
+              duration: const Duration(milliseconds: 260),
+              child: Text(
+                _roles.firstWhere((entry) => entry.$1 == _role).$3,
+                key: ValueKey(_role),
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
+            ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _name,

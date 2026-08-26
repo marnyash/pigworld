@@ -28,6 +28,11 @@ final sessionManagerProvider = Provider<SessionManager>(
 /// Lets the app be pointed at a different network (LAN IP, tunnel, or domain) without a rebuild.
 final serverUrlProvider = FutureProvider<String>((ref) async {
   final saved = await ServerAddressStorage.read();
+  if (saved == 'http://localhost/api/v1') {
+    const migratedUrl = 'http://localhost:8000/api/v1';
+    await ServerAddressStorage.write(migratedUrl);
+    return migratedUrl;
+  }
   return (saved == null || saved.isEmpty) ? ApiConfig.baseUrl : saved;
 });
 

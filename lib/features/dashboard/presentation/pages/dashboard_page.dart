@@ -40,15 +40,43 @@ class DashboardPage extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.all(AppDimensions.pagePadding),
         children: [
-          Text(
-            'Good day, $firstName',
-            style: Theme.of(context).textTheme.headlineMedium,
-          ),
-          const SizedBox(height: 4),
-          Text(
-            'Here is how your farm is doing today.',
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppColors.text.withValues(alpha: 0.7),
+          Card(
+            color: AppColors.deepGreen,
+            child: Padding(
+              padding: const EdgeInsets.all(AppDimensions.spacingLarge),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: const Text(
+                      'Farm overview',
+                      style: TextStyle(color: Colors.white, fontSize: 12),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Good day, $firstName',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.headlineSmall?.copyWith(color: Colors.white),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Your farm is running smoothly today.',
+                    style: Theme.of(
+                      context,
+                    ).textTheme.bodyMedium?.copyWith(color: Colors.white70),
+                  ),
+                ],
+              ),
             ),
           ),
           const SizedBox(height: AppDimensions.spacingLarge),
@@ -58,7 +86,7 @@ class DashboardPage extends ConsumerWidget {
             physics: const NeverScrollableScrollPhysics(),
             mainAxisSpacing: AppDimensions.spacingMedium,
             crossAxisSpacing: AppDimensions.spacingMedium,
-            childAspectRatio: 1.3,
+            childAspectRatio: 1.18,
             children: const [
               _StatCard(
                 icon: Icons.pets_outlined,
@@ -87,7 +115,7 @@ class DashboardPage extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: AppDimensions.spacingLarge),
-          Text('Quick actions', style: Theme.of(context).textTheme.titleLarge),
+          _SectionHeader(title: 'Quick actions'),
           const SizedBox(height: AppDimensions.spacingMedium),
           Wrap(
             spacing: AppDimensions.spacingMedium,
@@ -133,19 +161,23 @@ class DashboardPage extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: AppDimensions.spacingLarge),
-          Text(
-            'Recent activity',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
+          _SectionHeader(title: 'Recent activity'),
           const SizedBox(height: AppDimensions.spacingMedium),
           Card(
             child: Padding(
               padding: const EdgeInsets.all(AppDimensions.spacingLarge),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.inbox_outlined,
-                    color: AppColors.text.withValues(alpha: 0.4),
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: AppColors.primaryGreen.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.inbox_outlined,
+                      color: AppColors.primaryGreen,
+                    ),
                   ),
                   const SizedBox(width: AppDimensions.spacingMedium),
                   const Expanded(
@@ -219,7 +251,7 @@ class _QuickAction extends StatelessWidget {
       borderRadius: BorderRadius.circular(AppDimensions.radius),
       onTap: onTap,
       child: Container(
-        width: 84,
+        width: 94,
         padding: const EdgeInsets.symmetric(
           vertical: AppDimensions.spacingMedium,
         ),
@@ -231,7 +263,7 @@ class _QuickAction extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             Icon(icon, color: Theme.of(context).colorScheme.primary),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             Text(
               label,
               style: Theme.of(context).textTheme.bodyMedium,
@@ -242,4 +274,15 @@ class _QuickAction extends StatelessWidget {
       ),
     );
   }
+}
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [Text(title, style: Theme.of(context).textTheme.titleLarge)],
+  );
 }
