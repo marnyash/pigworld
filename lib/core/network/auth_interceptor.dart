@@ -5,18 +5,21 @@ import 'api_config.dart';
 
 /// Attaches the bearer access token to requests and transparently refreshes it once on a 401.
 class AuthInterceptor extends Interceptor {
-  AuthInterceptor({required this._authService, required this.onSessionExpired})
-    : _refreshDio = Dio(
-        BaseOptions(
-          baseUrl: ApiConfig.baseUrl,
-          connectTimeout: ApiConfig.connectTimeout,
-          receiveTimeout: ApiConfig.receiveTimeout,
-        ),
-      );
+  AuthInterceptor({
+    required this._authService,
+    required this.onSessionExpired,
+    required this.baseUrl,
+  }) : _refreshDio = Dio(
+         BaseOptions(
+           connectTimeout: ApiConfig.connectTimeout,
+           receiveTimeout: ApiConfig.receiveTimeout,
+         ),
+       );
 
   final AuthService _authService;
   final Dio _refreshDio;
   final Future<void> Function() onSessionExpired;
+  final String Function() baseUrl;
   Future<String?>? _refreshing;
 
   @override
@@ -62,6 +65,7 @@ class AuthInterceptor extends Interceptor {
     final refreshToken = await _authService.readRefreshToken();
     if (refreshToken == null) return null;
     try {
+      _refreshDio.options.baseUrl = baseUrl();
       final response = await _refreshDio.post<Map<String, dynamic>>(
         '/auth/refresh',
         data: {'refresh_token': refreshToken},

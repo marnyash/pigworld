@@ -1,6 +1,3 @@
-import 'package:flutter/foundation.dart';
-
-import '../../../../core/errors/error_handler.dart';
 import '../../../../security/authorization/roles.dart';
 import '../../domain/entities/farm.dart';
 import '../../domain/entities/session.dart';
@@ -9,7 +6,6 @@ import '../datasource/auth_local_datasource.dart';
 import '../datasource/auth_remote_datasource.dart';
 import '../models/login_request.dart';
 import '../models/register_request.dart';
-import '../models/user_model.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   const AuthRepositoryImpl({required this.remote, required this.local});
@@ -23,50 +19,23 @@ class AuthRepositoryImpl implements AuthRepository {
     String password, {
     bool rememberMe = false,
   }) async {
-    try {
-      final response = await remote.login(
-        LoginRequest(email: email, password: password, rememberMe: rememberMe),
-      );
-      final session = response.toEntity();
-      await local.saveSession(session);
-      return session;
-    } on ApiException catch (error) {
-      if (kDebugMode &&
-          error.statusCode == null &&
-          email.trim().toLowerCase() == 'test@example.com' &&
-          password == 'password') {
-        final session = _offlineDemoSession();
-        await local.saveSession(session);
-        return session;
-      }
-      rethrow;
-    }
-  }
-
-  Session _offlineDemoSession() {
-    const farm = Farm(
-      id: 'offline-demo-farm',
-      name: 'Green Valley Farm',
-      location: 'Offline demo workspace',
-    );
-    return const Session(
-      accessToken: 'offline-demo-access-token',
-      refreshToken: 'offline-demo-refresh-token',
-      user: UserModel(
-        id: 'offline-demo-user',
-        name: 'Test User',
-        email: 'test@example.com',
-        role: UserRole.farmOwner,
+    final response = await remote.login(
+      LoginRequest(
+        identifier: email,
+        password: password,
+        rememberMe: rememberMe,
       ),
-      farms: [farm],
-      selectedFarm: farm,
     );
+    final session = response.toEntity();
+    await local.saveSession(session);
+    return session;
   }
 
   @override
   Future<Session> register({
     required String name,
     required String email,
+    required String phone,
     required String password,
     required UserRole role,
     String? farmName,
@@ -79,6 +48,7 @@ class AuthRepositoryImpl implements AuthRepository {
       RegisterRequest(
         name: name,
         email: email,
+        phone: phone,
         password: password,
         role: role,
         farmName: farmName,
@@ -94,7 +64,14 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<void> logout() async => local.clear();
+  Future<void> logout() async {
+    final session = await local.readSession();
+    try {
+      if (session != null) await remote.logout(session.accessToken);
+    } finally {
+      await local.clear();
+    }
+  }
 
   @override
   Future<Session?> refreshSession() async {

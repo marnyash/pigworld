@@ -14,19 +14,41 @@ class SubscriptionPage extends ConsumerStatefulWidget {
 }
 
 class _SubscriptionPageState extends ConsumerState<SubscriptionPage> {
-  String _plan = 'starter';
+  String? _plan;
+  List<Map<String, dynamic>> _plans = [];
+  bool _loadingPlans = true;
   bool _saving = false;
 
-  static const _plans = [
-    ('starter', 'Starter', 'For small farms getting started.', 'Up to 50 pigs'),
-    ('growth', 'Growth', 'For growing teams and herds.', 'Up to 250 pigs'),
-    (
-      'enterprise',
-      'Enterprise',
-      'For large or multi-farm operations.',
-      'Unlimited pigs',
-    ),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _loadPlans();
+  }
+
+  Future<void> _loadPlans() async {
+    try {
+      final response = await ref.read(dioProvider).get('/subscription-plans');
+      final plans = List<Map<String, dynamic>>.from(
+        (response.data['data'] as List<dynamic>? ?? []).map(
+          (plan) => Map<String, dynamic>.from(plan as Map),
+        ),
+      );
+      if (mounted) {
+        setState(() {
+          _plans = plans;
+          _plan = plans.isEmpty ? null : plans.first['code'] as String;
+          _loadingPlans = false;
+        });
+      }
+    } on DioException catch (error) {
+      if (mounted) {
+        setState(() => _loadingPlans = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not load subscriptions: $error')),
+        );
+      }
+    }
+  }
 
   Future<void> _continue() async {
     final farmId = ref.read(authProvider).valueOrNull?.selectedFarm?.id;
@@ -64,24 +86,35 @@ class _SubscriptionPageState extends ConsumerState<SubscriptionPage> {
         const SizedBox(height: 8),
         const Text('You can change your plan later from farm settings.'),
         const SizedBox(height: 24),
-        ..._plans.map(
-          (plan) => Card(
-            margin: const EdgeInsets.only(bottom: 12),
-            child: RadioListTile<String>(
-              value: plan.$1,
-              // ignore: deprecated_member_use
-              groupValue: _plan,
-              // ignore: deprecated_member_use
-              onChanged: (value) => setState(() => _plan = value ?? _plan),
-              title: Text(plan.$2),
-              subtitle: Text('${plan.$3}\n${plan.$4}'),
-              isThreeLine: true,
+        if (_loadingPlans)
+          const Center(child: CircularProgressIndicator())
+        else if (_plans.isEmpty)
+          const Text('No subscription plans are available yet.')
+        else
+          ..._plans.map(
+            (plan) => Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              child: RadioListTile<String>(
+                value: plan['code'] as String,
+                // ignore: deprecated_member_use
+                groupValue: _plan,
+                // ignore: deprecated_member_use
+                onChanged: (value) => setState(() => _plan = value),
+                title: Text(
+                  '${plan['name']} - ${plan['amount']} ${plan['currency']}',
+                ),
+                subtitle: Text(
+                  '${plan['description'] ?? ''}\n${plan['pig_limit'] == null ? 'Unlimited pigs' : 'Up to ${plan['pig_limit']} pigs'}',
+                ),
+                isThreeLine: true,
+              ),
             ),
           ),
-        ),
         const SizedBox(height: 16),
         FilledButton(
-          onPressed: _saving ? null : _continue,
+          onPressed: _saving || _loadingPlans || _plan == null
+              ? null
+              : _continue,
           child: _saving
               ? const CircularProgressIndicator()
               : const Text('Continue to dashboard'),

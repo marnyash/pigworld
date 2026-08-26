@@ -1,9 +1,17 @@
 class LoginRequest {
-  const LoginRequest({required this.email, required this.password, this.rememberMe = false});
+  const LoginRequest({
+    required this.identifier,
+    required this.password,
+    this.rememberMe = false,
+  });
 
-  final String email;
+  final String identifier;
   final String password;
   final bool rememberMe;
 
-  Map<String, dynamic> toJson() => {'email': email, 'password': password, 'remember_me': rememberMe};
+  Map<String, dynamic> toJson() => {
+    'identifier': identifier,
+    'password': password,
+    'remember_me': rememberMe,
+  };
 }

@@ -37,6 +37,7 @@ class _CreateAccountPageState extends ConsumerState<CreateAccountPage> {
   final _formKey = GlobalKey<FormState>();
   final _name = TextEditingController();
   final _email = TextEditingController();
+  final _phone = TextEditingController();
   final _password = TextEditingController();
   final _farmName = TextEditingController();
   final _inviteCode = TextEditingController();
@@ -57,6 +58,7 @@ class _CreateAccountPageState extends ConsumerState<CreateAccountPage> {
   void dispose() {
     _name.dispose();
     _email.dispose();
+    _phone.dispose();
     _password.dispose();
     _farmName.dispose();
     _inviteCode.dispose();
@@ -75,6 +77,7 @@ class _CreateAccountPageState extends ConsumerState<CreateAccountPage> {
       final session = await ref.read(registerUseCaseProvider)(
         name: _name.text.trim(),
         email: _email.text.trim(),
+        phone: _phone.text.trim(),
         password: _password.text,
         role: _role,
         farmName: _role == UserRole.farmOwner ? _farmName.text.trim() : null,
@@ -152,6 +155,18 @@ class _CreateAccountPageState extends ConsumerState<CreateAccountPage> {
                 key: ValueKey(_role),
                 style: Theme.of(context).textTheme.bodySmall,
               ),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              controller: _phone,
+              keyboardType: TextInputType.phone,
+              decoration: const InputDecoration(
+                labelText: 'Phone number',
+                prefixIcon: Icon(Icons.phone_outlined),
+              ),
+              validator: (value) => (value == null || value.trim().length < 8)
+                  ? 'Enter a valid phone number.'
+                  : null,
             ),
             const SizedBox(height: 16),
             TextFormField(

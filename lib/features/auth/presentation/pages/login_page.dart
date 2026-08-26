@@ -42,8 +42,8 @@ class LoginPage extends ConsumerWidget {
                 const Text('Sign in to manage your Pig World farm.'),
                 const SizedBox(height: 24),
                 LoginForm(
-                  onSubmit: (email, password, rememberMe) async {
-                    if (email.isEmpty || password.isEmpty) {
+                  onSubmit: (identifier, password, rememberMe) async {
+                    if (identifier.isEmpty || password.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Enter your email and password.'),
@@ -52,7 +52,7 @@ class LoginPage extends ConsumerWidget {
                       return;
                     }
                     final session = await ref.read(loginUseCaseProvider)(
-                      email,
+                      identifier,
                       password,
                       rememberMe: rememberMe,
                     );

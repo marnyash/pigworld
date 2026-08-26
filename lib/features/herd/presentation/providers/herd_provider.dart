@@ -39,4 +39,37 @@ class HerdNotifier extends AsyncNotifier<List<Animal>> {
     ref.invalidateSelf();
     await future;
   }
+
+  Future<void> updateAnimal({
+    required String animalId,
+    String? tag,
+    String? status,
+    DateTime? birthDate,
+    String? notes,
+  }) async {
+    final farmId = ref.read(authProvider).valueOrNull?.selectedFarm?.id;
+    if (farmId == null) throw StateError('No farm selected.');
+    await ref
+        .read(herdApiProvider)
+        .updateAnimal(
+          farmId: farmId,
+          animalId: animalId,
+          tag: tag,
+          status: status,
+          birthDate: birthDate,
+          notes: notes,
+        );
+    ref.invalidateSelf();
+    await future;
+  }
+
+  Future<void> archiveAnimal(String animalId) async {
+    final farmId = ref.read(authProvider).valueOrNull?.selectedFarm?.id;
+    if (farmId == null) throw StateError('No farm selected.');
+    await ref
+        .read(herdApiProvider)
+        .archiveAnimal(farmId: farmId, animalId: animalId);
+    ref.invalidateSelf();
+    await future;
+  }
 }

@@ -4,6 +4,7 @@ class RegisterRequest {
   const RegisterRequest({
     required this.name,
     required this.email,
+    required this.phone,
     required this.password,
     required this.role,
     this.farmName,
@@ -15,6 +16,7 @@ class RegisterRequest {
 
   final String name;
   final String email;
+  final String phone;
   final String password;
   final UserRole role;
   final String? farmName;
@@ -26,6 +28,7 @@ class RegisterRequest {
   Map<String, dynamic> toJson() => {
     'name': name,
     'email': email,
+    'phone': phone,
     'password': password,
     'password_confirmation': password,
     'role': role.name,

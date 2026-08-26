@@ -10,7 +10,13 @@ abstract final class DioClient {
     required AuthService authService,
     required Future<void> Function() onSessionExpired,
   }) {
-    final dio = Dio(
+    late final Dio dio;
+    final authInterceptor = AuthInterceptor(
+      authService: authService,
+      onSessionExpired: onSessionExpired,
+      baseUrl: () => dio.options.baseUrl,
+    );
+    dio = Dio(
       BaseOptions(
         baseUrl: ApiConfig.baseUrl,
         connectTimeout: ApiConfig.connectTimeout,
@@ -18,13 +24,7 @@ abstract final class DioClient {
         contentType: 'application/json',
       ),
     );
-    dio.interceptors.addAll([
-      AuthInterceptor(
-        authService: authService,
-        onSessionExpired: onSessionExpired,
-      ),
-      LoggingInterceptor(),
-    ]);
+    dio.interceptors.addAll([authInterceptor, LoggingInterceptor()]);
     return dio;
   }
 }

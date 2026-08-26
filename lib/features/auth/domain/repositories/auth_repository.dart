@@ -11,6 +11,7 @@ abstract interface class AuthRepository {
   Future<Session> register({
     required String name,
     required String email,
+    required String phone,
     required String password,
     required UserRole role,
     String? farmName,

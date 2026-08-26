@@ -9,6 +9,7 @@ class Register {
   Future<Session> call({
     required String name,
     required String email,
+    required String phone,
     required String password,
     required UserRole role,
     String? farmName,
@@ -19,6 +20,7 @@ class Register {
   }) => repository.register(
     name: name,
     email: email,
+    phone: phone,
     password: password,
     role: role,
     farmName: farmName,

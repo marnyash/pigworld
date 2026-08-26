@@ -9,6 +9,7 @@ import '../../../../security/authorization/permissions.dart';
 import '../../../../security/authorization/roles.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../../shared/components/bottom_navigation.dart';
+import '../providers/farm_overview_provider.dart';
 
 class DashboardPage extends ConsumerWidget {
   const DashboardPage({super.key});
@@ -16,6 +17,10 @@ class DashboardPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final session = ref.watch(authProvider).valueOrNull;
+    final farmId = session?.selectedFarm?.id;
+    final overview = farmId == null
+        ? const AsyncValue<Map<String, dynamic>>.data({})
+        : ref.watch(farmOverviewProvider(farmId));
     final firstName = session?.user.name.split(' ').first ?? 'there';
     final farmName = session?.selectedFarm?.name ?? 'Pig World Smart';
     final role = session?.user.role;
@@ -87,29 +92,30 @@ class DashboardPage extends ConsumerWidget {
             mainAxisSpacing: AppDimensions.spacingMedium,
             crossAxisSpacing: AppDimensions.spacingMedium,
             childAspectRatio: 1.18,
-            children: const [
+            children: [
               _StatCard(
                 icon: Icons.pets_outlined,
                 label: 'Herd size',
-                value: '—',
+                value: overview.valueOrNull?['herd_count']?.toString() ?? '—',
                 color: AppColors.primaryGreen,
               ),
               _StatCard(
                 icon: Icons.grass_outlined,
                 label: 'Feed stock',
-                value: '—',
+                value: overview.valueOrNull?['feed_stock']?.toString() ?? '—',
                 color: AppColors.warning,
               ),
               _StatCard(
                 icon: Icons.checklist_outlined,
                 label: 'Tasks due',
-                value: '—',
+                value: overview.valueOrNull?['tasks_due']?.toString() ?? '—',
                 color: AppColors.danger,
               ),
               _StatCard(
                 icon: Icons.point_of_sale_outlined,
                 label: 'Sales this week',
-                value: '—',
+                value:
+                    overview.valueOrNull?['sales_this_week']?.toString() ?? '—',
                 color: AppColors.deepGreen,
               ),
             ],
@@ -180,9 +186,13 @@ class DashboardPage extends ConsumerWidget {
                     ),
                   ),
                   const SizedBox(width: AppDimensions.spacingMedium),
-                  const Expanded(
+                  Expanded(
                     child: Text(
-                      'No recent activity yet. Updates from your farm will appear here.',
+                      overview.valueOrNull?['recent_activity'] is List &&
+                              (overview.valueOrNull!['recent_activity'] as List)
+                                  .isNotEmpty
+                          ? 'Recent farm activity is available in the activity view.'
+                          : 'No recent activity recorded yet.',
                     ),
                   ),
                 ],
