@@ -42,164 +42,202 @@ class DashboardPage extends ConsumerWidget {
           ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(AppDimensions.pagePadding),
-        children: [
-          Card(
-            color: AppColors.deepGreen,
-            child: Padding(
-              padding: const EdgeInsets.all(AppDimensions.spacingLarge),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.15),
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                    child: const Text(
-                      'Farm overview',
-                      style: TextStyle(color: Colors.white, fontSize: 12),
-                    ),
+      body: RefreshIndicator(
+        onRefresh: () async {
+          if (farmId == null) return;
+          ref.invalidate(farmOverviewProvider(farmId));
+          await ref.read(farmOverviewProvider(farmId).future);
+        },
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(AppDimensions.pagePadding),
+          children: [
+            if (overview.isLoading) const LinearProgressIndicator(minHeight: 2),
+            if (overview.hasError)
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppDimensions.spacingMedium),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.cloud_off_outlined,
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                      const SizedBox(width: AppDimensions.spacingMedium),
+                      const Expanded(
+                        child: Text(
+                          'We could not load the latest farm overview.',
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: farmId == null
+                            ? null
+                            : () =>
+                                  ref.invalidate(farmOverviewProvider(farmId)),
+                        child: const Text('Retry'),
+                      ),
+                    ],
                   ),
-                  const SizedBox(height: 12),
-                  Text(
-                    'Good day, $firstName',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.headlineSmall?.copyWith(color: Colors.white),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Your farm is running smoothly today.',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyMedium?.copyWith(color: Colors.white70),
-                  ),
-                ],
+                ),
+              ),
+            Card(
+              color: AppColors.deepGreen,
+              child: Padding(
+                padding: const EdgeInsets.all(AppDimensions.spacingLarge),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(999),
+                      ),
+                      child: const Text(
+                        'Farm overview',
+                        style: TextStyle(color: Colors.white, fontSize: 12),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Good day, $firstName',
+                      style: Theme.of(
+                        context,
+                      ).textTheme.headlineSmall?.copyWith(color: Colors.white),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Your farm is running smoothly today.',
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.copyWith(color: Colors.white70),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-          const SizedBox(height: AppDimensions.spacingLarge),
-          GridView.count(
-            crossAxisCount: 2,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            mainAxisSpacing: AppDimensions.spacingMedium,
-            crossAxisSpacing: AppDimensions.spacingMedium,
-            childAspectRatio: 1.18,
-            children: [
-              _StatCard(
-                icon: Icons.pets_outlined,
-                label: 'Herd size',
-                value: overview.valueOrNull?['herd_count']?.toString() ?? '—',
-                color: AppColors.primaryGreen,
-              ),
-              _StatCard(
-                icon: Icons.grass_outlined,
-                label: 'Feed stock',
-                value: overview.valueOrNull?['feed_stock']?.toString() ?? '—',
-                color: AppColors.warning,
-              ),
-              _StatCard(
-                icon: Icons.checklist_outlined,
-                label: 'Tasks due',
-                value: overview.valueOrNull?['tasks_due']?.toString() ?? '—',
-                color: AppColors.danger,
-              ),
-              _StatCard(
-                icon: Icons.point_of_sale_outlined,
-                label: 'Sales this week',
-                value:
-                    overview.valueOrNull?['sales_this_week']?.toString() ?? '—',
-                color: AppColors.deepGreen,
-              ),
-            ],
-          ),
-          const SizedBox(height: AppDimensions.spacingLarge),
-          _SectionHeader(title: 'Quick actions'),
-          const SizedBox(height: AppDimensions.spacingMedium),
-          Wrap(
-            spacing: AppDimensions.spacingMedium,
-            runSpacing: AppDimensions.spacingMedium,
-            children: [
-              _QuickAction(
-                icon: Icons.pets_outlined,
-                label: 'Herd',
-                onTap: () => context.go(AppRoutes.herd),
-              ),
-              _QuickAction(
-                icon: Icons.grass_outlined,
-                label: 'Feed',
-                onTap: () => context.go(AppRoutes.feed),
-              ),
-              if (isAdmin ||
-                  (role != null &&
-                      RolePermissions.can(role, AppPermission.manageFinance)))
-                _QuickAction(
-                  icon: Icons.account_balance_wallet_outlined,
-                  label: 'Finance',
-                  onTap: () => context.go(AppRoutes.finance),
+            const SizedBox(height: AppDimensions.spacingLarge),
+            GridView.count(
+              crossAxisCount: 2,
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              mainAxisSpacing: AppDimensions.spacingMedium,
+              crossAxisSpacing: AppDimensions.spacingMedium,
+              childAspectRatio: 1.18,
+              children: [
+                _StatCard(
+                  icon: Icons.pets_outlined,
+                  label: 'Herd size',
+                  value: overview.valueOrNull?['herd_count']?.toString() ?? '—',
+                  color: AppColors.primaryGreen,
                 ),
-              if (isAdmin ||
-                  (role != null &&
-                      RolePermissions.can(role, AppPermission.manageSales)))
-                _QuickAction(
-                  icon: Icons.groups_outlined,
-                  label: 'Customers',
-                  onTap: () => context.go(AppRoutes.crm),
+                _StatCard(
+                  icon: Icons.grass_outlined,
+                  label: 'Feed stock',
+                  value: overview.valueOrNull?['feed_stock']?.toString() ?? '—',
+                  color: AppColors.warning,
                 ),
-              _QuickAction(
-                icon: Icons.support_agent_outlined,
-                label: 'Support',
-                onTap: () => context.go(AppRoutes.support),
-              ),
-              if (isAdmin)
-                _QuickAction(
-                  icon: Icons.group_outlined,
-                  label: 'Team & policies',
-                  onTap: () => context.go(AppRoutes.farmManagement),
+                _StatCard(
+                  icon: Icons.checklist_outlined,
+                  label: 'Tasks due',
+                  value: overview.valueOrNull?['tasks_due']?.toString() ?? '—',
+                  color: AppColors.danger,
                 ),
-            ],
-          ),
-          const SizedBox(height: AppDimensions.spacingLarge),
-          _SectionHeader(title: 'Recent activity'),
-          const SizedBox(height: AppDimensions.spacingMedium),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(AppDimensions.spacingLarge),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryGreen.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Icon(
-                      Icons.inbox_outlined,
-                      color: AppColors.primaryGreen,
-                    ),
+                _StatCard(
+                  icon: Icons.point_of_sale_outlined,
+                  label: 'Sales this week',
+                  value:
+                      overview.valueOrNull?['sales_this_week']?.toString() ??
+                      '—',
+                  color: AppColors.deepGreen,
+                ),
+              ],
+            ),
+            const SizedBox(height: AppDimensions.spacingLarge),
+            _SectionHeader(title: 'Quick actions'),
+            const SizedBox(height: AppDimensions.spacingMedium),
+            Wrap(
+              spacing: AppDimensions.spacingMedium,
+              runSpacing: AppDimensions.spacingMedium,
+              children: [
+                _QuickAction(
+                  icon: Icons.pets_outlined,
+                  label: 'Herd',
+                  onTap: () => context.go(AppRoutes.herd),
+                ),
+                _QuickAction(
+                  icon: Icons.grass_outlined,
+                  label: 'Feed',
+                  onTap: () => context.go(AppRoutes.feed),
+                ),
+                if (isAdmin ||
+                    (role != null &&
+                        RolePermissions.can(role, AppPermission.manageFinance)))
+                  _QuickAction(
+                    icon: Icons.account_balance_wallet_outlined,
+                    label: 'Finance',
+                    onTap: () => context.go(AppRoutes.finance),
                   ),
-                  const SizedBox(width: AppDimensions.spacingMedium),
-                  Expanded(
-                    child: Text(
-                      overview.valueOrNull?['recent_activity'] is List &&
-                              (overview.valueOrNull!['recent_activity'] as List)
-                                  .isNotEmpty
-                          ? 'Recent farm activity is available in the activity view.'
-                          : 'No recent activity recorded yet.',
-                    ),
+                if (isAdmin ||
+                    (role != null &&
+                        RolePermissions.can(role, AppPermission.manageSales)))
+                  _QuickAction(
+                    icon: Icons.groups_outlined,
+                    label: 'Customers',
+                    onTap: () => context.go(AppRoutes.crm),
                   ),
-                ],
+                _QuickAction(
+                  icon: Icons.support_agent_outlined,
+                  label: 'Support',
+                  onTap: () => context.go(AppRoutes.support),
+                ),
+                if (isAdmin)
+                  _QuickAction(
+                    icon: Icons.group_outlined,
+                    label: 'Team & policies',
+                    onTap: () => context.go(AppRoutes.farmManagement),
+                  ),
+              ],
+            ),
+            const SizedBox(height: AppDimensions.spacingLarge),
+            _SectionHeader(title: 'Recent activity'),
+            const SizedBox(height: AppDimensions.spacingMedium),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(AppDimensions.spacingLarge),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryGreen.withValues(alpha: 0.12),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.inbox_outlined,
+                        color: AppColors.primaryGreen,
+                      ),
+                    ),
+                    const SizedBox(width: AppDimensions.spacingMedium),
+                    Expanded(
+                      child: Text(
+                        overview.valueOrNull?['recent_activity'] is List &&
+                                (overview.valueOrNull!['recent_activity']
+                                        as List)
+                                    .isNotEmpty
+                            ? 'Recent farm activity is available in the activity view.'
+                            : 'No recent activity recorded yet.',
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

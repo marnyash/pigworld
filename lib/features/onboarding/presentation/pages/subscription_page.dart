@@ -19,6 +19,10 @@ class _SubscriptionPageState extends ConsumerState<SubscriptionPage> {
   bool _loadingPlans = true;
   bool _saving = false;
 
+  Map<String, dynamic>? get _selectedPlan => _plans
+      .cast<Map<String, dynamic>?>()
+      .firstWhere((plan) => plan?['code'] == _plan, orElse: () => null);
+
   @override
   void initState() {
     super.initState();
@@ -36,7 +40,18 @@ class _SubscriptionPageState extends ConsumerState<SubscriptionPage> {
       if (mounted) {
         setState(() {
           _plans = plans;
-          _plan = plans.isEmpty ? null : plans.first['code'] as String;
+          final motherPigCount =
+              ref
+                  .read(authProvider)
+                  .valueOrNull
+                  ?.selectedFarm
+                  ?.motherPigCount ??
+              0;
+          final matching = plans.where((plan) {
+            final limit = (plan['pig_limit'] as num?)?.toInt();
+            return limit == null || motherPigCount <= limit;
+          }).toList();
+          _plan = matching.isEmpty ? null : matching.first['code'] as String;
           _loadingPlans = false;
         });
       }
@@ -58,14 +73,27 @@ class _SubscriptionPageState extends ConsumerState<SubscriptionPage> {
     }
     setState(() => _saving = true);
     try {
-      await ref
+      final response = await ref
           .read(dioProvider)
-          .patch('/farms/$farmId/subscription', data: {'plan': _plan});
-      if (mounted) context.go(AppRoutes.home);
-    } on DioException catch (error) {
+          .post('/farms/$farmId/subscription/payment', data: {'plan': _plan});
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not save subscription: $error')),
+          SnackBar(
+            content: Text(
+              response.data['payment']['result_description'] ??
+                  'M-Pesa prompt sent. Check your phone and enter your PIN.',
+            ),
+          ),
+        );
+        context.go(AppRoutes.home);
+      }
+    } on DioException catch (error) {
+      if (mounted) {
+        final message = error.response?.data is Map<String, dynamic>
+            ? (error.response?.data['message'] as String?)
+            : null;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(message ?? 'Could not start M-Pesa payment.')),
         );
       }
     } finally {
@@ -86,6 +114,18 @@ class _SubscriptionPageState extends ConsumerState<SubscriptionPage> {
         const SizedBox(height: 8),
         const Text('You can change your plan later from farm settings.'),
         const SizedBox(height: 24),
+        _PaymentPromptCard(
+          phone: ref.read(authProvider).valueOrNull?.user.phone,
+          motherPigCount:
+              ref
+                  .read(authProvider)
+                  .valueOrNull
+                  ?.selectedFarm
+                  ?.motherPigCount ??
+              0,
+          plan: _selectedPlan,
+        ),
+        const SizedBox(height: 16),
         if (_loadingPlans)
           const Center(child: CircularProgressIndicator())
         else if (_plans.isEmpty)
@@ -117,9 +157,60 @@ class _SubscriptionPageState extends ConsumerState<SubscriptionPage> {
               : _continue,
           child: _saving
               ? const CircularProgressIndicator()
-              : const Text('Continue to dashboard'),
+              : const Text('Pay with M-Pesa'),
         ),
       ],
     ),
   );
+}
+
+class _PaymentPromptCard extends StatelessWidget {
+  const _PaymentPromptCard({
+    required this.phone,
+    required this.motherPigCount,
+    required this.plan,
+  });
+
+  final String? phone;
+  final int motherPigCount;
+  final Map<String, dynamic>? plan;
+
+  @override
+  Widget build(BuildContext context) {
+    final amount = plan?['amount'];
+    final currency = plan?['currency'] ?? 'KES';
+    final phoneText = phone == null || phone!.trim().isEmpty
+        ? 'Add a phone number to your account before paying.'
+        : 'The M-Pesa prompt will be sent to $phone.';
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.phone_android_outlined),
+                const SizedBox(width: 8),
+                Text(
+                  'M-Pesa payment',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text('$motherPigCount mother pigs'),
+            if (amount != null) Text('Amount: $amount $currency'),
+            const SizedBox(height: 8),
+            Text(phoneText),
+            if (phone != null && phone!.trim().isNotEmpty)
+              const Text(
+                'Tap Pay with M-Pesa, then enter your M-Pesa PIN on your phone.',
+              ),
+          ],
+        ),
+      ),
+    );
+  }
 }
