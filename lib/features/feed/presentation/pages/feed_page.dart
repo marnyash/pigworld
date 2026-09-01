@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/theme/app_colors.dart';
-import '../../../../app/theme/app_dimensions.dart';
 import '../../../../shared/components/bottom_navigation.dart';
 import '../../data/feed_api.dart';
 import '../providers/feed_provider.dart';
