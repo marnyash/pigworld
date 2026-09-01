@@ -52,16 +52,9 @@ class InventoryItem {
   /// Stock status: 'Low Stock', 'Expiring Soon', 'Expired', 'Good'
   String get stockStatus {
     if (isExpired) return 'Expired';
-    if (isExpiringExpiry) return 'Expiring Soon';
+    if (isExpiringSoon) return 'Expiring Soon';
     if (isLowStock) return 'Low Stock';
     return 'Good';
-  }
-
-  /// Helper for expiring soon check
-  bool get isExpiringExpiry {
-    if (expiryDate == null) return false;
-    final daysUntilExpiry = expiryDate!.difference(DateTime.now()).inDays;
-    return daysUntilExpiry > 0 && daysUntilExpiry <= 30;
   }
 
   InventoryItem copyWith({

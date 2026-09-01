@@ -45,7 +45,7 @@ class ReportsApi {
     try {
       final params = <String, dynamic>{
         'format': format,
-        if (dateRange != null) 'dateRange': dateRange,
+        'dateRange': ?dateRange,
         if (startDate != null) 'startDate': startDate.toIso8601String(),
         if (endDate != null) 'endDate': endDate.toIso8601String(),
       };

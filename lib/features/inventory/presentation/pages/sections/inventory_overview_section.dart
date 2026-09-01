@@ -9,93 +9,142 @@ class InventoryOverviewSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final overview = ref.watch(inventoryOverviewProvider);
+    final itemsAsync = ref.watch(inventoryItemsProvider);
+    final alertsAsync = ref.watch(inventoryAlertsProvider);
 
-    return overview.when(
-      data: (data) => ListView(
-        padding: const EdgeInsets.all(AppDimensions.pagePadding),
-        children: [
-          Text(
-            'Inventory Summary',
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: AppDimensions.spacingLarge),
-          GridView.count(
-            crossAxisCount: 2,
-            crossAxisSpacing: AppDimensions.spacingMedium,
-            mainAxisSpacing: AppDimensions.spacingMedium,
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            children: [
-              _SummaryCard(
-                icon: Icons.inventory_2,
-                label: 'Total Items',
-                value: data['totalItems'].toString(),
-                color: AppColors.primaryGreen,
-              ),
-              _SummaryCard(
-                icon: Icons.warning_amber,
-                label: 'Low Stock',
-                value: data['lowStockCount'].toString(),
-                color: AppColors.warmGold,
-              ),
-              _SummaryCard(
-                icon: Icons.access_time,
-                label: 'Expiring Soon',
-                value: data['expiringCount'].toString(),
-                color: Colors.orange,
-              ),
-              _SummaryCard(
-                icon: Icons.attach_money,
-                label: 'Total Value (KES)',
-                value:
-                    'KES ${(data['totalValue'] as double).toStringAsFixed(0)}',
-                color: AppColors.pigPink,
-              ),
-            ],
-          ),
-          const SizedBox(height: AppDimensions.spacingLarge),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(AppDimensions.spacingLarge),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
+    return itemsAsync.when(
+      loading: () => const Center(child: CircularProgressIndicator()),
+      error: (error, stack) => Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 48, color: Colors.red),
+            const SizedBox(height: 16),
+            Text('Error: $error'),
+          ],
+        ),
+      ),
+      data: (itemsData) {
+        return alertsAsync.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, stack) => Center(child: Text('Error: $error')),
+          data: (alertsData) {
+            final items = itemsData.items;
+            final summary = itemsData.summary;
+            final lowStock = (alertsData as dynamic)['lowStock'] is List
+                ? (alertsData as Map<String, dynamic>)['lowStock'].length as int
+                : 0;
+            final expiring = (alertsData as dynamic)['expiring'] is List
+                ? (alertsData as Map<String, dynamic>)['expiring'].length as int
+                : 0;
+            final expired = (alertsData as dynamic)['expired'] is List
+                ? (alertsData as Map<String, dynamic>)['expired'].length as int
+                : 0;
+
+            return ListView(
+              padding: const EdgeInsets.all(AppDimensions.pagePadding),
+              children: [
+                Text(
+                  'Inventory Summary',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: AppDimensions.spacingLarge),
+                // Summary Cards Grid
+                GridView.count(
+                  crossAxisCount: 2,
+                  crossAxisSpacing: AppDimensions.spacingMedium,
+                  mainAxisSpacing: AppDimensions.spacingMedium,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  children: [
+                    _SummaryCard(
+                      icon: Icons.inventory_2_outlined,
+                      label: 'Total Items',
+                      value: (summary['totalItems'] ?? 0).toString(),
+                      color: AppColors.primaryGreen,
+                    ),
+                    _SummaryCard(
+                      icon: Icons.warning_amber_rounded,
+                      label: 'Low Stock',
+                      value: lowStock.toString(),
+                      color: AppColors.warmGold,
+                    ),
+                    _SummaryCard(
+                      icon: Icons.access_time_rounded,
+                      label: 'Expiring Soon',
+                      value: expiring.toString(),
+                      color: Colors.orange,
+                    ),
+                    _SummaryCard(
+                      icon: Icons.attach_money_rounded,
+                      label: 'Total Value',
+                      value:
+                          'KES ${(summary['inventoryValue'] ?? 0).toStringAsFixed(0)}',
+                      color: AppColors.navy,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: AppDimensions.spacingLarge),
+                // Category Distribution
+                if (items.isNotEmpty) ...[
                   Text(
-                    'Active Alerts',
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    '${data['activeAlerts']} alerts require attention',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyMedium?.copyWith(color: Colors.red),
-                  ),
-                  const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      onPressed: () {
-                        // TODO: Navigate to alerts tab
-                      },
-                      icon: const Icon(Icons.notifications),
-                      label: const Text('View Alerts'),
+                    'Items by Category',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
+                  const SizedBox(height: AppDimensions.spacingMedium),
+                  _CategoryDistribution(items: items),
                 ],
-              ),
-            ),
-          ),
-        ],
-      ),
-      loading: () => const Center(child: CircularProgressIndicator()),
-      error: (error, _) => Center(child: Text('Error: $error')),
+                const SizedBox(height: AppDimensions.spacingLarge),
+                // Recent Alerts
+                if (lowStock + expiring + expired > 0) ...[
+                  Text(
+                    'Alerts',
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: AppDimensions.spacingMedium),
+                  if (lowStock > 0)
+                    _AlertCard(
+                      icon: Icons.warning,
+                      title: 'Low Stock Items',
+                      count: lowStock,
+                      color: AppColors.warmGold,
+                    ),
+                  if (expiring > 0)
+                    _AlertCard(
+                      icon: Icons.access_time,
+                      title: 'Expiring Soon',
+                      count: expiring,
+                      color: Colors.orange,
+                    ),
+                  if (expired > 0)
+                    _AlertCard(
+                      icon: Icons.error,
+                      title: 'Expired Items',
+                      count: expired,
+                      color: Colors.red,
+                    ),
+                ],
+              ],
+            );
+          },
+        );
+      },
     );
   }
 }
 
 class _SummaryCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
+
   const _SummaryCard({
     required this.icon,
     required this.label,
@@ -103,53 +152,136 @@ class _SummaryCard extends StatelessWidget {
     required this.color,
   });
 
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color color;
-
   @override
-  Widget build(BuildContext context) => Card(
-    child: Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppDimensions.radius),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [color.withValues(alpha: 0.1), color.withValues(alpha: 0.05)],
+  Widget build(BuildContext context) {
+    return Card(
+      elevation: 2,
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          gradient: LinearGradient(
+            colors: [color.withValues(alpha: 0.1), color.withValues(alpha: 0.05)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
         ),
-      ),
-      child: Padding(
         padding: const EdgeInsets.all(AppDimensions.spacingMedium),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.2),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: color, size: 24),
+            Icon(icon, color: color, size: 32),
+            const SizedBox(height: AppDimensions.spacingSmall),
+            Text(
+              label,
+              style: Theme.of(context).textTheme.bodySmall,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  value,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: color,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(label, style: Theme.of(context).textTheme.bodySmall),
-              ],
+            const SizedBox(height: AppDimensions.spacingSmall),
+            Text(
+              value,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: color,
+                fontWeight: FontWeight.bold,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),
       ),
-    ),
-  );
+    );
+  }
+}
+
+class _CategoryDistribution extends StatelessWidget {
+  final List items;
+
+  const _CategoryDistribution({required this.items});
+
+  @override
+  Widget build(BuildContext context) {
+    final categories = <String, int>{};
+    for (final item in items) {
+      final category = item.category as String;
+      categories[category] = (categories[category] ?? 0) + 1;
+    }
+
+    return Column(
+      children: categories.entries.map((entry) {
+        final percentage = (entry.value / items.length * 100).toStringAsFixed(
+          1,
+        );
+        return Padding(
+          padding: const EdgeInsets.only(bottom: AppDimensions.spacingMedium),
+          child: Row(
+            children: [
+              Expanded(child: Text(entry.key)),
+              const SizedBox(width: AppDimensions.spacingSmall),
+              Expanded(
+                flex: 2,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: entry.value / items.length,
+                    minHeight: 8,
+                    backgroundColor: Colors.grey[300],
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      AppColors.primaryGreen.withValues(alpha: 0.7),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppDimensions.spacingSmall),
+              SizedBox(
+                width: 50,
+                child: Text(
+                  '${entry.value} ($percentage%)',
+                  textAlign: TextAlign.right,
+                  style: Theme.of(context).textTheme.bodySmall,
+                ),
+              ),
+            ],
+          ),
+        );
+      }).toList(),
+    );
+  }
+}
+
+class _AlertCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final int count;
+  final Color color;
+
+  const _AlertCard({
+    required this.icon,
+    required this.title,
+    required this.count,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      margin: const EdgeInsets.only(bottom: AppDimensions.spacingMedium),
+      child: ListTile(
+        leading: Icon(icon, color: color),
+        title: Text(title),
+        trailing: Container(
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.2),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          child: Text(
+            count.toString(),
+            style: TextStyle(color: color, fontWeight: FontWeight.bold),
+          ),
+        ),
+      ),
+    );
+  }
 }
