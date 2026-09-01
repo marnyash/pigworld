@@ -8,6 +8,7 @@ import '../../features/feed/presentation/pages/feed_page.dart';
 import '../../features/feed/presentation/pages/inventory_page.dart';
 import '../../features/growth/presentation/pages/growth_page.dart';
 import '../../features/finance/presentation/pages/finance_page.dart';
+import '../../features/sales/presentation/pages/sales_page.dart';
 import '../../features/reports/presentation/pages/reports_page.dart';
 import '../../features/settings/presentation/pages/profile_page.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
@@ -123,12 +124,7 @@ abstract final class AppRouter {
           ),
           GoRoute(
             path: AppRoutes.salesAndExpenses,
-            builder: (context, state) => const ModulePage(
-              title: 'Sales & Expenses',
-              description:
-                  'Track sales, operating expenses, and farm profitability.',
-              icon: Icons.point_of_sale_outlined,
-            ),
+            builder: (context, state) => const SalesPage(),
           ),
           GoRoute(
             path: AppRoutes.inventory,
