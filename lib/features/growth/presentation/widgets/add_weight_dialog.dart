@@ -64,14 +64,6 @@ class _AddWeightDialogState extends State<AddWeightDialog> {
     );
     final double? targetWeight = double.tryParse(targetWeightController.text);
 
-    final weightGain = previousWeight != null
-        ? currentWeight - previousWeight
-        : null;
-    final dailyGain = weightGain != null && previousWeight != null
-        ? weightGain /
-              7 // Assuming weekly measurement
-        : null;
-
     widget.onSubmit({
       'animal_id': pigIdController.text,
       'rfid': rfidController.text.isNotEmpty ? rfidController.text : null,
