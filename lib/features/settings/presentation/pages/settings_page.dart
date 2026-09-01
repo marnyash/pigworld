@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../../app/theme/app_colors.dart';
-import '../../../../app/theme/app_dimensions.dart';
-import '../../../../core/network/api_config.dart';
-import '../../../../core/storage/secure_storage.dart';
-import '../../../auth/presentation/providers/auth_providers.dart';
+import 'package:proj/app/theme/app_colors.dart';
+import 'package:proj/app/theme/app_dimensions.dart';
+import 'package:proj/core/network/api_config.dart';
+import 'package:proj/core/storage/secure_storage.dart';
+import 'package:proj/features/auth/presentation/providers/auth_providers.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});

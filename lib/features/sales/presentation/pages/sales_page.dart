@@ -141,7 +141,7 @@ class SalesPage extends StatelessWidget {
                   ),
                   const SizedBox(height: AppDimensions.spacingMedium),
                   DropdownButtonFormField<String>(
-                    value: 'M-Pesa',
+                    initialValue: 'M-Pesa',
                     decoration: const InputDecoration(
                       labelText: 'Payment Method',
                       prefixIcon: Icon(Icons.payments_outlined),
