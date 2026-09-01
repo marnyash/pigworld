@@ -10,6 +10,7 @@ import '../../features/growth/presentation/pages/growth_page.dart';
 import '../../features/finance/presentation/pages/finance_page.dart';
 import '../../features/sales/presentation/pages/sales_page.dart';
 import '../../features/reports/presentation/pages/reports_page.dart';
+import '../../features/about/presentation/pages/about_page.dart';
 import '../../features/settings/presentation/pages/profile_page.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
 import '../../features/notifications/presentation/pages/notifications_page.dart';
@@ -169,12 +170,7 @@ abstract final class AppRouter {
           ),
           GoRoute(
             path: AppRoutes.about,
-            builder: (context, state) => const ModulePage(
-              title: 'About',
-              description:
-                  'Learn more about Pig World Smart and the app version.',
-              icon: Icons.info_outline,
-            ),
+            builder: (context, state) => const AboutPage(),
           ),
         ],
       ),
@@ -275,18 +271,33 @@ class _AppDrawer extends ConsumerWidget {
                   const _DrawerSectionLabel('Farm management'),
                   _ListTile(
                     icon: Icons.home_outlined,
-                    title: 'Home',
+                    title: 'Dashboard',
                     route: AppRoutes.home,
                   ),
                   _ListTile(
                     icon: Icons.pets_outlined,
-                    title: 'Pig Inventory',
+                    title: 'Herd',
                     route: AppRoutes.herd,
                   ),
                   _ListTile(
+                    icon: Icons.restaurant_outlined,
+                    title: 'Feed',
+                    route: AppRoutes.feed,
+                  ),
+                  _ListTile(
                     icon: Icons.health_and_safety_outlined,
-                    title: 'Health & Vaccination',
+                    title: 'Health',
                     route: AppRoutes.health,
+                  ),
+                  _ListTile(
+                    icon: Icons.monitor_weight_outlined,
+                    title: 'Growth',
+                    route: AppRoutes.growth,
+                  ),
+                  _ListTile(
+                    icon: Icons.inventory_2_outlined,
+                    title: 'Inventory',
+                    route: AppRoutes.inventory,
                   ),
                   _ListTile(
                     icon: Icons.favorite_outline,
@@ -294,50 +305,25 @@ class _AppDrawer extends ConsumerWidget {
                     route: AppRoutes.breeding,
                   ),
                   _ListTile(
-                    icon: Icons.restaurant_outlined,
-                    title: 'Feed Management',
-                    route: AppRoutes.feed,
-                  ),
-                  _ListTile(
-                    icon: Icons.monitor_weight_outlined,
-                    title: 'Growth & Weight',
-                    route: AppRoutes.growth,
-                  ),
-                  _ListTile(
                     icon: Icons.point_of_sale_outlined,
-                    title: 'Sales & Expenses',
+                    title: 'Sales',
                     route: AppRoutes.salesAndExpenses,
                   ),
-                  _ListTile(
-                    icon: Icons.inventory_2_outlined,
-                    title: 'Inventory & Stocks',
-                    route: AppRoutes.inventory,
-                  ),
                   const _DrawerSectionLabel('Workspace'),
-                  _ListTile(
-                    icon: Icons.notifications_outlined,
-                    title: 'Notifications',
-                    route: AppRoutes.notifications,
-                  ),
                   _ListTile(
                     icon: Icons.assessment_outlined,
                     title: 'Reports',
                     route: AppRoutes.reports,
                   ),
                   _ListTile(
-                    icon: Icons.groups_outlined,
-                    title: 'Workers',
-                    route: AppRoutes.workers,
+                    icon: Icons.support_agent_outlined,
+                    title: 'Customer Support',
+                    route: AppRoutes.support,
                   ),
                   _ListTile(
                     icon: Icons.settings_outlined,
                     title: 'Settings',
                     route: AppRoutes.settings,
-                  ),
-                  _ListTile(
-                    icon: Icons.support_agent_outlined,
-                    title: 'Customer Service',
-                    route: AppRoutes.support,
                   ),
                   _ListTile(
                     icon: Icons.info_outline,
