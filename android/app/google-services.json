@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "548618511024",
+    "project_id": "pigworld-smart",
+    "storage_bucket": "pigworld-smart.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:548618511024:android:c61b473a3b8a577039d175",
+        "android_client_info": {
+          "package_name": "pigworld.com"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCoWYLMgA9ssmFhP7eCsWDNnhmLIt59Gxg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

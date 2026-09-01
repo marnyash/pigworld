@@ -85,16 +85,18 @@ class _LanguagePageState extends ConsumerState<LanguagePage> {
             child: const Text('Back'),
           ),
           const Spacer(),
-          FilledButton(
-            onPressed: () {
-              final isMobile =
-                  !kIsWeb &&
-                  (defaultTargetPlatform == TargetPlatform.android ||
-                      defaultTargetPlatform == TargetPlatform.iOS);
-              if (isMobile) unawaited(_requestRuntimePermissions());
-              context.go(AppRoutes.country);
-            },
-            child: const Text('Continue'),
+          Flexible(
+            child: FilledButton(
+              onPressed: () {
+                final isMobile =
+                    !kIsWeb &&
+                    (defaultTargetPlatform == TargetPlatform.android ||
+                        defaultTargetPlatform == TargetPlatform.iOS);
+                if (isMobile) unawaited(_requestRuntimePermissions());
+                context.go(AppRoutes.country);
+              },
+              child: const Text('Continue'),
+            ),
           ),
         ],
       ),

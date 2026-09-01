@@ -2,6 +2,8 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 	<dict>
+		<key>NSPhotoLibraryUsageDescription</key>
+		<string>Pig World Smart uses your photo library to set your profile photo.</string>
 		<key>NSLocationWhenInUseUsageDescription</key>
 		<string>Pig World Smart uses your location for farm context and regional reports.</string>
 		<key>NSUserNotificationsUsageDescription</key>

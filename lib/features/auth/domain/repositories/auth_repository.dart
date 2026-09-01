@@ -8,6 +8,7 @@ abstract interface class AuthRepository {
     String password, {
     bool rememberMe = false,
   });
+  Future<Session> loginWithGoogle(String idToken);
   Future<Session> register({
     required String name,
     required String email,

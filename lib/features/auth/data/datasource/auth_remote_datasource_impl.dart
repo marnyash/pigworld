@@ -16,6 +16,10 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       _postForSession('/auth/login', request.toJson());
 
   @override
+  Future<LoginResponse> loginWithGoogle(String idToken) =>
+      _postForSession('/auth/google', {'id_token': idToken});
+
+  @override
   Future<LoginResponse> register(RegisterRequest request) =>
       _postForSession('/auth/register', request.toJson());
 

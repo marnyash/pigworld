@@ -13,6 +13,7 @@ import '../../domain/entities/session.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/forgot_password.dart';
 import '../../domain/usecases/login.dart';
+import '../../domain/usecases/login_with_google.dart';
 import '../../domain/usecases/logout.dart';
 import '../../domain/usecases/refresh_session.dart';
 import '../../domain/usecases/register.dart';
@@ -62,6 +63,9 @@ final authRepositoryProvider = Provider<AuthRepository>(
 
 final loginUseCaseProvider = Provider(
   (ref) => Login(ref.watch(authRepositoryProvider)),
+);
+final loginWithGoogleUseCaseProvider = Provider(
+  (ref) => LoginWithGoogle(ref.watch(authRepositoryProvider)),
 );
 final registerUseCaseProvider = Provider(
   (ref) => Register(ref.watch(authRepositoryProvider)),

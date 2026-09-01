@@ -15,6 +15,7 @@ class _LoginFormState extends State<LoginForm> {
   final formKey = GlobalKey<FormState>();
   bool rememberMe = false;
   bool isLoading = false;
+  bool passwordVisible = false;
 
   @override
   void dispose() {
@@ -51,10 +52,20 @@ class _LoginFormState extends State<LoginForm> {
         const SizedBox(height: 16),
         TextFormField(
           controller: passwordController,
-          obscureText: true,
-          decoration: const InputDecoration(
+          obscureText: !passwordVisible,
+          decoration: InputDecoration(
             labelText: 'Password',
-            prefixIcon: Icon(Icons.lock_outline),
+            prefixIcon: const Icon(Icons.lock_outline),
+            suffixIcon: IconButton(
+              tooltip: passwordVisible ? 'Hide password' : 'Show password',
+              icon: Icon(
+                passwordVisible
+                    ? Icons.visibility_off_outlined
+                    : Icons.visibility_outlined,
+              ),
+              onPressed: () =>
+                  setState(() => passwordVisible = !passwordVisible),
+            ),
           ),
           validator: (value) =>
               (value?.isEmpty ?? true) ? 'Enter your password' : null,

@@ -1,1 +1,1 @@
-String localApiOrigin() => 'http://localhost:8000';
+String localApiOrigin() => 'http://localhost';

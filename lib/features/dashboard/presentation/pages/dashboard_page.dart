@@ -23,6 +23,13 @@ class DashboardPage extends ConsumerWidget {
         : ref.watch(farmOverviewProvider(farmId));
     final firstName = session?.user.name.split(' ').first ?? 'there';
     final farmName = session?.selectedFarm?.name ?? 'Pig World Smart';
+    final registeredHerdCount = session?.selectedFarm?.registeredHerdCount ?? 0;
+    final liveHerdCount = overview.valueOrNull?['herd_count'] as num?;
+    final herdCount = liveHerdCount == null
+        ? registeredHerdCount
+        : liveHerdCount.toInt() > registeredHerdCount
+        ? liveHerdCount.toInt()
+        : registeredHerdCount;
     final role = session?.user.role;
     final isAdmin = role == UserRole.farmOwner;
 
@@ -131,7 +138,7 @@ class DashboardPage extends ConsumerWidget {
                 _StatCard(
                   icon: Icons.pets_outlined,
                   label: 'Herd size',
-                  value: overview.valueOrNull?['herd_count']?.toString() ?? '—',
+                  value: '$herdCount',
                   color: AppColors.primaryGreen,
                 ),
                 _StatCard(
@@ -156,6 +163,14 @@ class DashboardPage extends ConsumerWidget {
                 ),
               ],
             ),
+            if (registeredHerdCount > 0) ...[
+              const SizedBox(height: AppDimensions.spacingMedium),
+              _RegisteredHerdBanner(
+                motherPigs: session?.selectedFarm?.motherPigCount ?? 0,
+                piglets: session?.selectedFarm?.registeredPigletCount ?? 0,
+                pregnantPigs: session?.selectedFarm?.pregnantPigCount ?? 0,
+              ),
+            ],
             const SizedBox(height: AppDimensions.spacingLarge),
             _SectionHeader(title: 'Quick actions'),
             const SizedBox(height: AppDimensions.spacingMedium),
@@ -166,11 +181,13 @@ class DashboardPage extends ConsumerWidget {
                 _QuickAction(
                   icon: Icons.pets_outlined,
                   label: 'Herd',
+                  color: AppColors.pigPink,
                   onTap: () => context.go(AppRoutes.herd),
                 ),
                 _QuickAction(
                   icon: Icons.grass_outlined,
                   label: 'Feed',
+                  color: AppColors.leaf,
                   onTap: () => context.go(AppRoutes.feed),
                 ),
                 if (isAdmin ||
@@ -179,6 +196,7 @@ class DashboardPage extends ConsumerWidget {
                   _QuickAction(
                     icon: Icons.account_balance_wallet_outlined,
                     label: 'Finance',
+                    color: AppColors.warmGold,
                     onTap: () => context.go(AppRoutes.finance),
                   ),
                 if (isAdmin ||
@@ -187,17 +205,20 @@ class DashboardPage extends ConsumerWidget {
                   _QuickAction(
                     icon: Icons.groups_outlined,
                     label: 'Customers',
+                    color: AppColors.info,
                     onTap: () => context.go(AppRoutes.crm),
                   ),
                 _QuickAction(
                   icon: Icons.support_agent_outlined,
                   label: 'Support',
+                  color: AppColors.violet,
                   onTap: () => context.go(AppRoutes.support),
                 ),
                 if (isAdmin)
                   _QuickAction(
                     icon: Icons.group_outlined,
                     label: 'Team & policies',
+                    color: AppColors.aqua,
                     onTap: () => context.go(AppRoutes.farmManagement),
                   ),
               ],
@@ -238,6 +259,60 @@ class DashboardPage extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _RegisteredHerdBanner extends StatelessWidget {
+  const _RegisteredHerdBanner({
+    required this.motherPigs,
+    required this.piglets,
+    required this.pregnantPigs,
+  });
+
+  final int motherPigs;
+  final int piglets;
+  final int pregnantPigs;
+
+  @override
+  Widget build(BuildContext context) {
+    final details = <String>[
+      if (motherPigs > 0) '$motherPigs mother pigs',
+      if (piglets > 0) '$piglets piglets',
+      if (pregnantPigs > 0) '$pregnantPigs pregnant',
+    ];
+    return Container(
+      padding: const EdgeInsets.all(AppDimensions.spacingMedium),
+      decoration: BoxDecoration(
+        color: AppColors.secondaryContainer,
+        borderRadius: BorderRadius.circular(AppDimensions.radius),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: const BoxDecoration(
+              color: AppColors.pigPink,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.pets, color: Colors.white),
+          ),
+          const SizedBox(width: AppDimensions.spacingMedium),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Your registered herd',
+                  style: Theme.of(context).textTheme.titleSmall,
+                ),
+                const SizedBox(height: 2),
+                Text(details.join(' • ')),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -286,11 +361,13 @@ class _QuickAction extends StatelessWidget {
   const _QuickAction({
     required this.icon,
     required this.label,
+    required this.color,
     required this.onTap,
   });
 
   final IconData icon;
   final String label;
+  final Color color;
   final VoidCallback onTap;
 
   @override
@@ -304,13 +381,17 @@ class _QuickAction extends StatelessWidget {
           vertical: AppDimensions.spacingMedium,
         ),
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.08),
+          color: color.withValues(alpha: 0.13),
           borderRadius: BorderRadius.circular(AppDimensions.radius),
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(icon, color: Theme.of(context).colorScheme.primary),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+              child: Icon(icon, color: Colors.white, size: 20),
+            ),
             const SizedBox(height: 8),
             Text(
               label,

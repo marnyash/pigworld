@@ -6,8 +6,9 @@ import '../../../../app/routes/app_routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../features/auth/presentation/providers/auth_provider.dart';
-import '../../../../features/auth/presentation/providers/auth_providers.dart';
 import '../../../../shared/components/bottom_navigation.dart';
+import '../../../../shared/widgets/profile_avatar.dart';
+import '../providers/profile_image_provider.dart';
 
 class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
@@ -51,15 +52,21 @@ class ProfilePage extends ConsumerWidget {
               padding: const EdgeInsets.all(AppDimensions.spacingLarge),
               child: Row(
                 children: [
-                  CircleAvatar(
-                    radius: 30,
-                    backgroundColor: Colors.white.withValues(alpha: 0.18),
-                    child: Text(
-                      initials,
-                      style: Theme.of(
-                        context,
-                      ).textTheme.headlineSmall?.copyWith(color: Colors.white),
-                    ),
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      ProfileAvatar(initials: initials),
+                      Positioned(
+                        right: -4,
+                        bottom: -4,
+                        child: IconButton.filled(
+                          tooltip: 'Change profile photo',
+                          icon: const Icon(Icons.photo_camera_outlined),
+                          iconSize: 17,
+                          onPressed: () => _chooseProfileImage(context, ref),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(width: AppDimensions.spacingMedium),
                   Expanded(
@@ -118,41 +125,29 @@ class ProfilePage extends ConsumerWidget {
               onTap: () => context.go(AppRoutes.farmSelection),
             ),
           ),
-          const SizedBox(height: AppDimensions.spacingLarge),
-          Text('Account', style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: AppDimensions.spacingMedium),
-          Card(
-            child: Column(
-              children: [
-                ListTile(
-                  leading: const Icon(Icons.notifications_outlined),
-                  title: const Text('Notifications'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.go(AppRoutes.notifications),
-                ),
-                const Divider(height: 1),
-                ListTile(
-                  leading: const Icon(Icons.support_agent_outlined),
-                  title: const Text('Customer Care'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.go(AppRoutes.support),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: AppDimensions.spacingLarge),
-          OutlinedButton.icon(
-            onPressed: () async {
-              await ref.read(logoutUseCaseProvider)();
-              ref.read(authProvider.notifier).clearSession();
-              if (context.mounted) context.go(AppRoutes.login);
-            },
-            icon: const Icon(Icons.logout),
-            label: const Text('Sign out'),
-          ),
         ],
       ),
     );
+  }
+
+  Future<void> _chooseProfileImage(BuildContext context, WidgetRef ref) async {
+    try {
+      final selected = await ref
+          .read(profileImageProvider.notifier)
+          .chooseFromGallery();
+      if (context.mounted && !selected) return;
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Profile photo updated.')));
+      }
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not update profile photo.')),
+        );
+      }
+    }
   }
 
   String _roleLabel(String? role) => switch (role) {

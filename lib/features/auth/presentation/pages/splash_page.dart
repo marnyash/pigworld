@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../../../onboarding/presentation/providers/onboarding_provider.dart';
+import '../../domain/entities/session.dart';
+import '../providers/auth_provider.dart';
 import '../providers/auth_providers.dart';
 
 class SplashPage extends ConsumerStatefulWidget {
@@ -19,12 +21,22 @@ class _SplashPageState extends ConsumerState<SplashPage> {
   @override
   void initState() {
     super.initState();
-    _navigate();
+    // Let the router finish mounting before replacing the initial route.
+    // Navigating directly from initState can leave the Router with no page on
+    // some cold starts (most noticeably after the native splash disappears).
+    WidgetsBinding.instance.addPostFrameCallback((_) => _navigate());
   }
 
   Future<void> _navigate() async {
     if (_navigated || !mounted) return;
-    final session = await ref.read(sessionRestoreProvider.future);
+    Session? session;
+    try {
+      session = await ref.read(sessionRestoreProvider.future);
+    } catch (_) {
+      // A corrupt/unavailable persisted session must not strand the user on a
+      // blank startup screen. Continue as signed out instead.
+      ref.read(authProvider.notifier).clearSession();
+    }
     if (!mounted) return;
     if (session != null) {
       _navigated = true;
@@ -33,9 +45,13 @@ class _SplashPageState extends ConsumerState<SplashPage> {
       );
       return;
     }
-    final onboardingCompleted = await ref.read(
-      onboardingCompletedProvider.future,
-    );
+    bool onboardingCompleted;
+    try {
+      onboardingCompleted = await ref.read(onboardingCompletedProvider.future);
+    } catch (_) {
+      // Login is the safe fallback if the onboarding preference is unreadable.
+      onboardingCompleted = true;
+    }
     if (!mounted) return;
     _navigated = true;
     context.go(onboardingCompleted ? AppRoutes.login : AppRoutes.language);

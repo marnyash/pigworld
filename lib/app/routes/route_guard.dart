@@ -17,6 +17,7 @@ abstract final class RouteGuard {
     '/create-account',
     '/herd-setup',
     '/subscription',
+    '/farm-selection',
   };
 
   static bool isPublic(String location) => publicRoutes.contains(location);

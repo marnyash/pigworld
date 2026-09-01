@@ -2,8 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/herd/presentation/pages/herd_page.dart';
+import '../../features/health/presentation/pages/health_page.dart';
+import '../../features/breeding/presentation/pages/breeding_page.dart';
 import '../../features/feed/presentation/pages/feed_page.dart';
+import '../../features/feed/presentation/pages/inventory_page.dart';
+import '../../features/growth/presentation/pages/growth_page.dart';
 import '../../features/finance/presentation/pages/finance_page.dart';
+import '../../features/reports/presentation/pages/reports_page.dart';
 import '../../features/settings/presentation/pages/profile_page.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
 import '../../features/notifications/presentation/pages/notifications_page.dart';
@@ -22,12 +27,11 @@ import '../../features/onboarding/presentation/pages/language_page.dart';
 import '../../features/onboarding/presentation/pages/permissions_page.dart';
 import '../../features/settings/presentation/pages/farm_management_page.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
-import '../../features/settings/presentation/providers/farm_access_provider.dart';
-import '../../security/authorization/roles.dart';
-import '../../security/authorization/permissions.dart';
+import '../../features/auth/presentation/providers/auth_providers.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../shared/components/bottom_navigation.dart';
 import '../../shared/widgets/module_page.dart';
+import '../../shared/widgets/profile_avatar.dart';
 import '../../app/theme/app_colors.dart';
 import 'app_routes.dart';
 import 'route_guard.dart';
@@ -98,8 +102,12 @@ abstract final class AppRouter {
             builder: (context, state) => const HerdPage(),
           ),
           GoRoute(
+            path: AppRoutes.health,
+            builder: (context, state) => const HealthPage(),
+          ),
+          GoRoute(
             path: AppRoutes.breeding,
-            builder: (context, state) => const _SectionPage(title: 'Breeding'),
+            builder: (context, state) => const BreedingPage(),
           ),
           GoRoute(
             path: AppRoutes.feed,
@@ -108,6 +116,31 @@ abstract final class AppRouter {
           GoRoute(
             path: AppRoutes.finance,
             builder: (context, state) => const FinancePage(),
+          ),
+          GoRoute(
+            path: AppRoutes.growth,
+            builder: (context, state) => const GrowthPage(),
+          ),
+          GoRoute(
+            path: AppRoutes.salesAndExpenses,
+            builder: (context, state) => const ModulePage(
+              title: 'Sales & Expenses',
+              description:
+                  'Track sales, operating expenses, and farm profitability.',
+              icon: Icons.point_of_sale_outlined,
+            ),
+          ),
+          GoRoute(
+            path: AppRoutes.inventory,
+            builder: (context, state) => const InventoryPage(),
+          ),
+          GoRoute(
+            path: AppRoutes.reports,
+            builder: (context, state) => const ReportsPage(),
+          ),
+          GoRoute(
+            path: AppRoutes.workers,
+            builder: (context, state) => const FarmManagementPage(),
           ),
           GoRoute(
             path: AppRoutes.crm,
@@ -138,6 +171,15 @@ abstract final class AppRouter {
             path: AppRoutes.support,
             builder: (context, state) => const SupportPage(),
           ),
+          GoRoute(
+            path: AppRoutes.about,
+            builder: (context, state) => const ModulePage(
+              title: 'About',
+              description:
+                  'Learn more about Pig World Smart and the app version.',
+              icon: Icons.info_outline,
+            ),
+          ),
         ],
       ),
     ],
@@ -162,11 +204,6 @@ class NavigationShell extends StatelessWidget {
       key: navigationScaffoldKey,
       drawer: const _AppDrawer(),
       body: child,
-      floatingActionButton: location == AppRoutes.support
-          ? null
-          : _MovableCustomerCareButton(
-              onPressed: () => context.go(AppRoutes.support),
-            ),
       bottomNavigationBar: AppBottomNavigation(
         selectedIndex: selectedIndex,
         onSelected: (index) => context.go(
@@ -182,55 +219,19 @@ class NavigationShell extends StatelessWidget {
   }
 }
 
-class _MovableCustomerCareButton extends StatefulWidget {
-  const _MovableCustomerCareButton({required this.onPressed});
-
-  final VoidCallback onPressed;
-
-  @override
-  State<_MovableCustomerCareButton> createState() =>
-      _MovableCustomerCareButtonState();
-}
-
-class _MovableCustomerCareButtonState
-    extends State<_MovableCustomerCareButton> {
-  Offset offset = Offset.zero;
-
-  @override
-  Widget build(BuildContext context) => GestureDetector(
-    onPanUpdate: (details) => setState(() => offset += details.delta),
-    onTap: widget.onPressed,
-    child: Transform.translate(
-      offset: offset,
-      child: FloatingActionButton(
-        heroTag: 'customer-care-fab',
-        onPressed: widget.onPressed,
-        tooltip: 'Customer Care',
-        shape: const CircleBorder(),
-        child: const Icon(Icons.support_agent_outlined, size: 28),
-      ),
-    ),
-  );
-}
-
 class _AppDrawer extends ConsumerWidget {
   const _AppDrawer();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final session = ref.watch(authProvider).valueOrNull;
-    final role = session?.user.role;
-    final access = ref.watch(farmAccessProvider).valueOrNull;
-    final canManageMembers =
-        role == UserRole.farmOwner ||
-        (role == UserRole.farmManager &&
-            (access
-                    ?.permissionsFor(session?.user.id ?? '')
-                    .contains(AppPermission.manageMembers) ??
-                false));
+    final user = session?.user;
     final farmName = session?.selectedFarm?.name ?? 'Pig World Smart';
+    final initials = (user?.name.isNotEmpty ?? false)
+        ? user!.name.trim()[0].toUpperCase()
+        : '?';
     return Drawer(
-      width: 310,
+      width: 300,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.only(
           topRight: Radius.circular(28),
@@ -242,7 +243,7 @@ class _AppDrawer extends ConsumerWidget {
           children: [
             Container(
               width: double.infinity,
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 18),
+              padding: const EdgeInsets.fromLTRB(24, 28, 24, 22),
               decoration: const BoxDecoration(
                 color: AppColors.deepGreen,
                 borderRadius: BorderRadius.only(
@@ -252,71 +253,112 @@ class _AppDrawer extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
-                    ),
-                    child: const Icon(
-                      Icons.agriculture_outlined,
-                      color: Colors.white,
-                      size: 28,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
+                  ProfileAvatar(initials: initials, radius: 26),
+                  const SizedBox(height: 14),
                   Text(
                     'Pig World Smart',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.titleLarge?.copyWith(color: Colors.white),
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     farmName,
                     style: Theme.of(
                       context,
-                    ).textTheme.bodyMedium?.copyWith(color: Colors.white70),
+                    ).textTheme.bodySmall?.copyWith(color: Colors.white70),
                   ),
                 ],
               ),
             ),
             Expanded(
               child: ListView(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.fromLTRB(12, 14, 12, 20),
                 children: [
-                  if (canManageMembers)
-                    _ListTile(
-                      icon: Icons.group_outlined,
-                      title: 'Farm members',
-                      route: AppRoutes.farmManagement,
-                    ),
-                  if (role != null &&
-                      RolePermissions.can(role, AppPermission.manageFinance))
-                    _ListTile(
-                      icon: Icons.account_balance_wallet_outlined,
-                      title: 'Finance',
-                      route: AppRoutes.finance,
-                    ),
-                  if (role != null &&
-                      RolePermissions.can(role, AppPermission.manageSales))
-                    _ListTile(
-                      icon: Icons.groups_outlined,
-                      title: 'Customers',
-                      route: AppRoutes.crm,
-                    ),
+                  const _DrawerSectionLabel('Farm management'),
+                  _ListTile(
+                    icon: Icons.home_outlined,
+                    title: 'Home',
+                    route: AppRoutes.home,
+                  ),
+                  _ListTile(
+                    icon: Icons.pets_outlined,
+                    title: 'Pig Inventory',
+                    route: AppRoutes.herd,
+                  ),
+                  _ListTile(
+                    icon: Icons.health_and_safety_outlined,
+                    title: 'Health & Vaccination',
+                    route: AppRoutes.health,
+                  ),
+                  _ListTile(
+                    icon: Icons.favorite_outline,
+                    title: 'Breeding',
+                    route: AppRoutes.breeding,
+                  ),
+                  _ListTile(
+                    icon: Icons.restaurant_outlined,
+                    title: 'Feed Management',
+                    route: AppRoutes.feed,
+                  ),
+                  _ListTile(
+                    icon: Icons.monitor_weight_outlined,
+                    title: 'Growth & Weight',
+                    route: AppRoutes.growth,
+                  ),
+                  _ListTile(
+                    icon: Icons.point_of_sale_outlined,
+                    title: 'Sales & Expenses',
+                    route: AppRoutes.salesAndExpenses,
+                  ),
+                  _ListTile(
+                    icon: Icons.inventory_2_outlined,
+                    title: 'Inventory & Stocks',
+                    route: AppRoutes.inventory,
+                  ),
+                  const _DrawerSectionLabel('Workspace'),
                   _ListTile(
                     icon: Icons.notifications_outlined,
                     title: 'Notifications',
                     route: AppRoutes.notifications,
                   ),
-                  if (role != null &&
-                      RolePermissions.can(role, AppPermission.manageSettings))
-                    _ListTile(
-                      icon: Icons.settings_outlined,
-                      title: 'Settings',
-                      route: AppRoutes.settings,
-                    ),
+                  _ListTile(
+                    icon: Icons.assessment_outlined,
+                    title: 'Reports',
+                    route: AppRoutes.reports,
+                  ),
+                  _ListTile(
+                    icon: Icons.groups_outlined,
+                    title: 'Workers',
+                    route: AppRoutes.workers,
+                  ),
+                  _ListTile(
+                    icon: Icons.settings_outlined,
+                    title: 'Settings',
+                    route: AppRoutes.settings,
+                  ),
+                  _ListTile(
+                    icon: Icons.support_agent_outlined,
+                    title: 'Customer Service',
+                    route: AppRoutes.support,
+                  ),
+                  _ListTile(
+                    icon: Icons.info_outline,
+                    title: 'About',
+                    route: AppRoutes.about,
+                  ),
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 10),
+                    child: Divider(),
+                  ),
+                  _LogoutTile(
+                    onLogout: () async {
+                      await ref.read(logoutUseCaseProvider)();
+                      ref.read(authProvider.notifier).clearSession();
+                      if (context.mounted) context.go(AppRoutes.login);
+                    },
+                  ),
                 ],
               ),
             ),
@@ -339,40 +381,69 @@ class _ListTile extends StatelessWidget {
   final String route;
 
   @override
-  Widget build(BuildContext context) => Container(
-    margin: const EdgeInsets.only(bottom: 8),
-    decoration: BoxDecoration(
-      color: AppColors.background,
-      borderRadius: BorderRadius.circular(16),
-    ),
-    child: ListTile(
-      leading: Container(
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: AppColors.primaryGreen.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(12),
+  Widget build(BuildContext context) {
+    final selected = GoRouterState.of(context).uri.path == route;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 2),
+      child: ListTile(
+        dense: true,
+        minLeadingWidth: 28,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        selected: selected,
+        selectedTileColor: AppColors.primaryGreen.withValues(alpha: 0.11),
+        leading: Icon(
+          icon,
+          color: selected ? AppColors.deepGreen : AppColors.mutedText,
+          size: 22,
         ),
-        child: Icon(icon, color: AppColors.primaryGreen),
+        title: Text(
+          title,
+          style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+            color: selected ? AppColors.deepGreen : AppColors.text,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+          ),
+        ),
+        onTap: () {
+          Navigator.pop(context);
+          context.go(route);
+        },
       ),
-      title: Text(title),
-      trailing: const Icon(Icons.chevron_right, size: 20),
-      onTap: () {
-        Navigator.pop(context);
-        context.go(route);
-      },
+    );
+  }
+}
+
+class _DrawerSectionLabel extends StatelessWidget {
+  const _DrawerSectionLabel(this.label);
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.fromLTRB(12, 14, 12, 6),
+    child: Text(
+      label.toUpperCase(),
+      style: Theme.of(context).textTheme.labelSmall?.copyWith(
+        color: AppColors.primaryGreen,
+        fontWeight: FontWeight.w700,
+        letterSpacing: 0.7,
+      ),
     ),
   );
 }
 
-class _SectionPage extends StatelessWidget {
-  const _SectionPage({required this.title});
+class _LogoutTile extends StatelessWidget {
+  const _LogoutTile({required this.onLogout});
 
-  final String title;
+  final Future<void> Function() onLogout;
 
   @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Text(title, style: Theme.of(context).textTheme.headlineMedium),
-    );
-  }
+  Widget build(BuildContext context) => ListTile(
+    dense: true,
+    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    tileColor: Colors.red.withValues(alpha: 0.06),
+    leading: const Icon(Icons.logout, color: Colors.red),
+    title: const Text('Logout'),
+    textColor: Colors.red,
+    onTap: onLogout,
+  );
 }

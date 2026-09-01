@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../providers/auth_provider.dart';
 import '../providers/auth_providers.dart';
+import '../services/google_sign_in_service.dart';
 import '../widgets/login_form.dart';
 import '../widgets/server_settings_dialog.dart';
 
@@ -66,15 +67,39 @@ class LoginPage extends ConsumerWidget {
                 ),
                 const SizedBox(height: 12),
                 OutlinedButton.icon(
-                  onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        defaultTargetPlatform == TargetPlatform.iOS
-                            ? 'Continue with Apple will be connected soon.'
-                            : 'Continue with Google will be connected soon.',
-                      ),
-                    ),
-                  ),
+                  onPressed: defaultTargetPlatform == TargetPlatform.iOS
+                      ? () => ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Continue with Apple is coming soon.',
+                            ),
+                          ),
+                        )
+                      : () async {
+                          try {
+                            final idToken = await GoogleSignInService()
+                                .signIn();
+                            final session = await ref.read(
+                              loginWithGoogleUseCaseProvider,
+                            )(idToken);
+                            await ref
+                                .read(authServiceProvider)
+                                .setRememberMe(true);
+                            await ref.read(sessionManagerProvider).markActive();
+                            ref.read(authProvider.notifier).setSession(session);
+                            if (context.mounted) context.go(AppRoutes.home);
+                          } catch (_) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Google sign-in could not be completed. Please try again.',
+                                  ),
+                                ),
+                              );
+                            }
+                          }
+                        },
                   icon: Icon(
                     defaultTargetPlatform == TargetPlatform.iOS
                         ? Icons.apple

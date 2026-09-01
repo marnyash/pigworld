@@ -47,6 +47,9 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
                 name: farm.name,
                 location: farm.location,
                 inviteCode: farm.inviteCode,
+                motherPigCount: farm.motherPigCount,
+                registeredPigletCount: farm.registeredPigletCount,
+                pregnantPigCount: farm.pregnantPigCount,
               ).toJson(),
             )
             .toList(),
@@ -106,6 +109,9 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
         name: farm.name,
         location: farm.location,
         inviteCode: farm.inviteCode,
+        motherPigCount: farm.motherPigCount,
+        registeredPigletCount: farm.registeredPigletCount,
+        pregnantPigCount: farm.pregnantPigCount,
       ).toJson(),
     ),
   );

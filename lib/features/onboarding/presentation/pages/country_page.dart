@@ -107,22 +107,18 @@ class _CountryPageState extends ConsumerState<CountryPage> {
               ),
             ),
             const SizedBox(height: 16),
-            RadioGroup<String>(
-              groupValue: selected,
-              onChanged: (country) {
-                if (country != null) {
-                  ref.read(onboardingProvider.notifier).setCountry(country);
-                }
-              },
-              child: Column(
-                children: countries
-                    .map(
-                      (country) => CountryRadioTile(
-                        country: '${country.flag}  ${country.name}',
-                      ),
-                    )
-                    .toList(),
-              ),
+            Column(
+              children: countries
+                  .map(
+                    (country) => CountryRadioTile(
+                      country: '${country.flag}  ${country.name}',
+                      selected: selected == country.name,
+                      onChanged: (value) => ref
+                          .read(onboardingProvider.notifier)
+                          .setCountry(value),
+                    ),
+                  )
+                  .toList(),
             ),
           ],
         ),
@@ -134,11 +130,13 @@ class _CountryPageState extends ConsumerState<CountryPage> {
             child: const Text('Back'),
           ),
           const Spacer(),
-          FilledButton(
-            onPressed: selected == null
-                ? null
-                : () => context.go(AppRoutes.accountType),
-            child: const Text('Continue'),
+          Flexible(
+            child: FilledButton(
+              onPressed: selected == null
+                  ? null
+                  : () => context.go(AppRoutes.accountType),
+              child: const Text('Continue'),
+            ),
           ),
         ],
       ),
