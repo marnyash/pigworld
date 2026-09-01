@@ -45,7 +45,7 @@ class InventoryApi {
       );
       return InventoryItem.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
-      throw ErrorHandler.handle(e);
+      throw ErrorHandler.from(e);
     }
   }
 
@@ -75,7 +75,7 @@ class InventoryApi {
       );
       return InventoryItem.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
-      throw ErrorHandler.handle(e);
+      throw ErrorHandler.from(e);
     }
   }
 
@@ -99,7 +99,7 @@ class InventoryApi {
           )
           .toList();
     } on DioException catch (e) {
-      throw ErrorHandler.handle(e);
+      throw ErrorHandler.from(e);
     }
   }
 
@@ -125,7 +125,7 @@ class InventoryApi {
       );
       return StockMovement.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
-      throw ErrorHandler.handle(e);
+      throw ErrorHandler.from(e);
     }
   }
 
@@ -140,7 +140,7 @@ class InventoryApi {
           )
           .toList();
     } on DioException catch (e) {
-      throw ErrorHandler.handle(e);
+      throw ErrorHandler.from(e);
     }
   }
 
@@ -158,7 +158,7 @@ class InventoryApi {
       );
       return Supplier.fromJson(response.data as Map<String, dynamic>);
     } on DioException catch (e) {
-      throw ErrorHandler.handle(e);
+      throw ErrorHandler.from(e);
     }
   }
 
