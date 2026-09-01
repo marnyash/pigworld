@@ -1,6 +1,6 @@
 import 'package:dio/dio.dart';
 import '../../../../core/errors/error_handler.dart';
-import '../../../growth/domain/entities/growth_record.dart';
+import '../../domain/entities/growth_record.dart';
 
 class GrowthApi {
   final Dio _dio;
