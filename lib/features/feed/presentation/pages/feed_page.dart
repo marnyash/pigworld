@@ -1024,8 +1024,9 @@ class _FeedSearchDelegate extends SearchDelegate<void> {
     final matches = stock
         .where((item) => item.name.toLowerCase().contains(query.toLowerCase()))
         .toList();
-    if (matches.isEmpty)
+    if (matches.isEmpty) {
       return const Center(child: Text('No matching feed found'));
+    }
     return ListView(
       children: [
         for (final item in matches)
