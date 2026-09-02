@@ -2,7 +2,30 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:proj/app/theme/app_colors.dart';
 import 'package:proj/app/theme/app_dimensions.dart';
+import 'package:proj/features/inventory/domain/entities/inventory_item.dart';
 import 'package:proj/features/inventory/presentation/providers/inventory_providers.dart';
+
+final filteredInventoryItemsProvider = FutureProvider.autoDispose
+    .family<
+      ({List<InventoryItem> items, Map<String, dynamic> summary}),
+      ({String query, String category})
+    >((ref, filters) async {
+      final inventoryData = await ref.watch(inventoryItemsProvider.future);
+      final query = filters.query.trim().toLowerCase();
+
+      final items = inventoryData.items.where((item) {
+        final matchesQuery =
+            query.isEmpty ||
+            item.name.toLowerCase().contains(query) ||
+            item.sku.toLowerCase().contains(query) ||
+            (item.barcode?.toLowerCase().contains(query) ?? false);
+        final matchesCategory =
+            filters.category.isEmpty || item.category == filters.category;
+        return matchesQuery && matchesCategory;
+      }).toList();
+
+      return (items: items, summary: inventoryData.summary);
+    });
 
 class SearchCategoriesSection extends ConsumerStatefulWidget {
   const SearchCategoriesSection({super.key});
@@ -35,9 +58,12 @@ class _SearchCategoriesSectionState
   @override
   Widget build(BuildContext context) {
     final searchQuery = _searchController.text;
-    final items = _selectedCategory.isEmpty
-        ? ref.watch(searchInventoryProvider(searchQuery))
-        : ref.watch(filteredInventoryProvider(_selectedCategory));
+    final items = ref.watch(
+      filteredInventoryItemsProvider((
+        query: searchQuery,
+        category: _selectedCategory,
+      )),
+    );
 
     return ListView(
       padding: const EdgeInsets.all(AppDimensions.pagePadding),
@@ -94,7 +120,7 @@ class _SearchCategoriesSectionState
 
         // Results
         items.when(
-          data: (searchItems) => searchItems.isEmpty
+          data: (searchItems) => searchItems.items.isEmpty
               ? Center(
                   child: Padding(
                     padding: const EdgeInsets.all(AppDimensions.spacingLarge),
@@ -108,11 +134,11 @@ class _SearchCategoriesSectionState
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '${searchItems.length} item${searchItems.length == 1 ? '' : 's'} found',
+                      '${searchItems.items.length} item${searchItems.items.length == 1 ? '' : 's'} found',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                     const SizedBox(height: 12),
-                    ...searchItems.map(
+                    ...searchItems.items.map(
                       (item) => Card(
                         child: ListTile(
                           leading: Container(
