@@ -1,333 +1,91 @@
-import 'package:riverpod/riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:proj/features/auth/presentation/providers/auth_provider.dart';
 import 'package:proj/features/auth/presentation/providers/auth_providers.dart';
 import 'package:proj/features/inventory/data/inventory_api.dart';
+import 'package:proj/features/inventory/data/inventory_local_data_source.dart';
+import 'package:proj/features/inventory/domain/entities/inventory_alert.dart';
 import 'package:proj/features/inventory/domain/entities/inventory_item.dart';
 import 'package:proj/features/inventory/domain/entities/stock_movement.dart';
+import 'package:proj/features/inventory/domain/entities/supplier.dart';
 
-// API provider
-final inventoryApiProvider = Provider(
+final inventoryLocalDataSourceProvider = Provider<InventoryLocalDataSource>(
+  (ref) => InventoryLocalDataSource(),
+);
+
+final inventoryApiProvider = Provider<InventoryApi>(
   (ref) => InventoryApi(ref.watch(dioProvider)),
 );
 
-// Fetch inventory items for current farm
-final inventoryItemsProvider =
-    FutureProvider.autoDispose<
-      ({List<InventoryItem> items, Map<String, dynamic> summary})
-    >((ref) async {
-      final api = ref.watch(inventoryApiProvider);
-      final auth = ref.watch(authProvider).valueOrNull;
+final inventoryItemsProvider = FutureProvider.autoDispose<
+    ({List<InventoryItem> items, Map<String, dynamic> summary})>((ref) async {
+  final api = ref.watch(inventoryApiProvider);
+  final auth = ref.watch(authProvider).valueOrNull;
 
-      if (auth?.selectedFarm?.id == null) {
-        throw Exception('No farm selected');
-      }
+  final farmId = auth?.selectedFarm?.id;
+  if (farmId == null || farmId.isEmpty) {
+    throw Exception('No farm selected');
+  }
 
-      final result = await api.fetchItems(auth!.selectedFarm!.id);
-      return (
-        items: result['items'] as List<InventoryItem>,
-        summary: result['summary'] as Map<String, dynamic>,
-      );
-    });
+  final result = await api.fetchItems(farmId);
+  return (
+    items: (result['items'] as List<dynamic>)
+        .map((item) => InventoryItem.fromJson(item as Map<String, dynamic>))
+        .toList(),
+    summary: (result['summary'] as Map<String, dynamic>?) ?? <String, dynamic>{},
+  );
+});
 
-// Fetch a single inventory item with its movements
 final inventoryItemDetailsProvider = FutureProvider.autoDispose
-    .family<({InventoryItem item, List<StockMovement> movements}), String>((
-      ref,
-      itemId,
-    ) async {
-      final api = ref.watch(inventoryApiProvider);
-      final auth = ref.watch(authProvider).valueOrNull;
+    .family<({InventoryItem item, List<StockMovement> movements}), String>(
+      (ref, itemId) async {
+        final api = ref.watch(inventoryApiProvider);
+        final auth = ref.watch(authProvider).valueOrNull;
+        final farmId = auth?.selectedFarm?.id;
 
-      if (auth?.selectedFarm?.id == null) {
-        throw Exception('No farm selected');
-      }
+        if (farmId == null || farmId.isEmpty) {
+          throw Exception('No farm selected');
+        }
 
-      final result = await api.fetchItem(auth!.selectedFarm!.id, itemId);
-      return (
-        item: result['item'] as InventoryItem,
-        movements: result['movements'] as List<StockMovement>,
-      );
-    });
+        final result = await api.fetchItem(farmId, itemId);
+        return (
+          item: InventoryItem.fromJson(
+            (result['item'] as Map<String, dynamic>?) ?? <String, dynamic>{},
+          ),
+          movements: (result['movements'] as List<dynamic>? ?? const [])
+              .map(
+                (movement) =>
+                    StockMovement.fromJson(movement as Map<String, dynamic>),
+              )
+              .toList(),
+        );
+      },
+    );
 
-// Fetch inventory alerts
 final inventoryAlertsProvider =
-    FutureProvider.autoDispose<
-      ({
-        List<InventoryItem> lowStock,
-        List<InventoryItem> expiring,
-        List<InventoryItem> expired,
-      })
-    >((ref) async {
-      final api = ref.watch(inventoryApiProvider);
-      final auth = ref.watch(authProvider).valueOrNull;
-
-      if (auth?.selectedFarm?.id == null) {
-        throw Exception('No farm selected');
-      }
-
-      final result = await api.fetchAlerts(auth!.selectedFarm!.id);
-      return (
-        lowStock: result['lowStock'] as List<InventoryItem>,
-        expiring: result['expiring'] as List<InventoryItem>,
-        expired: result['expired'] as List<InventoryItem>,
-      );
-    });
-
-// Fetch items by category
-final inventoryCategoryProvider = FutureProvider.autoDispose
-    .family<({List<InventoryItem> items, int count}), String>((
-      ref,
-      category,
-    ) async {
-      final api = ref.watch(inventoryApiProvider);
-      final auth = ref.watch(authProvider).valueOrNull;
-
-      if (auth?.selectedFarm?.id == null) {
-        throw Exception('No farm selected');
-      }
-
-      final result = await api.fetchByCategory(
-        auth!.selectedFarm!.id,
-        category,
-      );
-      return (
-        items: result['items'] as List<InventoryItem>,
-        count: result['count'] as int,
-      );
-    });
-
-// Create inventory item notifier
-class CreateInventoryItemNotifier extends AsyncNotifier<void> {
-  @override
-  Future<void> build() async {}
-
-  Future<InventoryItem> createItem({
-    required String name,
-    required String category,
-    required String sku,
-    required double quantity,
-    required String unit,
-    required double minimumLevel,
-    required double costPrice,
-    String? supplier,
-    DateTime? expiryDate,
-    String? storageLocation,
-    String? barcode,
-    String? notes,
-  }) async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
-      final api = ref.watch(inventoryApiProvider);
-      final auth = ref.watch(authProvider).valueOrNull;
-
-      if (auth?.selectedFarm?.id == null) {
-        throw Exception('No farm selected');
-      }
-
-      final item = await api.createItem(
-        auth!.selectedFarm!.id,
-        name: name,
-        category: category,
-        sku: sku,
-        quantity: quantity,
-        unit: unit,
-        minimumLevel: minimumLevel,
-        costPrice: costPrice,
-        supplier: supplier,
-        expiryDate: expiryDate,
-        storageLocation: storageLocation,
-        barcode: barcode,
-        notes: notes,
-      );
-
-      // Invalidate the items list to trigger refresh
-      ref.invalidate(inventoryItemsProvider);
-      ref.invalidate(inventoryAlertsProvider);
-
-      return item;
-    });
-
-    if (state.hasError) {
-      rethrow;
-    }
-  }
-}
-
-final createInventoryItemProvider =
-    AsyncNotifierProvider<CreateInventoryItemNotifier, void>(
-      CreateInventoryItemNotifier.new,
+    AsyncNotifierProvider<InventoryAlertsNotifier, List<InventoryAlert>>(
+      InventoryAlertsNotifier.new,
     );
 
-// Update inventory item notifier
-class UpdateInventoryItemNotifier extends AsyncNotifier<void> {
-  @override
-  Future<void> build() async {}
-
-  Future<InventoryItem> updateItem(
-    String itemId, {
-    String? name,
-    String? category,
-    String? sku,
-    double? quantity,
-    String? unit,
-    double? minimumLevel,
-    double? costPrice,
-    String? supplier,
-    DateTime? expiryDate,
-    String? storageLocation,
-    String? barcode,
-    String? notes,
-  }) async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
-      final api = ref.watch(inventoryApiProvider);
-      final auth = ref.watch(authProvider).valueOrNull;
-
-      if (auth?.selectedFarm?.id == null) {
-        throw Exception('No farm selected');
-      }
-
-      final item = await api.updateItem(
-        auth!.selectedFarm!.id,
-        itemId,
-        name: name,
-        category: category,
-        sku: sku,
-        quantity: quantity,
-        unit: unit,
-        minimumLevel: minimumLevel,
-        costPrice: costPrice,
-        supplier: supplier,
-        expiryDate: expiryDate,
-        storageLocation: storageLocation,
-        barcode: barcode,
-        notes: notes,
-      );
-
-      // Invalidate relevant providers
-      ref.invalidate(inventoryItemsProvider);
-      ref.invalidate(inventoryItemDetailsProvider(itemId));
-      ref.invalidate(inventoryAlertsProvider);
-
-      return item;
-    });
-
-    if (state.hasError) {
-      rethrow;
-    }
-  }
-}
-
-final updateInventoryItemProvider =
-    AsyncNotifierProvider<UpdateInventoryItemNotifier, void>(
-      UpdateInventoryItemNotifier.new,
-    );
-
-// Delete inventory item notifier
-class DeleteInventoryItemNotifier extends AsyncNotifier<void> {
-  @override
-  Future<void> build() async {}
-
-  Future<void> deleteItem(String itemId) async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
-      final api = ref.watch(inventoryApiProvider);
-      final auth = ref.watch(authProvider).valueOrNull;
-
-      if (auth?.selectedFarm?.id == null) {
-        throw Exception('No farm selected');
-      }
-
-      await api.deleteItem(auth!.selectedFarm!.id, itemId);
-
-      // Invalidate relevant providers
-      ref.invalidate(inventoryItemsProvider);
-      ref.invalidate(inventoryItemDetailsProvider(itemId));
-      ref.invalidate(inventoryAlertsProvider);
-    });
-
-    if (state.hasError) {
-      rethrow;
-    }
-  }
-}
-
-final deleteInventoryItemProvider =
-    AsyncNotifierProvider<DeleteInventoryItemNotifier, void>(
-      DeleteInventoryItemNotifier.new,
-    );
-
-// Record stock movement notifier
-class RecordMovementNotifier extends AsyncNotifier<void> {
-  @override
-  Future<void> build() async {}
-
-  Future<StockMovement> recordMovement(
-    String itemId, {
-    required String type,
-    required double quantity,
-    String? reference,
-    String? notes,
-  }) async {
-    state = const AsyncValue.loading();
-    state = await AsyncValue.guard(() async {
-      final api = ref.watch(inventoryApiProvider);
-      final auth = ref.watch(authProvider).valueOrNull;
-
-      if (auth?.selectedFarm?.id == null) {
-        throw Exception('No farm selected');
-      }
-
-      final movement = await api.recordMovement(
-        auth!.selectedFarm!.id,
-        itemId,
-        type: type,
-        quantity: quantity,
-        reference: reference,
-        notes: notes,
-      );
-
-      // Invalidate relevant providers
-      ref.invalidate(inventoryItemsProvider);
-      ref.invalidate(inventoryItemDetailsProvider(itemId));
-      ref.invalidate(inventoryAlertsProvider);
-
-      return movement;
-    });
-
-    if (state.hasError) {
-      rethrow;
-    }
-  }
-}
-
-final recordMovementProvider =
-    AsyncNotifierProvider<RecordMovementNotifier, void>(
-      RecordMovementNotifier.new,
-    );
-
-// Selected filter providers
-final selectedCategoryFilterProvider = StateProvider<String>((ref) => 'Feed');
-final selectedStatusFilterProvider = StateProvider<String>(
-  (ref) => 'all',
-); // 'all', 'low_stock', 'expiring'
-
-// Inventory Alerts Provider
 class InventoryAlertsNotifier extends AsyncNotifier<List<InventoryAlert>> {
   @override
   Future<List<InventoryAlert>> build() async {
     final local = ref.watch(inventoryLocalDataSourceProvider);
     final alerts = await local.readAlerts();
-    return alerts.where((a) => !a.isResolved).toList();
+    return alerts.where((alert) => !alert.isResolved).toList();
   }
 
   Future<void> generateAlerts() async {
-    final items = await ref.watch(inventoryItemsProvider.future);
+    final itemsAsync = ref.watch(inventoryItemsProvider);
     final local = ref.watch(inventoryLocalDataSourceProvider);
 
-    final alerts = <InventoryAlert>[];
+    final items = itemsAsync.when(
+      data: (value) => value.items,
+      loading: () => <InventoryItem>[],
+      error: (error, stackTrace) => <InventoryItem>[],
+    );
 
+    final alerts = <InventoryAlert>[];
     for (final item in items) {
-      // Low stock alert
       if (item.isLowStock) {
         alerts.add(
           InventoryAlert(
@@ -345,8 +103,7 @@ class InventoryAlertsNotifier extends AsyncNotifier<List<InventoryAlert>> {
         );
       }
 
-      // Expiring soon alert
-      if (item.isExpiringExpiry) {
+      if (item.isExpiringSoon) {
         alerts.add(
           InventoryAlert(
             id: 'expiring_${item.id}',
@@ -363,7 +120,6 @@ class InventoryAlertsNotifier extends AsyncNotifier<List<InventoryAlert>> {
         );
       }
 
-      // Expired alert
       if (item.isExpired) {
         alerts.add(
           InventoryAlert(
@@ -394,12 +150,210 @@ class InventoryAlertsNotifier extends AsyncNotifier<List<InventoryAlert>> {
   }
 }
 
-final inventoryAlertsProvider =
-    AsyncNotifierProvider<InventoryAlertsNotifier, List<InventoryAlert>>(
-      InventoryAlertsNotifier.new,
+final inventoryCategoryProvider = FutureProvider.autoDispose
+    .family<({List<InventoryItem> items, int count}), String>((ref, category) async {
+      final api = ref.watch(inventoryApiProvider);
+      final auth = ref.watch(authProvider).valueOrNull;
+      final farmId = auth?.selectedFarm?.id;
+
+      if (farmId == null || farmId.isEmpty) {
+        throw Exception('No farm selected');
+      }
+
+      final result = await api.fetchByCategory(farmId, category);
+      return (
+        items: (result['items'] as List<dynamic>)
+            .map((item) => InventoryItem.fromJson(item as Map<String, dynamic>))
+            .toList(),
+        count: (result['count'] as int?) ?? 0,
+      );
+    });
+
+class CreateInventoryItemNotifier extends AsyncNotifier<void> {
+  @override
+  Future<void> build() async {}
+
+  Future<InventoryItem> createItem({
+    required String name,
+    required String category,
+    required String sku,
+    required double quantity,
+    required String unit,
+    required double minimumLevel,
+    required double costPrice,
+    String? supplier,
+    DateTime? expiryDate,
+    String? storageLocation,
+    String? barcode,
+    String? notes,
+  }) async {
+    state = const AsyncValue.loading();
+
+    final api = ref.watch(inventoryApiProvider);
+    final auth = ref.watch(authProvider).valueOrNull;
+    final farmId = auth?.selectedFarm?.id;
+
+    if (farmId == null || farmId.isEmpty) {
+      throw Exception('No farm selected');
+    }
+
+    final item = await api.createItem(
+      farmId,
+      name: name,
+      category: category,
+      sku: sku,
+      quantity: quantity,
+      unit: unit,
+      minimumLevel: minimumLevel,
+      costPrice: costPrice,
+      supplier: supplier,
+      expiryDate: expiryDate,
+      storageLocation: storageLocation,
+      barcode: barcode,
+      notes: notes,
     );
 
-// Suppliers Provider
+    ref.invalidate(inventoryItemsProvider);
+    ref.invalidate(inventoryAlertsProvider);
+    return item;
+  }
+}
+
+final createInventoryItemProvider =
+    AsyncNotifierProvider<CreateInventoryItemNotifier, void>(
+      CreateInventoryItemNotifier.new,
+    );
+
+class UpdateInventoryItemNotifier extends AsyncNotifier<void> {
+  @override
+  Future<void> build() async {}
+
+  Future<InventoryItem> updateItem(
+    String itemId, {
+    String? name,
+    String? category,
+    String? sku,
+    double? quantity,
+    String? unit,
+    double? minimumLevel,
+    double? costPrice,
+    String? supplier,
+    DateTime? expiryDate,
+    String? storageLocation,
+    String? barcode,
+    String? notes,
+  }) async {
+    state = const AsyncValue.loading();
+
+    final api = ref.watch(inventoryApiProvider);
+    final auth = ref.watch(authProvider).valueOrNull;
+    final farmId = auth?.selectedFarm?.id;
+
+    if (farmId == null || farmId.isEmpty) {
+      throw Exception('No farm selected');
+    }
+
+    final item = await api.updateItem(
+      farmId,
+      itemId,
+      name: name,
+      category: category,
+      sku: sku,
+      quantity: quantity,
+      unit: unit,
+      minimumLevel: minimumLevel,
+      costPrice: costPrice,
+      supplier: supplier,
+      expiryDate: expiryDate,
+      storageLocation: storageLocation,
+      barcode: barcode,
+      notes: notes,
+    );
+
+    ref.invalidate(inventoryItemsProvider);
+    ref.invalidate(inventoryItemDetailsProvider(itemId));
+    ref.invalidate(inventoryAlertsProvider);
+    return item;
+  }
+}
+
+final updateInventoryItemProvider =
+    AsyncNotifierProvider<UpdateInventoryItemNotifier, void>(
+      UpdateInventoryItemNotifier.new,
+    );
+
+class DeleteInventoryItemNotifier extends AsyncNotifier<void> {
+  @override
+  Future<void> build() async {}
+
+  Future<void> deleteItem(String itemId) async {
+    state = const AsyncValue.loading();
+
+    final api = ref.watch(inventoryApiProvider);
+    final auth = ref.watch(authProvider).valueOrNull;
+    final farmId = auth?.selectedFarm?.id;
+
+    if (farmId == null || farmId.isEmpty) {
+      throw Exception('No farm selected');
+    }
+
+    await api.deleteItem(farmId, itemId);
+    ref.invalidate(inventoryItemsProvider);
+    ref.invalidate(inventoryItemDetailsProvider(itemId));
+    ref.invalidate(inventoryAlertsProvider);
+  }
+}
+
+final deleteInventoryItemProvider =
+    AsyncNotifierProvider<DeleteInventoryItemNotifier, void>(
+      DeleteInventoryItemNotifier.new,
+    );
+
+class RecordMovementNotifier extends AsyncNotifier<void> {
+  @override
+  Future<void> build() async {}
+
+  Future<StockMovement> recordMovement(
+    String itemId, {
+    required String type,
+    required double quantity,
+    String? reference,
+    String? notes,
+  }) async {
+    state = const AsyncValue.loading();
+
+    final api = ref.watch(inventoryApiProvider);
+    final auth = ref.watch(authProvider).valueOrNull;
+    final farmId = auth?.selectedFarm?.id;
+
+    if (farmId == null || farmId.isEmpty) {
+      throw Exception('No farm selected');
+    }
+
+    final movement = await api.recordMovement(
+      farmId,
+      itemId,
+      type: type,
+      quantity: quantity,
+      reference: reference,
+      notes: notes,
+    );
+
+    ref.invalidate(inventoryItemsProvider);
+    ref.invalidate(inventoryItemDetailsProvider(itemId));
+    ref.invalidate(inventoryAlertsProvider);
+    return movement;
+  }
+}
+
+final recordMovementProvider =
+    AsyncNotifierProvider<RecordMovementNotifier, void>(
+      RecordMovementNotifier.new,
+    );
+
+final selectedCategoryFilterProvider = StateProvider<String>((ref) => 'Feed');
+final selectedStatusFilterProvider = StateProvider<String>((ref) => 'all');
+
 class SuppliersNotifier extends AsyncNotifier<List<Supplier>> {
   @override
   Future<List<Supplier>> build() async {
@@ -420,12 +374,10 @@ class SuppliersNotifier extends AsyncNotifier<List<Supplier>> {
   }
 }
 
-final suppliersProvider =
-    AsyncNotifierProvider<SuppliersNotifier, List<Supplier>>(
-      SuppliersNotifier.new,
-    );
+final suppliersProvider = AsyncNotifierProvider<SuppliersNotifier, List<Supplier>>(
+  SuppliersNotifier.new,
+);
 
-// Stock Movements Provider
 class StockMovementsNotifier extends AsyncNotifier<List<StockMovement>> {
   @override
   Future<List<StockMovement>> build() async {
@@ -437,11 +389,10 @@ class StockMovementsNotifier extends AsyncNotifier<List<StockMovement>> {
     final local = ref.watch(inventoryLocalDataSourceProvider);
     await local.recordMovement(movement);
 
-    // Update item quantity
     final items = await ref.watch(inventoryItemsProvider.future);
-    final itemIndex = items.indexWhere((i) => i.id == movement.itemId);
+    final itemIndex = items.items.indexWhere((item) => item.id == movement.itemId);
     if (itemIndex >= 0) {
-      final item = items[itemIndex];
+      final item = items.items[itemIndex];
       double newQuantity = item.quantity;
 
       switch (movement.movementType) {
@@ -454,12 +405,10 @@ class StockMovementsNotifier extends AsyncNotifier<List<StockMovement>> {
           newQuantity -= movement.quantity;
           break;
         case 'transfer':
-          // No quantity change for transfers
           break;
       }
 
-      final updatedItem = item.copyWith(quantity: newQuantity);
-      await local.saveItem(updatedItem);
+      await local.saveItem(item.copyWith(quantity: newQuantity));
       ref.invalidate(inventoryItemsProvider);
     }
 
@@ -473,44 +422,43 @@ final stockMovementsProvider =
       StockMovementsNotifier.new,
     );
 
-// Inventory Overview Provider (computed from items)
-final inventoryOverviewProvider = FutureProvider((ref) async {
+final inventoryOverviewProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   final items = await ref.watch(inventoryItemsProvider.future);
   final alerts = await ref.watch(inventoryAlertsProvider.future);
 
   return {
-    'totalItems': items.length,
-    'lowStockCount': items.where((i) => i.isLowStock).length,
-    'expiringCount': items.where((i) => i.isExpiringExpiry).length,
-    'totalValue': items.fold<double>(0, (sum, item) => sum + item.totalValue),
+    'totalItems': items.items.length,
+    'lowStockCount': items.items.where((item) => item.isLowStock).length,
+    'expiringCount': items.items.where((item) => item.isExpiringSoon).length,
+    'totalValue': items.items.fold<double>(
+      0,
+      (sum, item) => sum + item.totalValue,
+    ),
     'activeAlerts': alerts.length,
   };
 });
 
-// Filtered items by category
-final filteredInventoryProvider = FutureProvider.family((
-  ref,
-  String category,
-) async {
-  final items = await ref.watch(inventoryItemsProvider.future);
-  if (category.isEmpty) return items;
-  return items.where((item) => item.category == category).toList();
-});
+final filteredInventoryProvider = FutureProvider.family<List<InventoryItem>, String>(
+  (ref, category) async {
+    final items = await ref.watch(inventoryItemsProvider.future);
+    if (category.isEmpty) return items.items;
+    return items.items.where((item) => item.category == category).toList();
+  },
+);
 
-// Search items
-final searchInventoryProvider = FutureProvider.family((
-  ref,
-  String query,
-) async {
-  final items = await ref.watch(inventoryItemsProvider.future);
-  if (query.isEmpty) return items;
-  final lowerQuery = query.toLowerCase();
-  return items
-      .where(
-        (item) =>
-            item.name.toLowerCase().contains(lowerQuery) ||
-            item.sku.toLowerCase().contains(lowerQuery) ||
-            (item.barcode?.toLowerCase().contains(lowerQuery) ?? false),
-      )
-      .toList();
-});
+final searchInventoryProvider = FutureProvider.family<List<InventoryItem>, String>(
+  (ref, query) async {
+    final items = await ref.watch(inventoryItemsProvider.future);
+    if (query.isEmpty) return items.items;
+
+    final lowerQuery = query.toLowerCase();
+    return items.items
+        .where(
+          (item) =>
+              item.name.toLowerCase().contains(lowerQuery) ||
+              item.sku.toLowerCase().contains(lowerQuery) ||
+              (item.barcode?.toLowerCase().contains(lowerQuery) ?? false),
+        )
+        .toList();
+  },
+);

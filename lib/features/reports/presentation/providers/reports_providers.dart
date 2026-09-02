@@ -1,4 +1,4 @@
-import 'package:riverpod/riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:proj/features/auth/presentation/providers/auth_providers.dart';
 import 'package:proj/features/reports/data/reports_api.dart';
 import 'package:proj/features/reports/data/reports_local_data_source.dart';

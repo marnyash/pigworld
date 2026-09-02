@@ -31,15 +31,9 @@ class InventoryOverviewSection extends ConsumerWidget {
           data: (alertsData) {
             final items = itemsData.items;
             final summary = itemsData.summary;
-            final lowStock = (alertsData as dynamic)['lowStock'] is List
-                ? (alertsData as Map<String, dynamic>)['lowStock'].length as int
-                : 0;
-            final expiring = (alertsData as dynamic)['expiring'] is List
-                ? (alertsData as Map<String, dynamic>)['expiring'].length as int
-                : 0;
-            final expired = (alertsData as dynamic)['expired'] is List
-                ? (alertsData as Map<String, dynamic>)['expired'].length as int
-                : 0;
+            final lowStock = alertsData.where((alert) => alert.alertType == 'low_stock').length;
+            final expiring = alertsData.where((alert) => alert.alertType == 'expiring').length;
+            final expired = alertsData.where((alert) => alert.alertType == 'expired').length;
 
             return ListView(
               padding: const EdgeInsets.all(AppDimensions.pagePadding),

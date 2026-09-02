@@ -165,7 +165,7 @@ class _SearchCategoriesSectionState
 
   Color _getStockColor(dynamic item) {
     if (item.isExpired) return Colors.red;
-    if (item.isExpiringExpiry) return Colors.orange;
+    if (item.isExpiringSoon) return Colors.orange;
     if (item.isLowStock) return AppColors.warmGold;
     return AppColors.primaryGreen;
   }

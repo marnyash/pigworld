@@ -248,30 +248,34 @@ class _GrowthPageState extends ConsumerState<GrowthPage>
   }
 
   void _showAddWeightDialog() {
+    final dialogContext = context;
+
     showDialog(
-      context: context,
+      context: dialogContext,
       builder: (context) => AddWeightDialog(
         onSubmit: (data) async {
           try {
             await ref.read(growthRecordsProvider.notifier).addRecord(data);
-            if (mounted) {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Weight record added successfully'),
-                  backgroundColor: AppColors.success,
-                ),
-              );
+            if (!mounted || !dialogContext.mounted) return;
+
+            if (Navigator.of(dialogContext).canPop()) {
+              Navigator.of(dialogContext).pop();
             }
+            ScaffoldMessenger.maybeOf(dialogContext)?.showSnackBar(
+              const SnackBar(
+                content: Text('Weight record added successfully'),
+                backgroundColor: AppColors.success,
+              ),
+            );
           } catch (e) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Error: $e'),
-                  backgroundColor: AppColors.danger,
-                ),
-              );
-            }
+            if (!mounted || !dialogContext.mounted) return;
+
+            ScaffoldMessenger.maybeOf(dialogContext)?.showSnackBar(
+              SnackBar(
+                content: Text('Error: $e'),
+                backgroundColor: AppColors.danger,
+              ),
+            );
           }
         },
       ),

@@ -72,7 +72,7 @@ class NotificationSection extends ConsumerWidget {
   List<Widget> _buildNotificationTiles(
     BuildContext context,
     WidgetRef ref,
-    var prefs,
+    prefs,
   ) {
     final notifications = [
       (

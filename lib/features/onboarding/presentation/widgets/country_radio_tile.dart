@@ -13,24 +13,27 @@ class CountryRadioTile extends StatelessWidget {
   final ValueChanged<String> onChanged;
 
   @override
-  Widget build(BuildContext context) => Card(
-    color: selected
-        ? Theme.of(context).colorScheme.primaryContainer
-        : Theme.of(context).colorScheme.surface,
-    child: RadioListTile<String>(
-      value: country.substring(country.indexOf('  ') + 2),
-      groupValue: selected ? country.substring(country.indexOf('  ') + 2) : null,
-      title: Text(country),
-      secondary: Icon(
-        Icons.public_outlined,
-        color: Theme.of(context).colorScheme.primary,
+  Widget build(BuildContext context) {
+    final value = country.substring(country.indexOf('  ') + 2);
+
+    return Card(
+      color: selected
+          ? Theme.of(context).colorScheme.primaryContainer
+          : Theme.of(context).colorScheme.surface,
+      child: ListTile(
+        leading: Checkbox(
+          value: selected,
+          onChanged: (_) => onChanged(value),
+          activeColor: Theme.of(context).colorScheme.primary,
+        ),
+        title: Text(country),
+        trailing: Icon(
+          Icons.public_outlined,
+          color: Theme.of(context).colorScheme.primary,
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        onTap: () => onChanged(value),
       ),
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      onChanged: (value) {
-        if (value != null) {
-          onChanged(value);
-        }
-      },
-    ),
-  );
+    );
+  }
 }

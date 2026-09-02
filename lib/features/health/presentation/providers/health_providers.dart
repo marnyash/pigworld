@@ -1,4 +1,4 @@
-import 'package:riverpod/riverpod.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../data/health_api.dart';
 import '../../domain/entities/health_record.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';

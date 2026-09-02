@@ -72,12 +72,13 @@ class InventoryApi {
         'unit': unit,
         'minimum_level': minimumLevel,
         'cost_price': costPrice,
-        'supplier': ?supplier,
-        if (expiryDate != null)
-          'expiry_date': expiryDate.toIso8601String().split('T')[0],
-        'storage_location': ?storageLocation,
-        'barcode': ?barcode,
-        'notes': ?notes,
+        ...supplier == null ? const {} : {'supplier': supplier},
+        ...expiryDate == null
+            ? const {}
+            : {'expiry_date': expiryDate.toIso8601String().split('T')[0]},
+        ...storageLocation == null ? const {} : {'storage_location': storageLocation},
+        ...barcode == null ? const {} : {'barcode': barcode},
+        ...notes == null ? const {} : {'notes': notes},
       };
 
       final response = await _dio.post(
@@ -111,19 +112,22 @@ class InventoryApi {
   }) async {
     try {
       final data = <String, dynamic>{
-        'name': ?name,
-        'category': ?category,
-        'sku': ?sku,
-        'quantity': ?quantity,
-        'unit': ?unit,
-        'minimum_level': ?minimumLevel,
-        'cost_price': ?costPrice,
-        'supplier': ?supplier,
-        if (expiryDate != null)
-          'expiry_date': expiryDate.toIso8601String().split('T')[0],
-        'storage_location': ?storageLocation,
-        'barcode': ?barcode,
-        'notes': ?notes,
+        ...name == null ? const {} : {'name': name},
+        ...category == null ? const {} : {'category': category},
+        ...sku == null ? const {} : {'sku': sku},
+        ...quantity == null ? const {} : {'quantity': quantity},
+        ...unit == null ? const {} : {'unit': unit},
+        ...minimumLevel == null ? const {} : {'minimum_level': minimumLevel},
+        ...costPrice == null ? const {} : {'cost_price': costPrice},
+        ...supplier == null ? const {} : {'supplier': supplier},
+        ...expiryDate == null
+            ? const {}
+            : {'expiry_date': expiryDate.toIso8601String().split('T')[0]},
+        ...storageLocation == null
+            ? const {}
+            : {'storage_location': storageLocation},
+        ...barcode == null ? const {} : {'barcode': barcode},
+        ...notes == null ? const {} : {'notes': notes},
       };
 
       final response = await _dio.patch(
@@ -160,8 +164,8 @@ class InventoryApi {
       final data = <String, dynamic>{
         'type': type,
         'quantity': quantity,
-        'reference': ?reference,
-        'notes': ?notes,
+        ...reference == null ? const {} : {'reference': reference},
+        ...notes == null ? const {} : {'notes': notes},
       };
 
       final response = await _dio.post(
