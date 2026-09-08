@@ -6,6 +6,7 @@ class UserPreferences {
     required this.dateFormat,
     required this.currency,
     required this.notifications,
+    required this.notificationSound,
   });
 
   final String language; // 'en', 'sw'
@@ -14,6 +15,7 @@ class UserPreferences {
   final String dateFormat; // 'dd/MM/yyyy', 'MM/dd/yyyy'
   final String currency; // 'KES', 'USD'
   final Map<String, bool> notifications;
+  final String notificationSound;
 
   UserPreferences copyWith({
     String? language,
@@ -22,6 +24,7 @@ class UserPreferences {
     String? dateFormat,
     String? currency,
     Map<String, bool>? notifications,
+    String? notificationSound,
   }) => UserPreferences(
     language: language ?? this.language,
     isDarkMode: isDarkMode ?? this.isDarkMode,
@@ -29,6 +32,7 @@ class UserPreferences {
     dateFormat: dateFormat ?? this.dateFormat,
     currency: currency ?? this.currency,
     notifications: notifications ?? this.notifications,
+    notificationSound: notificationSound ?? this.notificationSound,
   );
 
   Map<String, dynamic> toJson() => {
@@ -38,6 +42,7 @@ class UserPreferences {
     'dateFormat': dateFormat,
     'currency': currency,
     'notifications': notifications,
+    'notificationSound': notificationSound,
   };
 
   factory UserPreferences.fromJson(Map<String, dynamic> json) =>
@@ -50,6 +55,7 @@ class UserPreferences {
         notifications: Map<String, bool>.from(
           json['notifications'] as Map<dynamic, dynamic>? ?? {},
         ),
+        notificationSound: json['notificationSound'] as String? ?? 'default',
       );
 
   factory UserPreferences.defaults() => const UserPreferences(
@@ -66,5 +72,6 @@ class UserPreferences {
       'sales': true,
       'payments': true,
     },
+    notificationSound: 'default',
   );
 }

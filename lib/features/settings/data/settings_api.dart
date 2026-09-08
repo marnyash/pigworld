@@ -7,6 +7,25 @@ class SettingsApi {
 
   final Dio _dio;
 
+  Future<void> updateDisplayName(String name) async {
+    try {
+      await _dio.patch('/auth/profile', data: {'name': name});
+    } on DioException catch (error) {
+      throw ErrorHandler.from(error);
+    }
+  }
+
+  Future<void> renameFarm({
+    required String farmId,
+    required String name,
+  }) async {
+    try {
+      await _dio.patch('/farms/$farmId', data: {'name': name});
+    } on DioException catch (error) {
+      throw ErrorHandler.from(error);
+    }
+  }
+
   // Profile updates
   Future<void> updateProfile({
     required String farmId,
@@ -39,6 +58,7 @@ class SettingsApi {
         data: {
           'current_password': currentPassword,
           'new_password': newPassword,
+          'new_password_confirmation': newPassword,
         },
       );
     } on DioException catch (error) {

@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -8,14 +10,37 @@ import '../../../../app/theme/app_dimensions.dart';
 import '../../../../security/authorization/permissions.dart';
 import '../../../../security/authorization/roles.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../notifications/presentation/providers/notifications_provider.dart';
+import '../../../notifications/data/notifications_api.dart';
 import '../../../../shared/components/bottom_navigation.dart';
 import '../providers/farm_overview_provider.dart';
 
-class DashboardPage extends ConsumerWidget {
+class DashboardPage extends ConsumerStatefulWidget {
   const DashboardPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DashboardPage> createState() => _DashboardPageState();
+}
+
+class _DashboardPageState extends ConsumerState<DashboardPage> {
+  Timer? _notificationRefreshTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _notificationRefreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      ref.invalidate(notificationsProvider);
+    });
+  }
+
+  @override
+  void dispose() {
+    _notificationRefreshTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final session = ref.watch(authProvider).valueOrNull;
     final farmId = session?.selectedFarm?.id;
     final overview = farmId == null
@@ -32,6 +57,15 @@ class DashboardPage extends ConsumerWidget {
         : registeredHerdCount;
     final role = session?.user.role;
     final isAdmin = role == UserRole.farmOwner;
+    final notifications =
+        ref.watch(notificationsProvider).valueOrNull ?? const <FarmNotification>[];
+    FarmNotification? crmMessage;
+    for (final notification in notifications) {
+      if (notification.type == 'crm_message') {
+        crmMessage = notification;
+        break;
+      }
+    }
 
     return Scaffold(
       appBar: AppBar(
@@ -53,6 +87,7 @@ class DashboardPage extends ConsumerWidget {
         onRefresh: () async {
           if (farmId == null) return;
           ref.invalidate(farmOverviewProvider(farmId));
+          ref.invalidate(notificationsProvider);
           await ref.read(farmOverviewProvider(farmId).future);
         },
         child: ListView(
@@ -117,7 +152,7 @@ class DashboardPage extends ConsumerWidget {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Your farm is running smoothly today.',
+                      crmMessage?.body ?? 'Your farm is running smoothly today.',
                       style: Theme.of(
                         context,
                       ).textTheme.bodyMedium?.copyWith(color: Colors.white70),
@@ -126,6 +161,13 @@ class DashboardPage extends ConsumerWidget {
                 ),
               ),
             ),
+            if (notifications.any((item) => !item.isRead)) ...[
+              const SizedBox(height: AppDimensions.spacingMedium),
+              _NotificationBanner(
+                notification: notifications.firstWhere((item) => !item.isRead),
+                onOpen: () => context.go(AppRoutes.notifications),
+              ),
+            ],
             const SizedBox(height: AppDimensions.spacingLarge),
             GridView.count(
               crossAxisCount: 2,
@@ -414,4 +456,31 @@ class _SectionHeader extends StatelessWidget {
   Widget build(BuildContext context) => Row(
     children: [Text(title, style: Theme.of(context).textTheme.titleLarge)],
   );
+}
+
+class _NotificationBanner extends StatelessWidget {
+  const _NotificationBanner({required this.notification, required this.onOpen});
+
+  final FarmNotification notification;
+  final VoidCallback onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final color = switch (notification.severity) {
+      'warning' => AppColors.warning,
+      'danger' => AppColors.danger,
+      'success' => AppColors.success,
+      _ => AppColors.info,
+    };
+    return Card(
+      color: color.withValues(alpha: 0.12),
+      child: ListTile(
+        leading: Icon(Icons.notifications_active_outlined, color: color),
+        title: Text(notification.title),
+        subtitle: Text(notification.body, maxLines: 2, overflow: TextOverflow.ellipsis),
+        trailing: const Icon(Icons.chevron_right),
+        onTap: onOpen,
+      ),
+    );
+  }
 }

@@ -77,15 +77,34 @@ class _SubscriptionPageState extends ConsumerState<SubscriptionPage> {
           .read(dioProvider)
           .post('/farms/$farmId/subscription/payment', data: {'plan': _plan});
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              response.data['payment']['result_description'] ??
-                  'M-Pesa prompt sent. Check your phone and enter your PIN.',
-            ),
-          ),
+        final payment = response.data['payment'] as Map<String, dynamic>? ?? {};
+        final amount = payment['amount'] is num
+            ? payment['amount'] as num
+            : num.tryParse(payment['amount']?.toString() ?? '0') ?? 0;
+        final currency = (payment['currency'] ?? 'KES').toString();
+        final merchantRequestId = (payment['merchant_request_id'] ?? '')
+            .toString();
+        final checkoutRequestId = (payment['checkout_request_id'] ?? '')
+            .toString();
+        final resultDescription =
+            (payment['result_description'] ??
+                    'M-Pesa prompt sent. Check your phone and enter your PIN.')
+                .toString();
+
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(resultDescription)));
+
+        context.go(
+          AppRoutes.paymentStatus,
+          extra: {
+            'amount': amount,
+            'currency': currency,
+            'merchant_request_id': merchantRequestId,
+            'checkout_request_id': checkoutRequestId,
+            'result_description': resultDescription,
+          },
         );
-        context.go(AppRoutes.home);
       }
     } on DioException catch (error) {
       if (mounted) {

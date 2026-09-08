@@ -27,6 +27,7 @@ import '../../features/onboarding/presentation/pages/herd_setup_page.dart';
 import '../../features/onboarding/presentation/pages/subscription_page.dart';
 import '../../features/onboarding/presentation/pages/language_page.dart';
 import '../../features/onboarding/presentation/pages/permissions_page.dart';
+import '../../features/subscription/presentation/pages/payment_status_page.dart';
 import '../../features/settings/presentation/pages/farm_management_page.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../features/auth/presentation/providers/auth_providers.dart';
@@ -78,6 +79,10 @@ abstract final class AppRouter {
       GoRoute(
         path: AppRoutes.subscription,
         builder: (context, state) => const SubscriptionPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.paymentStatus,
+        builder: (context, state) => PaymentStatusPage.fromExtra(state.extra),
       ),
       GoRoute(
         path: AppRoutes.farmSelection,
@@ -314,6 +319,11 @@ class _AppDrawer extends ConsumerWidget {
                     icon: Icons.assessment_outlined,
                     title: 'Reports',
                     route: AppRoutes.reports,
+                  ),
+                  _ListTile(
+                    icon: Icons.notifications_outlined,
+                    title: 'Notifications',
+                    route: AppRoutes.notifications,
                   ),
                   _ListTile(
                     icon: Icons.support_agent_outlined,

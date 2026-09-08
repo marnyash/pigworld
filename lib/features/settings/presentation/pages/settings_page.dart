@@ -2,9 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:proj/app/theme/app_colors.dart';
 import 'package:proj/app/theme/app_dimensions.dart';
-import 'package:proj/core/network/api_config.dart';
-import 'package:proj/core/storage/secure_storage.dart';
+import 'package:proj/features/auth/domain/entities/farm.dart';
+import 'package:proj/features/auth/domain/entities/session.dart';
+import 'package:proj/features/auth/domain/entities/user.dart';
+import 'package:proj/features/auth/presentation/providers/auth_provider.dart';
 import 'package:proj/features/auth/presentation/providers/auth_providers.dart';
+import 'package:proj/features/onboarding/presentation/providers/onboarding_provider.dart';
+import 'package:proj/features/settings/data/settings_api.dart';
+import 'package:proj/features/settings/presentation/providers/settings_providers.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
@@ -14,169 +19,387 @@ class SettingsPage extends ConsumerStatefulWidget {
 }
 
 class _SettingsPageState extends ConsumerState<SettingsPage> {
-  late final TextEditingController _serverUrl;
-
-  @override
-  void initState() {
-    super.initState();
-    _serverUrl = TextEditingController(text: ApiConfig.baseUrl);
-    Future<void>(() async {
-      final saved = await ServerAddressStorage.read();
-      if (mounted && saved != null) _serverUrl.text = saved;
-    });
+  Future<void> _changeLanguage(String language) async {
+    await ref.read(userPreferencesProvider.notifier).updateLanguage(language);
+    ref
+        .read(onboardingProvider.notifier)
+        .setLanguage(
+          name: language == 'sw' ? 'Swahili' : 'English',
+          code: language,
+        );
+    if (!mounted) return;
+    _showMessage(
+      'Language changed to ${SettingsHelper.getLanguageName(language)}.',
+    );
   }
 
-  @override
-  void dispose() {
-    _serverUrl.dispose();
-    super.dispose();
+  Future<void> _changeProfileName(Session? session) async {
+    if (session == null) return;
+    final name = await _editTextDialog(
+      'Change profile name',
+      'Profile name',
+      session.user.name,
+    );
+    if (name == null || !mounted) return;
+    try {
+      await SettingsApi(ref.read(dioProvider)).updateDisplayName(name);
+      if (!mounted) return;
+      final user = session.user;
+      ref
+          .read(authProvider.notifier)
+          .setSession(
+            Session(
+              accessToken: session.accessToken,
+              refreshToken: session.refreshToken,
+              user: User(
+                id: user.id,
+                name: name,
+                email: user.email,
+                phone: user.phone,
+                role: user.role,
+              ),
+              farms: session.farms,
+              selectedFarm: session.selectedFarm,
+            ),
+          );
+      _showMessage('Profile name updated.');
+    } catch (_) {
+      _showMessage('Could not update your profile name.', isError: true);
+    }
   }
 
-  Future<void> _saveServerUrl() async {
-    final value = _serverUrl.text.trim();
-    final uri = Uri.tryParse(value);
-    if (uri == null || !uri.hasScheme || uri.host.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Enter a complete server URL.')),
+  Future<void> _changeFarmName(Session? session, Farm? farm) async {
+    if (session == null || farm == null) return;
+    final name = await _editTextDialog(
+      'Change farm name',
+      'Farm name',
+      farm.name,
+    );
+    if (name == null || !mounted) return;
+    try {
+      await SettingsApi(
+        ref.read(dioProvider),
+      ).renameFarm(farmId: farm.id, name: name);
+      if (!mounted) return;
+      final renamedFarm = Farm(
+        id: farm.id,
+        name: name,
+        location: farm.location,
+        inviteCode: farm.inviteCode,
+        motherPigCount: farm.motherPigCount,
+        registeredPigletCount: farm.registeredPigletCount,
+        pregnantPigCount: farm.pregnantPigCount,
+        subscriptionPlan: farm.subscriptionPlan,
       );
-      return;
-    }
-    await ServerAddressStorage.write(value);
-    ref.invalidate(serverUrlProvider);
-    if (mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Server address saved.')));
+      ref
+          .read(authProvider.notifier)
+          .setSession(
+            Session(
+              accessToken: session.accessToken,
+              refreshToken: session.refreshToken,
+              user: session.user,
+              farms: [
+                for (final item in session.farms)
+                  item.id == farm.id ? renamedFarm : item,
+              ],
+              selectedFarm: renamedFarm,
+            ),
+          );
+      _showMessage('Farm name updated.');
+    } catch (_) {
+      _showMessage('Could not update the farm name.', isError: true);
     }
   }
 
+  Future<void> _setNewPassword() async {
+    final passwords = await showDialog<(String, String)>(
+      context: context,
+      builder: (_) => const _PasswordDialog(),
+    );
+    if (passwords == null || !mounted) return;
+    try {
+      await SettingsApi(ref.read(dioProvider)).changePassword(
+        currentPassword: passwords.$1,
+        newPassword: passwords.$2,
+      );
+      if (mounted) {
+        _showMessage('Password updated.');
+      }
+    } catch (_) {
+      if (mounted) {
+        _showMessage(
+          'Could not update the password. Check your current password.',
+          isError: true,
+        );
+      }
+    }
+  }
+
+  Future<String?> _editTextDialog(
+    String title,
+    String label,
+    String initialValue,
+  ) => showDialog<String>(
+    context: context,
+    builder: (_) =>
+        _TextEditDialog(title: title, label: label, initialValue: initialValue),
+  );
+
+  void _showMessage(String message, {bool isError = false}) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? AppColors.danger : null,
+      ),
+    );
+  }
+
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Settings')),
-    body: ListView(
-      padding: const EdgeInsets.all(AppDimensions.pagePadding),
+  Widget build(BuildContext context) {
+    final preferences = ref.watch(userPreferencesProvider).valueOrNull;
+    final session = ref.watch(authProvider).valueOrNull;
+    final farm = session?.selectedFarm ?? session?.farms.firstOrNull;
+    final notificationSound = preferences?.notificationSound ?? 'default';
+    return Scaffold(
+      appBar: AppBar(title: const Text('Settings')),
+      body: ListView(
+        padding: const EdgeInsets.all(AppDimensions.pagePadding),
+        children: [
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.language_outlined),
+              title: const Text('Change language'),
+              subtitle: Text(
+                SettingsHelper.getLanguageName(preferences?.language ?? 'en'),
+              ),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: _showLanguagePicker,
+            ),
+          ),
+          const SizedBox(height: AppDimensions.spacingLarge),
+          Text(
+            'Account settings',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: AppDimensions.spacingMedium),
+          Card(
+            child: Column(
+              children: [
+                _SettingsAction(
+                  icon: Icons.person_outline,
+                  title: 'Change profile name',
+                  onTap: () => _changeProfileName(session),
+                ),
+                const Divider(height: 1),
+                _SettingsAction(
+                  icon: Icons.agriculture_outlined,
+                  title: 'Change farm name',
+                  onTap: farm == null
+                      ? null
+                      : () => _changeFarmName(session, farm),
+                ),
+                const Divider(height: 1),
+                _SettingsAction(
+                  icon: Icons.lock_outline,
+                  title: 'Set new password',
+                  onTap: _setNewPassword,
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppDimensions.spacingLarge),
+          Text('Notifications', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: AppDimensions.spacingMedium),
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.volume_up_outlined),
+              title: const Text('Notification sound'),
+              subtitle: Text(_notificationSoundLabel(notificationSound)),
+              trailing: const Icon(Icons.chevron_right),
+              onTap: _showNotificationSoundPicker,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _showLanguagePicker() => showDialog<void>(
+    context: context,
+    builder: (dialogContext) => SimpleDialog(
+      title: const Text('Change language'),
       children: [
-        Card(
-          color: AppColors.deepGreen,
-          child: Padding(
-            padding: const EdgeInsets.all(AppDimensions.spacingLarge),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.12),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.cloud_done_outlined,
-                    color: Colors.white,
-                    size: 26,
-                  ),
-                ),
-                const SizedBox(width: AppDimensions.spacingMedium),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Connection',
-                        style: Theme.of(
-                          context,
-                        ).textTheme.titleLarge?.copyWith(color: Colors.white),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Point the app at your farm server on a LAN, tunnel, or public domain.',
-                        style: Theme.of(
-                          context,
-                        ).textTheme.bodyMedium?.copyWith(color: Colors.white70),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
+        SimpleDialogOption(
+          onPressed: () {
+            Navigator.pop(dialogContext);
+            _changeLanguage('en');
+          },
+          child: const Text('English'),
         ),
-        const SizedBox(height: AppDimensions.spacingLarge),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(AppDimensions.spacingLarge),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'API server URL',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: _serverUrl,
-                  keyboardType: TextInputType.url,
-                  decoration: const InputDecoration(
-                    prefixIcon: Icon(Icons.public),
-                    hintText: 'https://example.com/api/v1',
-                  ),
-                ),
-                const SizedBox(height: 16),
-                FilledButton.icon(
-                  onPressed: _saveServerUrl,
-                  icon: const Icon(Icons.save_outlined),
-                  label: const Text('Save server address'),
-                ),
-              ],
-            ),
-          ),
+        SimpleDialogOption(
+          onPressed: () {
+            Navigator.pop(dialogContext);
+            _changeLanguage('sw');
+          },
+          child: const Text('Kiswahili'),
         ),
-        const SizedBox(height: AppDimensions.spacingLarge),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(AppDimensions.spacingLarge),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Quick tips',
-                  style: Theme.of(context).textTheme.titleMedium,
-                ),
-                const SizedBox(height: 12),
-                _TipRow(
-                  icon: Icons.wifi_tethering,
-                  text: 'Use the LAN IP for local testing.',
-                ),
-                const SizedBox(height: 8),
-                _TipRow(
-                  icon: Icons.security,
-                  text: 'Keep the URL secure and include /api/v1.',
-                ),
-                const SizedBox(height: 8),
-                _TipRow(
-                  icon: Icons.sync,
-                  text: 'Save changes and refresh the app if needed.',
-                ),
-              ],
-            ),
+      ],
+    ),
+  );
+
+  String _notificationSoundLabel(String sound) => switch (sound) {
+    'chime' => 'Chime',
+    'alert' => 'Alert',
+    'silent' => 'Silent',
+    _ => 'Phone default',
+  };
+
+  Future<void> _showNotificationSoundPicker() => showDialog<void>(
+    context: context,
+    builder: (dialogContext) => SimpleDialog(
+      title: const Text('Notification sound'),
+      children: [
+        for (final option in const [
+          ('default', 'Phone default'),
+          ('chime', 'Chime'),
+          ('alert', 'Alert'),
+          ('silent', 'Silent'),
+        ])
+          SimpleDialogOption(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              ref
+                  .read(userPreferencesProvider.notifier)
+                  .updateNotificationSound(option.$1);
+            },
+            child: Text(option.$2),
           ),
-        ),
       ],
     ),
   );
 }
 
-class _TipRow extends StatelessWidget {
-  const _TipRow({required this.icon, required this.text});
-
+class _SettingsAction extends StatelessWidget {
+  const _SettingsAction({required this.icon, required this.title, this.onTap});
   final IconData icon;
-  final String text;
+  final String title;
+  final VoidCallback? onTap;
+  @override
+  Widget build(BuildContext context) => ListTile(
+    leading: Icon(icon, color: AppColors.primaryGreen),
+    title: Text(title),
+    trailing: const Icon(Icons.chevron_right),
+    onTap: onTap,
+  );
+}
+
+class _TextEditDialog extends StatefulWidget {
+  const _TextEditDialog({
+    required this.title,
+    required this.label,
+    required this.initialValue,
+  });
+  final String title;
+  final String label;
+  final String initialValue;
+  @override
+  State<_TextEditDialog> createState() => _TextEditDialogState();
+}
+
+class _TextEditDialogState extends State<_TextEditDialog> {
+  late final TextEditingController _controller;
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialValue);
+  }
 
   @override
-  Widget build(BuildContext context) => Row(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Icon(icon, size: 18, color: AppColors.primaryGreen),
-      const SizedBox(width: 10),
-      Expanded(child: Text(text)),
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _save() {
+    final value = _controller.text.trim();
+    if (value.isNotEmpty) Navigator.pop(context, value);
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: Text(widget.title),
+    content: TextField(
+      controller: _controller,
+      autofocus: true,
+      decoration: InputDecoration(labelText: widget.label),
+      onSubmitted: (_) => _save(),
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: const Text('Cancel'),
+      ),
+      FilledButton(onPressed: _save, child: const Text('Save')),
+    ],
+  );
+}
+
+class _PasswordDialog extends StatefulWidget {
+  const _PasswordDialog();
+  @override
+  State<_PasswordDialog> createState() => _PasswordDialogState();
+}
+
+class _PasswordDialogState extends State<_PasswordDialog> {
+  final _currentController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _confirmationController = TextEditingController();
+  @override
+  void dispose() {
+    _currentController.dispose();
+    _passwordController.dispose();
+    _confirmationController.dispose();
+    super.dispose();
+  }
+
+  void _updatePassword() {
+    final password = _passwordController.text;
+    if (password.length >= 8 && password == _confirmationController.text) {
+      Navigator.pop(context, (_currentController.text, password));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('Set new password'),
+    content: Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        TextField(
+          controller: _currentController,
+          obscureText: true,
+          decoration: const InputDecoration(labelText: 'Current password'),
+        ),
+        TextField(
+          controller: _passwordController,
+          obscureText: true,
+          decoration: const InputDecoration(labelText: 'New password'),
+        ),
+        TextField(
+          controller: _confirmationController,
+          obscureText: true,
+          decoration: const InputDecoration(labelText: 'Confirm new password'),
+          onSubmitted: (_) => _updatePassword(),
+        ),
+      ],
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context),
+        child: const Text('Cancel'),
+      ),
+      FilledButton(onPressed: _updatePassword, child: const Text('Update')),
     ],
   );
 }

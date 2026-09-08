@@ -88,6 +88,20 @@ class LoginPage extends ConsumerWidget {
                             await ref.read(sessionManagerProvider).markActive();
                             ref.read(authProvider.notifier).setSession(session);
                             if (context.mounted) context.go(AppRoutes.home);
+                          } on GoogleSignInConfigurationException catch (
+                            error
+                          ) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  content: Text(
+                                    error.message.isNotEmpty
+                                        ? error.message
+                                        : 'Google sign-in is not configured for this app yet.',
+                                  ),
+                                ),
+                              );
+                            }
                           } catch (_) {
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(

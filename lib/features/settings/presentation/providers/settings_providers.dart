@@ -66,6 +66,13 @@ class UserPreferencesNotifier extends AsyncNotifier<UserPreferences> {
     await ref.watch(settingsLocalDataSourceProvider).savePreferences(updated);
     ref.invalidateSelf();
   }
+
+  Future<void> updateNotificationSound(String sound) async {
+    final current = await future;
+    final updated = current.copyWith(notificationSound: sound);
+    await ref.watch(settingsLocalDataSourceProvider).savePreferences(updated);
+    ref.invalidateSelf();
+  }
 }
 
 final userPreferencesProvider =
