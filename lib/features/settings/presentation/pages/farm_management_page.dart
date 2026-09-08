@@ -16,7 +16,7 @@ class FarmManagementPage extends ConsumerWidget {
     final access = ref.watch(farmAccessProvider);
     final isOwner = role == UserRole.farmOwner;
     return Scaffold(
-      appBar: AppBar(title: const Text('Farm members')),
+      appBar: AppBar(title: const Text('Team & policies')),
       body: RefreshIndicator(
         onRefresh: () => ref.refresh(farmAccessProvider.future),
         child: ListView(
@@ -29,29 +29,57 @@ class FarmManagementPage extends ConsumerWidget {
             const SizedBox(height: 6),
             Text(
               isOwner
-                  ? 'Control who can work here and what they can do.'
+                  ? 'Register managers and workers with your invite code, then control what they can do.'
                   : 'Manage workers according to your owner-approved access.',
             ),
             if (isOwner && session?.selectedFarm?.inviteCode != null) ...[
               const SizedBox(height: 20),
               Card(
-                child: ListTile(
-                  leading: const Icon(Icons.link),
-                  title: const Text('Invite code'),
-                  subtitle: Text(
-                    'Share this with a farm manager or worker so they can join at sign-up: ${session!.selectedFarm!.inviteCode}',
-                  ),
-                  trailing: IconButton(
-                    tooltip: 'Copy invite code',
-                    icon: const Icon(Icons.copy_outlined),
-                    onPressed: () {
-                      Clipboard.setData(
-                        ClipboardData(text: session.selectedFarm!.inviteCode!),
-                      );
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Invite code copied.')),
-                      );
-                    },
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.person_add_alt_1_outlined),
+                          SizedBox(width: 10),
+                          Text('Register a manager or worker'),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Share this code. They choose Farm manager or Farm worker during account creation and enter it to join your farm.',
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: SelectableText(
+                              session!.selectedFarm!.inviteCode!,
+                              style: Theme.of(context).textTheme.titleLarge
+                                  ?.copyWith(fontWeight: FontWeight.w700),
+                            ),
+                          ),
+                          IconButton(
+                            tooltip: 'Copy invite code',
+                            icon: const Icon(Icons.copy_outlined),
+                            onPressed: () {
+                              Clipboard.setData(
+                                ClipboardData(
+                                  text: session.selectedFarm!.inviteCode!,
+                                ),
+                              );
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Invite code copied.'),
+                                ),
+                              );
+                            },
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               ),
@@ -107,11 +135,20 @@ class FarmManagementPage extends ConsumerWidget {
                               ),
                               for (final policy in const [
                                 (AppPermission.manageHerd, 'Manage herd'),
+                                (
+                                  AppPermission.manageBreeding,
+                                  'Manage breeding',
+                                ),
                                 (AppPermission.manageFeed, 'Manage feed'),
+                                (
+                                  AppPermission.manageFinance,
+                                  'Manage finances',
+                                ),
+                                (AppPermission.manageSales, 'Manage sales'),
                                 (AppPermission.viewReports, 'View reports'),
                                 (
                                   AppPermission.manageMembers,
-                                  'Add farm workers',
+                                  'Manage team members',
                                 ),
                               ])
                                 CheckboxListTile(

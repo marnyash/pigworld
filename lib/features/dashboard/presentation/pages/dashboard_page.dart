@@ -133,7 +133,7 @@ class DashboardPage extends ConsumerWidget {
               physics: const NeverScrollableScrollPhysics(),
               mainAxisSpacing: AppDimensions.spacingMedium,
               crossAxisSpacing: AppDimensions.spacingMedium,
-              childAspectRatio: 1.18,
+              childAspectRatio: 1.0,
               children: [
                 _StatCard(
                   icon: Icons.pets_outlined,
