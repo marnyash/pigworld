@@ -292,6 +292,10 @@ class _HealthPageState extends ConsumerState<HealthPage>
             physics: const NeverScrollableScrollPhysics(),
             crossAxisSpacing: AppDimensions.spacingMedium,
             mainAxisSpacing: AppDimensions.spacingMedium,
+            // The overview cards contain an icon, value, and label. Giving
+            // them a little more height prevents their content from clipping
+            // on narrow phone screens.
+            childAspectRatio: 0.85,
             children: [
               HealthOverviewCard(
                 label: 'Healthy Pigs',
@@ -325,6 +329,7 @@ class _HealthPageState extends ConsumerState<HealthPage>
             physics: const NeverScrollableScrollPhysics(),
             crossAxisSpacing: AppDimensions.spacingMedium,
             mainAxisSpacing: AppDimensions.spacingMedium,
+            childAspectRatio: 0.85,
             children: List.generate(
               4,
               (index) =>

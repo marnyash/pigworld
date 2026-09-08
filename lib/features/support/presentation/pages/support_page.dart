@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
@@ -48,14 +49,16 @@ class _SupportPageState extends State<SupportPage> {
     setState(() => selectedCategory = 'General');
   }
 
-  void callVeterinary() {
+  Future<void> _openContact(Uri uri, String service) async {
+    if (await launchUrl(uri, mode: LaunchMode.externalApplication)) return;
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Initiating emergency veterinary call...'),
-        backgroundColor: AppColors.danger,
-      ),
+      SnackBar(content: Text('Could not open $service on this device.')),
     );
   }
+
+  Future<void> callVeterinary() =>
+      _openContact(Uri.parse('tel:+254705030550'), 'the phone app');
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -91,7 +94,7 @@ class _SupportPageState extends State<SupportPage> {
         // Contact Options
         Text('Contact Options', style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: AppDimensions.spacingMedium),
-        _ContactOptionsSection(),
+        _ContactOptionsSection(onOpenContact: _openContact),
         const SizedBox(height: AppDimensions.spacingLarge),
 
         // Emergency Veterinary Help
@@ -285,29 +288,46 @@ class _ActionCard extends StatelessWidget {
 
 // Contact Options Section
 class _ContactOptionsSection extends StatelessWidget {
+  const _ContactOptionsSection({required this.onOpenContact});
+
+  final Future<void> Function(Uri uri, String service) onOpenContact;
+
   @override
   Widget build(BuildContext context) => Column(
     children: [
       _ContactOptionTile(
         icon: Icons.phone_outlined,
         title: 'Call Support',
-        subtitle: '+1 (800) 123-4567',
+        subtitle: '+254705030550',
         actionLabel: 'Call',
-        onTap: () => _showMessage(context, 'Initiating call to support...'),
+        onTap: () => onOpenContact(
+          Uri.parse('tel:+254705030550'),
+          'the phone app',
+        ),
       ),
       _ContactOptionTile(
         icon: Icons.chat_outlined,
         title: 'WhatsApp',
-        subtitle: 'Message us on WhatsApp',
+        subtitle: '+254705030550',
         actionLabel: 'Open',
-        onTap: () => _showMessage(context, 'Opening WhatsApp...'),
+        onTap: () => onOpenContact(
+          Uri.parse('https://wa.me/254705030550'),
+          'WhatsApp',
+        ),
       ),
       _ContactOptionTile(
         icon: Icons.email_outlined,
         title: 'Email Support',
-        subtitle: 'support@pigworld.com',
+        subtitle: 'info@pigworld.com',
         actionLabel: 'Email',
-        onTap: () => _showMessage(context, 'Opening email client...'),
+        onTap: () => onOpenContact(
+          Uri(
+            scheme: 'mailto',
+            path: 'info@pigworld.com',
+            queryParameters: {'subject': 'PigWorld support request'},
+          ),
+          'the email app',
+        ),
       ),
       Card(
         color: AppColors.primaryContainer,
@@ -404,7 +424,7 @@ class _EmergencyVeterinaryCard extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      'One-tap call for urgent veterinary assistance',
+                      'Urgent veterinary assistance: +254705030550',
                       style: Theme.of(
                         context,
                       ).textTheme.bodySmall?.copyWith(color: Colors.white70),

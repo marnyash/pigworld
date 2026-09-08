@@ -184,7 +184,10 @@ class _AnalyticsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Card(
     child: Padding(
-      padding: const EdgeInsets.all(AppDimensions.spacingMedium),
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppDimensions.spacingMedium,
+        vertical: AppDimensions.spacingSmall,
+      ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.center,

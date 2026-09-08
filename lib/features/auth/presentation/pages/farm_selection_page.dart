@@ -19,17 +19,46 @@ class FarmSelectionPage extends ConsumerWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
         children: [
-          Text('Where are we working today?', style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
+          Text(
+            'Where are we working today?',
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
+          ),
           const SizedBox(height: 8),
           const Text('Select a farm to open its home page.'),
           const SizedBox(height: 24),
-          ...farms.map((farm) => Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: FarmCard(farm: farm, onTap: () {
-                  ref.read(authProvider.notifier).setSession(Session(accessToken: session!.accessToken, refreshToken: session.refreshToken, user: session.user, farms: session.farms, selectedFarm: farm));
+          if (farms.isEmpty) ...[
+            const Text('You are not connected to a farm yet.'),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed: () => context.go(AppRoutes.farmManagement),
+              icon: const Icon(Icons.search_outlined),
+              label: const Text('Find a farm to work with'),
+            ),
+          ],
+          ...farms.map(
+            (farm) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: FarmCard(
+                farm: farm,
+                onTap: () {
+                  ref
+                      .read(authProvider.notifier)
+                      .setSession(
+                        Session(
+                          accessToken: session!.accessToken,
+                          refreshToken: session.refreshToken,
+                          user: session.user,
+                          farms: session.farms,
+                          selectedFarm: farm,
+                        ),
+                      );
                   context.go(AppRoutes.home);
-                }),
-              )),
+                },
+              ),
+            ),
+          ),
         ],
       ),
     );

@@ -223,7 +223,7 @@ class _CreateAccountPageState extends ConsumerState<CreateAccountPage> {
                   labelText: 'Owner invite code',
                   prefixIcon: Icon(Icons.link),
                   helperText:
-                      'Ask your farm owner for the code shown on their farm settings.',
+                      'Optional. You can request a farm after creating your account.',
                 ),
                 validator: (value) => (value == null || value.trim().isEmpty)
                     ? 'Enter the invite code from your farm owner.'

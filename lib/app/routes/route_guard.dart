@@ -35,6 +35,9 @@ abstract final class RouteGuard {
       context,
     ).read(authProvider).valueOrNull;
     if (session == null) return '/splash';
+    if (session.selectedFarm == null && state.uri.path == '/farm-management') {
+      return null;
+    }
     if (session.selectedFarm == null) return '/farm-selection';
     return null;
   }

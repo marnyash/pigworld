@@ -30,7 +30,6 @@ import '../../features/onboarding/presentation/pages/permissions_page.dart';
 import '../../features/settings/presentation/pages/farm_management_page.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../features/auth/presentation/providers/auth_providers.dart';
-import '../../security/authorization/roles.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../shared/components/bottom_navigation.dart';
 import '../../shared/widgets/module_page.dart';
@@ -219,7 +218,6 @@ class _AppDrawer extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final session = ref.watch(authProvider).valueOrNull;
     final user = session?.user;
-    final isFarmOwner = user?.role == UserRole.farmOwner;
     final farmName = session?.selectedFarm?.name ?? 'Pig World Smart';
     final initials = (user?.name.isNotEmpty ?? false)
         ? user!.name.trim()[0].toUpperCase()
@@ -322,12 +320,11 @@ class _AppDrawer extends ConsumerWidget {
                     title: 'Customer Support',
                     route: AppRoutes.support,
                   ),
-                  if (isFarmOwner)
-                    _ListTile(
-                      icon: Icons.manage_accounts_outlined,
-                      title: 'Team & policies',
-                      route: AppRoutes.farmManagement,
-                    ),
+                  _ListTile(
+                    icon: Icons.manage_accounts_outlined,
+                    title: 'My team',
+                    route: AppRoutes.farmManagement,
+                  ),
                   _ListTile(
                     icon: Icons.settings_outlined,
                     title: 'Settings',

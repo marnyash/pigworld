@@ -340,7 +340,9 @@ class _OverviewGrid extends StatelessWidget {
       physics: const NeverScrollableScrollPhysics(),
       mainAxisSpacing: AppDimensions.spacingMedium,
       crossAxisSpacing: AppDimensions.spacingMedium,
-      childAspectRatio: 1.9,
+      // A square tile leaves room when labels such as "Monthly Revenue"
+      // wrap on compact phone layouts.
+      childAspectRatio: 1,
       children: items,
     );
   }
