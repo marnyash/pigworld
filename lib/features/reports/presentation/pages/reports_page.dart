@@ -1,7 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:proj/app/theme/app_colors.dart';
 import 'package:proj/app/theme/app_dimensions.dart';
+import 'package:proj/features/reports/data/report_export_service.dart';
 import 'package:proj/features/reports/presentation/providers/reports_providers.dart';
 
 class ReportsPage extends ConsumerStatefulWidget {
@@ -411,12 +414,47 @@ class _ExportOptionsSheet extends StatelessWidget {
     BuildContext context,
     String report,
     String format,
-  ) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Exporting $report as $format...'),
-        duration: const Duration(seconds: 2),
-      ),
-    );
+  ) async {
+    final exportService = ReportExportService();
+    final normalizedFormat = format.toLowerCase();
+    final payload = {
+      'report': report,
+      'generatedAt': DateTime.now().toIso8601String(),
+      'totalRevenue': 185000.0,
+      'totalExpenses': 98000.0,
+      'mortalityRate': 2.4,
+      'averageGrowth': 12.8,
+      'salesCount': 148,
+      'vaccinationCompletion': 96.5,
+    };
+
+    try {
+      final filePath = await exportService.exportReport(
+        reportName: report,
+        format: normalizedFormat,
+        data: payload,
+      );
+
+      if (!context.mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Exported $report as ${format.toUpperCase()}\n$filePath'),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+
+      if (Platform.isAndroid || Platform.isIOS) {
+        // The file was saved to the device download/documents directory.
+      }
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Export failed: $error'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    }
   }
 }
