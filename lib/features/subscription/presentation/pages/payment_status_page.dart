@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../app/theme/app_colors.dart';
+
 class PaymentStatusPage extends StatelessWidget {
   const PaymentStatusPage({
     super.key,
@@ -79,12 +81,15 @@ class PaymentStatusPage extends StatelessWidget {
                           vertical: 8,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.amber.shade100,
+                          color: AppColors.warningContainer,
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Text(
+                        child: Text(
                           'Awaiting confirmation',
-                          style: TextStyle(fontWeight: FontWeight.w600),
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.warning,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 20),

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:proj/app/theme/app_colors.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../../../../security/authorization/permissions.dart';
 import '../../../../security/authorization/roles.dart';
@@ -430,14 +431,14 @@ class _OwnerRequestList extends StatelessWidget {
                 children: [
                   IconButton(
                     tooltip: 'Reject',
-                    icon: const Icon(Icons.close, color: Colors.red),
+                    icon: const Icon(Icons.close, color: AppColors.danger),
                     onPressed: () => ref
                         .read(farmTeamProvider.notifier)
                         .reviewRequest(request.id, false),
                   ),
                   IconButton(
                     tooltip: 'Accept',
-                    icon: const Icon(Icons.check, color: Colors.green),
+                    icon: const Icon(Icons.check, color: AppColors.success),
                     onPressed: () => ref
                         .read(farmTeamProvider.notifier)
                         .reviewRequest(request.id, true),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:proj/app/theme/app_colors.dart';
 
 class OnboardingHeader extends StatelessWidget {
   const OnboardingHeader({
@@ -33,7 +34,7 @@ class OnboardingHeader extends StatelessWidget {
         subtitle,
         style: Theme.of(
           context,
-        ).textTheme.bodyLarge?.copyWith(color: const Color(0xFF68756B)),
+        ).textTheme.bodyLarge?.copyWith(color: AppColors.mutedText),
       ),
     ],
   );

@@ -51,8 +51,8 @@ class SuppliersSection extends ConsumerWidget {
                     child: Icon(
                       Icons.shopping_cart,
                       color: supplier.outstandingOrders > 0
-                          ? Colors.orange
-                          : Colors.grey,
+                          ? AppColors.warning
+                          : AppColors.mutedText,
                     ),
                   ),
                   children: [

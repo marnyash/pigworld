@@ -209,6 +209,110 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             ),
           ),
           const SizedBox(height: AppDimensions.spacingLarge),
+          Text(
+            'Farm configuration',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: AppDimensions.spacingMedium),
+          Card(
+            child: Column(
+              children: [
+                _SettingsAction(
+                  icon: Icons.location_on_outlined,
+                  title: 'Farm location',
+                  subtitle: farm?.location ?? 'Add your farm location',
+                  onTap: () =>
+                      _showMessage('Farm location settings are coming soon.'),
+                ),
+                const Divider(height: 1),
+                _SettingsAction(
+                  icon: Icons.straighten_outlined,
+                  title: 'Herd units',
+                  subtitle: 'Kg, breeding cycles, and display units',
+                  onTap: () =>
+                      _showMessage('Herd units settings are coming soon.'),
+                ),
+                const Divider(height: 1),
+                _SettingsAction(
+                  icon: Icons.access_time_outlined,
+                  title: 'Timezone & date format',
+                  subtitle: 'Local farm time and reporting format',
+                  onTap: () =>
+                      _showMessage('Timezone settings are coming soon.'),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppDimensions.spacingLarge),
+          Text(
+            'Billing & subscription',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: AppDimensions.spacingMedium),
+          Card(
+            child: Column(
+              children: [
+                _SettingsAction(
+                  icon: Icons.credit_card_outlined,
+                  title: 'Current plan',
+                  subtitle: farm?.subscriptionPlan ?? 'Starter plan',
+                  onTap: () => _showMessage(
+                    'Subscription management is ready for the next milestone.',
+                  ),
+                ),
+                const Divider(height: 1),
+                _SettingsAction(
+                  icon: Icons.autorenew_outlined,
+                  title: 'Auto-renewal',
+                  subtitle: 'Enabled',
+                  onTap: () =>
+                      _showMessage('Auto-renewal settings are coming soon.'),
+                ),
+                const Divider(height: 1),
+                _SettingsAction(
+                  icon: Icons.receipt_long_outlined,
+                  title: 'Billing history',
+                  subtitle: 'View invoices and payment activity',
+                  onTap: () => _showMessage('Billing history is coming soon.'),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppDimensions.spacingLarge),
+          Text(
+            'Security & sessions',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
+          const SizedBox(height: AppDimensions.spacingMedium),
+          Card(
+            child: Column(
+              children: [
+                _SettingsAction(
+                  icon: Icons.devices_outlined,
+                  title: 'Active devices',
+                  subtitle: 'Manage sign-ins across your devices',
+                  onTap: () =>
+                      _showMessage('Device management is coming soon.'),
+                ),
+                const Divider(height: 1),
+                _SettingsAction(
+                  icon: Icons.logout_outlined,
+                  title: 'Sign out of all devices',
+                  subtitle: 'Require re-login everywhere',
+                  onTap: () => _showMessage('Session reset is coming soon.'),
+                ),
+                const Divider(height: 1),
+                _SettingsAction(
+                  icon: Icons.security_outlined,
+                  title: 'Privacy and access',
+                  subtitle: 'Role-based controls and session policy',
+                  onTap: () =>
+                      _showMessage('Access policy settings are coming soon.'),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: AppDimensions.spacingLarge),
           Text('Notifications', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: AppDimensions.spacingMedium),
           Card(
@@ -281,14 +385,21 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 }
 
 class _SettingsAction extends StatelessWidget {
-  const _SettingsAction({required this.icon, required this.title, this.onTap});
+  const _SettingsAction({
+    required this.icon,
+    required this.title,
+    this.subtitle,
+    this.onTap,
+  });
   final IconData icon;
   final String title;
+  final String? subtitle;
   final VoidCallback? onTap;
   @override
   Widget build(BuildContext context) => ListTile(
     leading: Icon(icon, color: AppColors.primaryGreen),
     title: Text(title),
+    subtitle: subtitle == null ? null : Text(subtitle!),
     trailing: const Icon(Icons.chevron_right),
     onTap: onTap,
   );

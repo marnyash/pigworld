@@ -173,7 +173,7 @@ class StockItemsSection extends ConsumerWidget {
                                         .bodyMedium
                                         ?.copyWith(
                                           color: item.isExpired
-                                              ? Colors.red
+                                              ? AppColors.danger
                                               : null,
                                         ),
                                   ),
@@ -231,8 +231,8 @@ class StockItemsSection extends ConsumerWidget {
   }
 
   Color _getStockColor(dynamic item) {
-    if (item.isExpired) return Colors.red;
-    if (item.isExpiringSoon) return Colors.orange;
+    if (item.isExpired) return AppColors.danger;
+    if (item.isExpiringSoon) return AppColors.warning;
     if (item.isLowStock) return AppColors.warmGold;
     return AppColors.primaryGreen;
   }

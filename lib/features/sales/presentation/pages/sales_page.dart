@@ -273,12 +273,12 @@ class _HeaderCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.12),
+                color: AppColors.inverseText.withValues(alpha: 0.12),
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.point_of_sale,
-                color: Colors.white,
+                color: AppColors.inverseText,
                 size: 28,
               ),
             ),
@@ -289,16 +289,16 @@ class _HeaderCard extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.headlineSmall?.copyWith(color: Colors.white),
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      color: AppColors.inverseText,
+                    ),
                   ),
                   const SizedBox(height: 6),
                   Text(
                     subtitle,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodyMedium?.copyWith(color: Colors.white70),
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppColors.inverseMutedText,
+                    ),
                   ),
                 ],
               ),

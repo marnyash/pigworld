@@ -26,12 +26,14 @@ class FinancePage extends StatelessWidget {
             padding: const EdgeInsets.all(AppDimensions.spacingLarge),
             child: Row(
               children: [
-                const CircleAvatar(
+                CircleAvatar(
                   radius: 28,
-                  backgroundColor: Colors.white24,
-                  child: Icon(
+                  backgroundColor: AppColors.inverseText.withValues(
+                    alpha: 0.18,
+                  ),
+                  child: const Icon(
                     Icons.account_balance_wallet_outlined,
-                    color: Colors.white,
+                    color: AppColors.inverseText,
                     size: 28,
                   ),
                 ),
@@ -43,14 +45,14 @@ class FinancePage extends StatelessWidget {
                       Text(
                         'Farm finances',
                         style: Theme.of(context).textTheme.headlineSmall
-                            ?.copyWith(color: Colors.white),
+                            ?.copyWith(color: AppColors.inverseText),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         "Track this month's income, costs, and profit.",
-                        style: Theme.of(
-                          context,
-                        ).textTheme.bodyMedium?.copyWith(color: Colors.white70),
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: AppColors.inverseMutedText,
+                        ),
                       ),
                     ],
                   ),

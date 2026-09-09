@@ -28,7 +28,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   @override
   void initState() {
     super.initState();
-    _notificationRefreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+    _notificationRefreshTimer = Timer.periodic(const Duration(seconds: 30), (
+      _,
+    ) {
       ref.invalidate(notificationsProvider);
     });
   }
@@ -58,7 +60,8 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     final role = session?.user.role;
     final isAdmin = role == UserRole.farmOwner;
     final notifications =
-        ref.watch(notificationsProvider).valueOrNull ?? const <FarmNotification>[];
+        ref.watch(notificationsProvider).valueOrNull ??
+        const <FarmNotification>[];
     FarmNotification? crmMessage;
     for (final notification in notifications) {
       if (notification.type == 'crm_message') {
@@ -135,27 +138,30 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                         vertical: 6,
                       ),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.15),
+                        color: AppColors.inverseText.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(999),
                       ),
-                      child: const Text(
+                      child: Text(
                         'Farm overview',
-                        style: TextStyle(color: Colors.white, fontSize: 12),
+                        style: TextStyle(
+                          color: AppColors.inverseText,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 12),
                     Text(
                       'Good day, $firstName',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.headlineSmall?.copyWith(color: Colors.white),
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(color: AppColors.inverseText),
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      crmMessage?.body ?? 'Your farm is running smoothly today.',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodyMedium?.copyWith(color: Colors.white70),
+                      crmMessage?.body ??
+                          'Your farm is running smoothly today.',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.inverseMutedText,
+                      ),
                     ),
                   ],
                 ),
@@ -338,7 +344,7 @@ class _RegisteredHerdBanner extends StatelessWidget {
               color: AppColors.pigPink,
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.pets, color: Colors.white),
+            child: const Icon(Icons.pets, color: AppColors.inverseText),
           ),
           const SizedBox(width: AppDimensions.spacingMedium),
           Expanded(
@@ -432,7 +438,7 @@ class _QuickAction extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-              child: Icon(icon, color: Colors.white, size: 20),
+              child: Icon(icon, color: AppColors.inverseText, size: 20),
             ),
             const SizedBox(height: 8),
             Text(
@@ -477,7 +483,11 @@ class _NotificationBanner extends StatelessWidget {
       child: ListTile(
         leading: Icon(Icons.notifications_active_outlined, color: color),
         title: Text(notification.title),
-        subtitle: Text(notification.body, maxLines: 2, overflow: TextOverflow.ellipsis),
+        subtitle: Text(
+          notification.body,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
         trailing: const Icon(Icons.chevron_right),
         onTap: onOpen,
       ),

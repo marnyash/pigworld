@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 
 class GrowthOverviewCard extends StatelessWidget {
@@ -40,7 +41,7 @@ class GrowthOverviewCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             label,
-            style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+            style: TextStyle(fontSize: 12, color: AppColors.mutedText),
             textAlign: TextAlign.center,
           ),
         ],

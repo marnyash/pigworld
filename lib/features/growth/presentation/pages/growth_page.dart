@@ -40,11 +40,11 @@ class _GrowthPageState extends ConsumerState<GrowthPage>
       appBar: AppBar(
         title: const Text('Growth Tracking'),
         backgroundColor: AppColors.primaryGreen,
-        foregroundColor: Colors.white,
+        foregroundColor: AppColors.inverseText,
         elevation: 0,
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: Colors.white,
+          indicatorColor: AppColors.inverseText,
           indicatorWeight: 3,
           tabs: const [
             Tab(text: 'Overview'),
@@ -183,14 +183,14 @@ class _GrowthPageState extends ConsumerState<GrowthPage>
                             Icon(
                               Icons.scale,
                               size: 64,
-                              color: Colors.grey[300],
+                              color: AppColors.outline,
                             ),
                             const SizedBox(height: AppDimensions.spacingMedium),
                             Text(
                               'No weight records',
                               style: TextStyle(
                                 fontSize: 16,
-                                color: Colors.grey[600],
+                                color: AppColors.mutedText,
                               ),
                             ),
                           ],
@@ -318,7 +318,7 @@ class _GrowthRecordCard extends StatelessWidget {
                           'RFID: ${record.rfid}',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.grey[600],
+                            color: AppColors.mutedText,
                           ),
                         ),
                     ],
@@ -341,7 +341,10 @@ class _GrowthRecordCard extends StatelessWidget {
                   children: [
                     Text(
                       'Current Weight',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.mutedText,
+                      ),
                     ),
                     Text(
                       '${record.currentWeight.toStringAsFixed(1)} kg',
@@ -357,7 +360,10 @@ class _GrowthRecordCard extends StatelessWidget {
                   children: [
                     Text(
                       'Weight Gain',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.mutedText,
+                      ),
                     ),
                     Text(
                       '${(record.weightGain ?? 0) > 0 ? '+' : ''}${(record.weightGain ?? 0).toStringAsFixed(1)} kg',
@@ -374,7 +380,10 @@ class _GrowthRecordCard extends StatelessWidget {
                   children: [
                     Text(
                       'Daily Gain',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.mutedText,
+                      ),
                     ),
                     Text(
                       '${(record.dailyGain ?? 0).toStringAsFixed(2)} kg/day',
@@ -393,7 +402,7 @@ class _GrowthRecordCard extends StatelessWidget {
                 record.notes!,
                 style: TextStyle(
                   fontSize: 12,
-                  color: Colors.grey[700],
+                  color: AppColors.text,
                   fontStyle: FontStyle.italic,
                 ),
               ),
@@ -401,7 +410,7 @@ class _GrowthRecordCard extends StatelessWidget {
             const SizedBox(height: AppDimensions.spacingSmall),
             Text(
               'Recorded ${record.measurementDate.toLocal().toString().split('.')[0]}',
-              style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+              style: TextStyle(fontSize: 11, color: AppColors.mutedText),
             ),
           ],
         ),

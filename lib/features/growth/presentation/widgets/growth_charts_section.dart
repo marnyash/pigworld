@@ -79,7 +79,9 @@ class _PeriodChip extends StatelessWidget {
       onSelected: (_) => onTap(),
       selectedColor: AppColors.primaryGreen.withValues(alpha: 0.3),
       side: BorderSide(
-        color: isSelected ? AppColors.primaryGreen : Colors.grey[300]!,
+        color: isSelected
+            ? AppColors.primaryGreen
+            : Theme.of(context).colorScheme.outline,
       ),
     );
   }
@@ -92,22 +94,32 @@ class _ChartPlaceholder extends StatelessWidget {
       child: Container(
         height: 250,
         decoration: BoxDecoration(
-          color: Colors.grey[100],
+          color: Theme.of(context).colorScheme.surfaceContainerHighest,
           borderRadius: BorderRadius.circular(AppDimensions.radius),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.show_chart, size: 64, color: Colors.grey[400]),
+            Icon(
+              Icons.show_chart,
+              size: 64,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
             const SizedBox(height: AppDimensions.spacingMedium),
             Text(
               'Weight Trend Chart',
-              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+              style: TextStyle(
+                fontSize: 16,
+                color: Theme.of(context).colorScheme.onSurface,
+              ),
             ),
             const SizedBox(height: AppDimensions.spacingSmall),
             Text(
               'Interactive chart coming soon',
-              style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+              style: TextStyle(
+                fontSize: 12,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ],
         ),

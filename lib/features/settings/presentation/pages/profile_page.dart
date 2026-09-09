@@ -75,14 +75,13 @@ class ProfilePage extends ConsumerWidget {
                       children: [
                         Text(
                           user?.name ?? 'Your profile',
-                          style: Theme.of(
-                            context,
-                          ).textTheme.titleLarge?.copyWith(color: Colors.white),
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(color: AppColors.inverseText),
                         ),
                         const SizedBox(height: 4),
                         Text(
                           user?.email ?? 'Sign in to view your account',
-                          style: TextStyle(color: Colors.white70),
+                          style: TextStyle(color: AppColors.inverseMutedText),
                         ),
                         const SizedBox(height: 8),
                         Container(
@@ -91,12 +90,14 @@ class ProfilePage extends ConsumerWidget {
                             vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.12),
+                            color: AppColors.inverseText.withValues(
+                              alpha: 0.12,
+                            ),
                             borderRadius: BorderRadius.circular(999),
                           ),
                           child: Text(
                             _roleLabel(user?.role.name),
-                            style: const TextStyle(color: Colors.white),
+                            style: TextStyle(color: AppColors.inverseText),
                           ),
                         ),
                       ],

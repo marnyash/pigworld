@@ -18,7 +18,7 @@ class InventoryOverviewSection extends ConsumerWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline, size: 48, color: Colors.red),
+            const Icon(Icons.error_outline, size: 48, color: AppColors.danger),
             const SizedBox(height: 16),
             Text('Error: $error'),
           ],
@@ -31,9 +31,15 @@ class InventoryOverviewSection extends ConsumerWidget {
           data: (alertsData) {
             final items = itemsData.items;
             final summary = itemsData.summary;
-            final lowStock = alertsData.where((alert) => alert.alertType == 'low_stock').length;
-            final expiring = alertsData.where((alert) => alert.alertType == 'expiring').length;
-            final expired = alertsData.where((alert) => alert.alertType == 'expired').length;
+            final lowStock = alertsData
+                .where((alert) => alert.alertType == 'low_stock')
+                .length;
+            final expiring = alertsData
+                .where((alert) => alert.alertType == 'expiring')
+                .length;
+            final expired = alertsData
+                .where((alert) => alert.alertType == 'expired')
+                .length;
 
             return ListView(
               padding: const EdgeInsets.all(AppDimensions.pagePadding),
@@ -69,7 +75,7 @@ class InventoryOverviewSection extends ConsumerWidget {
                       icon: Icons.access_time_rounded,
                       label: 'Expiring Soon',
                       value: expiring.toString(),
-                      color: Colors.orange,
+                      color: AppColors.warning,
                     ),
                     _SummaryCard(
                       icon: Icons.attach_money_rounded,
@@ -114,14 +120,14 @@ class InventoryOverviewSection extends ConsumerWidget {
                       icon: Icons.access_time,
                       title: 'Expiring Soon',
                       count: expiring,
-                      color: Colors.orange,
+                      color: AppColors.warning,
                     ),
                   if (expired > 0)
                     _AlertCard(
                       icon: Icons.error,
                       title: 'Expired Items',
                       count: expired,
-                      color: Colors.red,
+                      color: AppColors.danger,
                     ),
                 ],
               ],
@@ -154,7 +160,10 @@ class _SummaryCard extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(12),
           gradient: LinearGradient(
-            colors: [color.withValues(alpha: 0.1), color.withValues(alpha: 0.05)],
+            colors: [
+              color.withValues(alpha: 0.1),
+              color.withValues(alpha: 0.05),
+            ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
@@ -220,7 +229,7 @@ class _CategoryDistribution extends StatelessWidget {
                   child: LinearProgressIndicator(
                     value: entry.value / items.length,
                     minHeight: 8,
-                    backgroundColor: Colors.grey[300],
+                    backgroundColor: AppColors.outline,
                     valueColor: AlwaysStoppedAnimation<Color>(
                       AppColors.primaryGreen.withValues(alpha: 0.7),
                     ),

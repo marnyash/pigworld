@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:proj/app/theme/app_colors.dart';
 import '../providers/auth_providers.dart';
 
 class ForgotPasswordPage extends ConsumerStatefulWidget {
@@ -68,7 +69,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
               const SizedBox(height: 16),
               const Text(
                 'If an account exists for that email, a reset link has been sent.',
-                style: TextStyle(color: Colors.green),
+                style: TextStyle(color: AppColors.success),
               ),
             ],
             if (_error != null) ...[

@@ -133,17 +133,17 @@ class _StockMovementsSectionState extends ConsumerState<StockMovementsSection> {
   Color _getMovementColor(String type) {
     switch (type) {
       case 'in':
-        return Colors.green;
+        return AppColors.success;
       case 'out':
-        return Colors.blue;
+        return AppColors.info;
       case 'damaged':
-        return Colors.red;
+        return AppColors.danger;
       case 'returned':
-        return Colors.orange;
+        return AppColors.warning;
       case 'transfer':
-        return Colors.purple;
+        return AppColors.violet;
       default:
-        return Colors.grey;
+        return AppColors.mutedText;
     }
   }
 
@@ -216,7 +216,7 @@ class _DetailRow extends StatelessWidget {
           label,
           style: Theme.of(
             context,
-          ).textTheme.bodySmall?.copyWith(color: Colors.grey),
+          ).textTheme.bodySmall?.copyWith(color: AppColors.mutedText),
         ),
         Text(
           value ?? 'N/A',

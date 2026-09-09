@@ -20,11 +20,11 @@ class WeightRecordsSection extends ConsumerWidget {
                   padding: const EdgeInsets.all(AppDimensions.spacingLarge),
                   child: Column(
                     children: [
-                      Icon(Icons.scale, size: 48, color: Colors.grey[300]),
+                      Icon(Icons.scale, size: 48, color: AppColors.outline),
                       const SizedBox(height: AppDimensions.spacingSmall),
                       Text(
                         'No weight records yet',
-                        style: TextStyle(color: Colors.grey[600]),
+                        style: TextStyle(color: AppColors.mutedText),
                       ),
                     ],
                   ),
@@ -79,13 +79,13 @@ class _WeightRecordTile extends StatelessWidget {
             if (record.rfid != null)
               Text(
                 'RFID: ${record.rfid}',
-                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                style: TextStyle(fontSize: 12, color: AppColors.mutedText),
               ),
           ],
         ),
         subtitle: Text(
           '${record.measurementDate.toLocal().toString().split(' ')[0]} • ${record.recordedBy ?? 'Unknown'}',
-          style: TextStyle(fontSize: 12, color: Colors.grey[500]),
+          style: TextStyle(fontSize: 12, color: AppColors.mutedText),
         ),
         trailing: Column(
           crossAxisAlignment: CrossAxisAlignment.end,

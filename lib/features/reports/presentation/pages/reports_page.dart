@@ -133,13 +133,13 @@ class _ReportsDashboard extends StatelessWidget {
               icon: Icons.trending_down,
               label: 'Total Expenses',
               value: 'KES ${metrics.totalExpenses.toStringAsFixed(0)}',
-              color: Colors.orange,
+              color: AppColors.warning,
             ),
             _MetricCard(
               icon: Icons.warning,
               label: 'Mortality Rate',
               value: '${metrics.mortalityRate.toStringAsFixed(1)}%',
-              color: Colors.red,
+              color: AppColors.danger,
             ),
             _MetricCard(
               icon: Icons.trending_up,
@@ -274,7 +274,9 @@ class _ChartPlaceholder extends StatelessWidget {
                     Icon(
                       Icons.insert_chart_outlined,
                       size: 64,
-                      color: Colors.grey.withValues(alpha: 0.5),
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSurfaceVariant.withValues(alpha: 0.5),
                     ),
                     const SizedBox(height: 12),
                     Text(
@@ -299,11 +301,11 @@ class _ReportCategories extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final reports = [
       ('Financial Report', Icons.attach_money, AppColors.primaryGreen),
-      ('Herd Report', Icons.pets, Colors.blue),
-      ('Health Report', Icons.health_and_safety, Colors.red),
+      ('Herd Report', Icons.pets, AppColors.info),
+      ('Health Report', Icons.health_and_safety, AppColors.danger),
       ('Feed Report', Icons.fastfood, AppColors.warmGold),
       ('Breeding Report', Icons.favorite, AppColors.pigPink),
-      ('Inventory Report', Icons.inventory_2, Colors.purple),
+      ('Inventory Report', Icons.inventory_2, AppColors.violet),
     ];
 
     return GridView.count(

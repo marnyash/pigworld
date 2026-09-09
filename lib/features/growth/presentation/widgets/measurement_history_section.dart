@@ -19,11 +19,11 @@ class MeasurementHistorySection extends ConsumerWidget {
                   padding: const EdgeInsets.all(AppDimensions.spacingLarge),
                   child: Column(
                     children: [
-                      Icon(Icons.history, size: 48, color: Colors.grey[300]),
+                      Icon(Icons.history, size: 48, color: AppColors.outline),
                       const SizedBox(height: AppDimensions.spacingSmall),
                       Text(
                         'No measurement history',
-                        style: TextStyle(color: Colors.grey[600]),
+                        style: TextStyle(color: AppColors.mutedText),
                       ),
                     ],
                   ),
@@ -84,10 +84,14 @@ class _TimelineItem extends StatelessWidget {
                 color: AppColors.primaryGreen,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.scale, color: Colors.white, size: 20),
+              child: const Icon(
+                Icons.scale,
+                color: AppColors.inverseText,
+                size: 20,
+              ),
             ),
             if (!isLast)
-              Container(width: 2, height: 60, color: Colors.grey[300]),
+              Container(width: 2, height: 60, color: AppColors.outline),
           ],
         ),
         const SizedBox(width: AppDimensions.spacingMedium),
@@ -119,7 +123,7 @@ class _TimelineItem extends StatelessWidget {
                                   'RFID: ${record.rfid}',
                                   style: TextStyle(
                                     fontSize: 11,
-                                    color: Colors.grey[600],
+                                    color: AppColors.mutedText,
                                   ),
                                 ),
                             ],
@@ -131,12 +135,12 @@ class _TimelineItem extends StatelessWidget {
                             height: 40,
                             decoration: BoxDecoration(
                               borderRadius: BorderRadius.circular(4),
-                              color: Colors.grey[200],
+                              color: AppColors.surfaceMuted,
                             ),
                             child: const Icon(
                               Icons.image,
                               size: 20,
-                              color: Colors.grey,
+                              color: AppColors.mutedText,
                             ),
                           ),
                       ],
@@ -152,7 +156,7 @@ class _TimelineItem extends StatelessWidget {
                               'Weight',
                               style: TextStyle(
                                 fontSize: 11,
-                                color: Colors.grey[600],
+                                color: AppColors.mutedText,
                               ),
                             ),
                             Text(
@@ -170,7 +174,7 @@ class _TimelineItem extends StatelessWidget {
                               'Daily Gain',
                               style: TextStyle(
                                 fontSize: 11,
-                                color: Colors.grey[600],
+                                color: AppColors.mutedText,
                               ),
                             ),
                             Text(
@@ -189,7 +193,7 @@ class _TimelineItem extends StatelessWidget {
                         'Notes: ${record.notes}',
                         style: TextStyle(
                           fontSize: 12,
-                          color: Colors.grey[700],
+                          color: AppColors.text,
                           fontStyle: FontStyle.italic,
                         ),
                       ),
@@ -202,7 +206,7 @@ class _TimelineItem extends StatelessWidget {
                           measurementDate,
                           style: TextStyle(
                             fontSize: 11,
-                            color: Colors.grey[500],
+                            color: AppColors.mutedText,
                           ),
                         ),
                         if (record.recordedBy != null)
@@ -210,7 +214,7 @@ class _TimelineItem extends StatelessWidget {
                             'By: ${record.recordedBy}',
                             style: TextStyle(
                               fontSize: 11,
-                              color: Colors.grey[500],
+                              color: AppColors.mutedText,
                             ),
                           ),
                       ],

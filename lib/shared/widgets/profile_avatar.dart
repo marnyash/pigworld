@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../app/theme/app_colors.dart';
 import '../../features/settings/presentation/providers/profile_image_provider.dart';
 
 class ProfileAvatar extends ConsumerWidget {
@@ -40,12 +41,12 @@ class _InitialsAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    color: Colors.white.withValues(alpha: 0.18),
+    color: AppColors.inverseText.withValues(alpha: 0.18),
     alignment: Alignment.center,
     child: Text(
       initials,
       style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-        color: Colors.white,
+        color: AppColors.inverseText,
         fontSize: radius * 0.75,
       ),
     ),

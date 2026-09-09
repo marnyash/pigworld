@@ -148,12 +148,12 @@ class _SupportHeader extends StatelessWidget {
         children: [
           Row(
             children: [
-              const CircleAvatar(
+              CircleAvatar(
                 radius: 28,
-                backgroundColor: Colors.white24,
-                child: Icon(
+                backgroundColor: AppColors.inverseText.withValues(alpha: 0.18),
+                child: const Icon(
                   Icons.support_agent_outlined,
-                  color: Colors.white,
+                  color: AppColors.inverseText,
                   size: 28,
                 ),
               ),
@@ -164,9 +164,9 @@ class _SupportHeader extends StatelessWidget {
                   children: [
                     Text(
                       'We\'re Here to Help',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.titleLarge?.copyWith(color: Colors.white),
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: AppColors.inverseText,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Row(
@@ -175,7 +175,7 @@ class _SupportHeader extends StatelessWidget {
                           width: 8,
                           height: 8,
                           decoration: BoxDecoration(
-                            color: Colors.greenAccent,
+                            color: AppColors.success,
                             shape: BoxShape.circle,
                           ),
                         ),
@@ -183,7 +183,7 @@ class _SupportHeader extends StatelessWidget {
                         Text(
                           'Online',
                           style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: Colors.white70),
+                              ?.copyWith(color: AppColors.inverseMutedText),
                         ),
                       ],
                     ),
@@ -199,14 +199,14 @@ class _SupportHeader extends StatelessWidget {
               vertical: AppDimensions.spacingSmall,
             ),
             decoration: BoxDecoration(
-              color: Colors.white12,
+              color: AppColors.inverseText.withValues(alpha: 0.12),
               borderRadius: BorderRadius.circular(AppDimensions.radius),
             ),
             child: Text(
               '⏱️ Average response time: 2-4 hours',
               style: Theme.of(
                 context,
-              ).textTheme.bodySmall?.copyWith(color: Colors.white),
+              ).textTheme.bodySmall?.copyWith(color: AppColors.inverseText),
             ),
           ),
         ],
@@ -300,20 +300,16 @@ class _ContactOptionsSection extends StatelessWidget {
         title: 'Call Support',
         subtitle: '+254705030550',
         actionLabel: 'Call',
-        onTap: () => onOpenContact(
-          Uri.parse('tel:+254705030550'),
-          'the phone app',
-        ),
+        onTap: () =>
+            onOpenContact(Uri.parse('tel:+254705030550'), 'the phone app'),
       ),
       _ContactOptionTile(
         icon: Icons.chat_outlined,
         title: 'WhatsApp',
         subtitle: '+254705030550',
         actionLabel: 'Open',
-        onTap: () => onOpenContact(
-          Uri.parse('https://wa.me/254705030550'),
-          'WhatsApp',
-        ),
+        onTap: () =>
+            onOpenContact(Uri.parse('https://wa.me/254705030550'), 'WhatsApp'),
       ),
       _ContactOptionTile(
         icon: Icons.email_outlined,
@@ -408,7 +404,7 @@ class _EmergencyVeterinaryCard extends StatelessWidget {
             children: [
               const Icon(
                 Icons.emergency_outlined,
-                color: Colors.white,
+                color: AppColors.inverseText,
                 size: 32,
               ),
               const SizedBox(width: AppDimensions.spacingMedium),
@@ -419,15 +415,15 @@ class _EmergencyVeterinaryCard extends StatelessWidget {
                     Text(
                       'Emergency Veterinary Help',
                       style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                        color: Colors.white,
+                        color: AppColors.inverseText,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     Text(
                       'Urgent veterinary assistance: +254705030550',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodySmall?.copyWith(color: Colors.white70),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.inverseMutedText,
+                      ),
                     ),
                   ],
                 ),
@@ -442,7 +438,7 @@ class _EmergencyVeterinaryCard extends StatelessWidget {
               icon: const Icon(Icons.phone),
               label: const Text('Call Emergency Vet Now'),
               style: FilledButton.styleFrom(
-                backgroundColor: Colors.white,
+                backgroundColor: AppColors.inverseText,
                 foregroundColor: AppColors.danger,
               ),
             ),

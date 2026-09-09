@@ -199,7 +199,7 @@ class _AddHealthRecordDialogState extends State<AddHealthRecordDialog> {
                       selectedColor: AppColors.primaryGreen,
                       labelStyle: TextStyle(
                         color: symptoms.contains(symptom)
-                            ? Colors.white
+                            ? AppColors.inverseText
                             : AppColors.text,
                       ),
                     ),

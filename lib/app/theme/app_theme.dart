@@ -7,7 +7,7 @@ abstract final class AppTheme {
   static final _lightScheme = ColorScheme.fromSeed(
     seedColor: AppColors.primaryGreen,
     primary: AppColors.primaryGreen,
-    onPrimary: Colors.white,
+    onPrimary: AppColors.inverseText,
     primaryContainer: AppColors.primaryContainer,
     onPrimaryContainer: AppColors.deepGreen,
     secondary: AppColors.pigPink,
@@ -17,7 +17,7 @@ abstract final class AppTheme {
     tertiary: AppColors.warmGold,
     onTertiary: AppColors.text,
     error: AppColors.danger,
-    onError: Colors.white,
+    onError: AppColors.inverseText,
     errorContainer: AppColors.dangerContainer,
     onErrorContainer: AppColors.danger,
     surface: AppColors.surface,
@@ -28,11 +28,39 @@ abstract final class AppTheme {
     brightness: Brightness.light,
   );
 
+  static const _darkScheme = ColorScheme(
+    brightness: Brightness.dark,
+    primary: AppColors.leaf,
+    onPrimary: AppColors.deepGreen,
+    primaryContainer: AppColors.darkPrimaryContainer,
+    onPrimaryContainer: AppColors.darkText,
+    secondary: AppColors.pigPink,
+    onSecondary: AppColors.darkText,
+    secondaryContainer: Color(0xFF633541),
+    onSecondaryContainer: Color(0xFFF4DCE2),
+    tertiary: AppColors.warmGold,
+    onTertiary: Color(0xFF2A210D),
+    tertiaryContainer: Color(0xFF5D4819),
+    onTertiaryContainer: Color(0xFFF6E7C5),
+    error: Color(0xFFFFB4AB),
+    onError: Color(0xFF690005),
+    errorContainer: Color(0xFF93000A),
+    onErrorContainer: Color(0xFFFFDAD6),
+    surface: AppColors.darkSurface,
+    onSurface: AppColors.darkText,
+    surfaceContainerHighest: AppColors.darkSurfaceMuted,
+    onSurfaceVariant: AppColors.darkMutedText,
+    outline: AppColors.darkOutline,
+  );
+
   static ThemeData get light => ThemeData(
     useMaterial3: true,
     scaffoldBackgroundColor: AppColors.background,
     colorScheme: _lightScheme,
-    textTheme: AppTypography.textTheme.apply(bodyColor: AppColors.text),
+    textTheme: AppTypography.textTheme.apply(
+      bodyColor: AppColors.text,
+      displayColor: AppColors.text,
+    ),
     appBarTheme: const AppBarTheme(
       centerTitle: false,
       elevation: 0,
@@ -100,7 +128,7 @@ abstract final class AppTheme {
     elevatedButtonTheme: ElevatedButtonThemeData(
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.primaryGreen,
-        foregroundColor: Colors.white,
+        foregroundColor: AppColors.inverseText,
         minimumSize: const Size(0, AppDimensions.controlHeight),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radius),
@@ -110,7 +138,7 @@ abstract final class AppTheme {
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         backgroundColor: AppColors.primaryGreen,
-        foregroundColor: Colors.white,
+        foregroundColor: AppColors.inverseText,
         minimumSize: const Size(0, AppDimensions.controlHeight),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppDimensions.radius),
@@ -134,7 +162,7 @@ abstract final class AppTheme {
     ),
     snackBarTheme: SnackBarThemeData(
       backgroundColor: AppColors.navy,
-      contentTextStyle: const TextStyle(color: Colors.white),
+      contentTextStyle: const TextStyle(color: AppColors.inverseText),
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppDimensions.radius),
@@ -143,11 +171,122 @@ abstract final class AppTheme {
     dividerColor: AppColors.outline,
   );
 
-  static ThemeData get dark => ThemeData.dark(useMaterial3: true).copyWith(
-    colorScheme: ColorScheme.fromSeed(
-      seedColor: AppColors.primaryGreen,
-      brightness: Brightness.dark,
+  static ThemeData get dark => ThemeData(
+    useMaterial3: true,
+    brightness: Brightness.dark,
+    scaffoldBackgroundColor: AppColors.darkBackground,
+    colorScheme: _darkScheme,
+    textTheme: AppTypography.textTheme.apply(
+      bodyColor: AppColors.darkText,
+      displayColor: AppColors.darkText,
     ),
-    textTheme: AppTypography.textTheme,
+    appBarTheme: const AppBarTheme(
+      centerTitle: false,
+      elevation: 0,
+      backgroundColor: AppColors.darkBackground,
+      foregroundColor: AppColors.darkText,
+    ),
+    iconTheme: const IconThemeData(color: AppColors.leaf),
+    cardTheme: CardThemeData(
+      color: AppColors.darkSurface,
+      surfaceTintColor: Colors.transparent,
+      elevation: 0,
+      margin: EdgeInsets.zero,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppDimensions.radius),
+      ),
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      filled: true,
+      fillColor: AppColors.darkSurface,
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppDimensions.radius),
+        borderSide: const BorderSide(color: AppColors.darkOutline),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppDimensions.radius),
+        borderSide: const BorderSide(color: AppColors.darkOutline),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(AppDimensions.radius),
+        borderSide: const BorderSide(color: AppColors.leaf, width: 2),
+      ),
+      prefixIconColor: AppColors.leaf,
+      hintStyle: const TextStyle(color: AppColors.darkMutedText),
+    ),
+    navigationBarTheme: NavigationBarThemeData(
+      backgroundColor: AppColors.darkSurface,
+      indicatorColor: const Color(0xFF24553F),
+      labelTextStyle: WidgetStateProperty.resolveWith(
+        (states) => TextStyle(
+          color: states.contains(WidgetState.selected)
+              ? AppColors.inverseText
+              : AppColors.darkMutedText,
+          fontWeight: states.contains(WidgetState.selected)
+              ? FontWeight.w700
+              : FontWeight.w600,
+        ),
+      ),
+      iconTheme: WidgetStateProperty.resolveWith(
+        (states) => IconThemeData(
+          color: states.contains(WidgetState.selected)
+              ? AppColors.leaf
+              : AppColors.darkMutedText,
+        ),
+      ),
+    ),
+    chipTheme: ChipThemeData(
+      backgroundColor: const Color(0xFF24553F),
+      side: BorderSide.none,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(999)),
+      labelStyle: const TextStyle(
+        color: AppColors.inverseText,
+        fontWeight: FontWeight.w600,
+      ),
+    ),
+    elevatedButtonTheme: ElevatedButtonThemeData(
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.leaf,
+        foregroundColor: AppColors.deepGreen,
+        minimumSize: const Size(0, AppDimensions.controlHeight),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.radius),
+        ),
+      ),
+    ),
+    filledButtonTheme: FilledButtonThemeData(
+      style: FilledButton.styleFrom(
+        backgroundColor: AppColors.leaf,
+        foregroundColor: AppColors.deepGreen,
+        minimumSize: const Size(0, AppDimensions.controlHeight),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppDimensions.radius),
+        ),
+      ),
+    ),
+    outlinedButtonTheme: OutlinedButtonThemeData(
+      style: OutlinedButton.styleFrom(
+        foregroundColor: AppColors.leaf,
+        side: const BorderSide(color: AppColors.darkOutline),
+        minimumSize: const Size(0, AppDimensions.controlHeight),
+      ),
+    ),
+    floatingActionButtonTheme: const FloatingActionButtonThemeData(
+      backgroundColor: AppColors.warmGold,
+      foregroundColor: Color(0xFF2A210D),
+    ),
+    progressIndicatorTheme: const ProgressIndicatorThemeData(
+      color: AppColors.leaf,
+      linearTrackColor: AppColors.darkSurfaceMuted,
+    ),
+    snackBarTheme: SnackBarThemeData(
+      backgroundColor: AppColors.darkSurfaceMuted,
+      contentTextStyle: const TextStyle(color: AppColors.darkText),
+      behavior: SnackBarBehavior.floating,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppDimensions.radius),
+      ),
+    ),
+    dividerColor: AppColors.darkOutline,
   );
 }

@@ -380,7 +380,9 @@ class _FilterChip extends StatelessWidget {
     selected: isSelected,
     onSelected: (_) => onSelected(),
     selectedColor: AppColors.primaryGreen,
-    labelStyle: TextStyle(color: isSelected ? Colors.white : AppColors.text),
+    labelStyle: TextStyle(
+      color: isSelected ? AppColors.inverseText : AppColors.text,
+    ),
   );
 }
 

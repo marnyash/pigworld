@@ -425,7 +425,7 @@ class _RegistrationSummary extends StatelessWidget {
         children: [
           const CircleAvatar(
             backgroundColor: AppColors.primaryGreen,
-            child: Icon(Icons.auto_awesome, color: Colors.white),
+            child: Icon(Icons.auto_awesome, color: AppColors.inverseText),
           ),
           const SizedBox(width: AppDimensions.spacingMedium),
           Expanded(

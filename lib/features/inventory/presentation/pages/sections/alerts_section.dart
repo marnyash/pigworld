@@ -182,13 +182,13 @@ class AlertsSection extends ConsumerWidget {
   Color _getSeverityColor(String severity) {
     switch (severity) {
       case 'critical':
-        return Colors.red;
+        return AppColors.danger;
       case 'warning':
-        return Colors.orange;
+        return AppColors.warning;
       case 'info':
-        return Colors.blue;
+        return AppColors.info;
       default:
-        return Colors.grey;
+        return AppColors.mutedText;
     }
   }
 

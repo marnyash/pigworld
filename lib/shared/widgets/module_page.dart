@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:proj/app/theme/app_colors.dart';
 import '../components/bottom_navigation.dart';
 
 class ModulePage extends StatelessWidget {
@@ -28,7 +29,7 @@ class ModulePage extends StatelessWidget {
         padding: const EdgeInsets.all(20),
         children: [
           Card(
-            color: const Color(0xFF1B5E20),
+            color: AppColors.deepGreen,
             child: Padding(
               padding: const EdgeInsets.all(24),
               child: Row(
@@ -36,10 +37,10 @@ class ModulePage extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.12),
+                      color: AppColors.inverseText.withValues(alpha: 0.12),
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(icon, size: 28, color: Colors.white),
+                    child: Icon(icon, size: 28, color: AppColors.inverseText),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -49,13 +50,13 @@ class ModulePage extends StatelessWidget {
                         Text(
                           title,
                           style: Theme.of(context).textTheme.headlineSmall
-                              ?.copyWith(color: Colors.white),
+                              ?.copyWith(color: AppColors.inverseText),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           description,
                           style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(color: Colors.white70),
+                              ?.copyWith(color: AppColors.inverseMutedText),
                         ),
                       ],
                     ),

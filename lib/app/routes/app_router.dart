@@ -255,16 +255,16 @@ class _AppDrawer extends ConsumerWidget {
                   Text(
                     'Pig World Smart',
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      color: Colors.white,
+                      color: AppColors.inverseText,
                       fontWeight: FontWeight.w700,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     farmName,
-                    style: Theme.of(
-                      context,
-                    ).textTheme.bodySmall?.copyWith(color: Colors.white70),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: AppColors.inverseMutedText,
+                    ),
                   ),
                 ],
               ),
@@ -437,10 +437,10 @@ class _LogoutTile extends StatelessWidget {
   Widget build(BuildContext context) => ListTile(
     dense: true,
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-    tileColor: Colors.red.withValues(alpha: 0.06),
-    leading: const Icon(Icons.logout, color: Colors.red),
+    tileColor: AppColors.danger.withValues(alpha: 0.06),
+    leading: const Icon(Icons.logout, color: AppColors.danger),
     title: const Text('Logout'),
-    textColor: Colors.red,
+    textColor: AppColors.danger,
     onTap: onLogout,
   );
 }

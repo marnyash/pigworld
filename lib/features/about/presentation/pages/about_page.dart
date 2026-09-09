@@ -149,7 +149,7 @@ class _AboutPageState extends State<AboutPage> {
                   'All rights reserved.',
                   style: Theme.of(
                     context,
-                  ).textTheme.bodySmall?.copyWith(color: Colors.grey),
+                  ).textTheme.bodySmall?.copyWith(color: AppColors.mutedText),
                 ),
               ],
             ),
@@ -218,12 +218,12 @@ class _HeaderSection extends StatelessWidget {
       padding: const EdgeInsets.all(AppDimensions.spacingLarge),
       child: Column(
         children: [
-          Icon(Icons.pets, size: 64, color: Colors.white),
+          Icon(Icons.pets, size: 64, color: AppColors.inverseText),
           const SizedBox(height: AppDimensions.spacingMedium),
           Text(
             'PigWorld',
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              color: Colors.white,
+              color: AppColors.inverseText,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -232,7 +232,7 @@ class _HeaderSection extends StatelessWidget {
             'Smart Pig Farm Management',
             style: Theme.of(
               context,
-            ).textTheme.bodyMedium?.copyWith(color: Colors.white70),
+            ).textTheme.bodyMedium?.copyWith(color: AppColors.inverseMutedText),
           ),
         ],
       ),

@@ -39,7 +39,7 @@ class GrowthPerformanceSection extends ConsumerWidget {
                   padding: const EdgeInsets.all(AppDimensions.spacingMedium),
                   child: Text(
                     'Insufficient data for performance analysis',
-                    style: TextStyle(color: Colors.grey[600]),
+                    style: TextStyle(color: AppColors.mutedText),
                   ),
                 ),
               );
@@ -125,7 +125,10 @@ class _PerformanceCard extends StatelessWidget {
                   children: [
                     Text(
                       'Daily Gain',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.mutedText,
+                      ),
                     ),
                     Text(
                       '${dailyGain.toStringAsFixed(2)} kg/day',
@@ -141,7 +144,10 @@ class _PerformanceCard extends StatelessWidget {
                   children: [
                     Text(
                       'Current Weight',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.mutedText,
+                      ),
                     ),
                     Text(
                       '${currentWeight.toStringAsFixed(1)} kg',
@@ -157,7 +163,10 @@ class _PerformanceCard extends StatelessWidget {
                   children: [
                     Text(
                       'Target Weight',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.mutedText,
+                      ),
                     ),
                     Text(
                       '${targetWeight.toStringAsFixed(1)} kg',
@@ -179,7 +188,10 @@ class _PerformanceCard extends StatelessWidget {
                   children: [
                     Text(
                       'Progress to Target',
-                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.mutedText,
+                      ),
                     ),
                     Text(
                       '${progress.toStringAsFixed(0)}%',
@@ -196,7 +208,7 @@ class _PerformanceCard extends StatelessWidget {
                   child: LinearProgressIndicator(
                     value: (progress / 100).clamp(0, 1),
                     minHeight: 8,
-                    backgroundColor: Colors.grey[300],
+                    backgroundColor: AppColors.outline,
                     valueColor: AlwaysStoppedAnimation<Color>(
                       progress >= 100 ? AppColors.success : AppColors.info,
                     ),
