@@ -60,8 +60,21 @@ class _SupportPageState extends State<SupportPage> {
   Future<void> callVeterinary() =>
       _openContact(Uri.parse('tel:+254705030550'), 'the phone app');
 
+  void _openLiveChat() {
+    showModalBottomSheet<void>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const _LiveChatSheet(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) => Scaffold(
+    endDrawer: _SupportDrawer(
+      onOpenContact: _openContact,
+      onCall: callVeterinary,
+    ),
     appBar: AppBar(
       title: const Text('Customer Support'),
       leading: IconButton(
@@ -69,6 +82,15 @@ class _SupportPageState extends State<SupportPage> {
         icon: const Icon(Icons.arrow_back),
         onPressed: () => context.go(AppRoutes.home),
       ),
+      actions: [
+        Builder(
+          builder: (context) => IconButton(
+            tooltip: 'Guidance and contacts',
+            icon: const Icon(Icons.menu_open),
+            onPressed: () => Scaffold.of(context).openEndDrawer(),
+          ),
+        ),
+      ],
       centerTitle: true,
     ),
     body: ListView(
@@ -86,9 +108,7 @@ class _SupportPageState extends State<SupportPage> {
         // Quick Actions
         Text('Get Help Quickly', style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: AppDimensions.spacingMedium),
-        _QuickActionsSection(
-          onOpenChat: () => _showMessage(context, 'Opening live chat...'),
-        ),
+        _QuickActionsSection(onOpenChat: _openLiveChat),
         const SizedBox(height: AppDimensions.spacingLarge),
 
         // Contact Options

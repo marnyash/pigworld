@@ -79,4 +79,21 @@ class NotificationsApi {
       throw ErrorHandler.from(error);
     }
   }
+
+  Future<FarmNotification> sendMessage({
+    required String farmId,
+    required String message,
+  }) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/farms/$farmId/notifications/messages',
+        data: {'message': message},
+      );
+      return FarmNotification.fromJson(
+        response.data!['data'] as Map<String, dynamic>,
+      );
+    } on DioException catch (error) {
+      throw ErrorHandler.from(error);
+    }
+  }
 }

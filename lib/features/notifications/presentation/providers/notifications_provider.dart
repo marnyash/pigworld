@@ -35,4 +35,13 @@ class NotificationsNotifier extends AsyncNotifier<List<FarmNotification>> {
         notification.id == updated.id ? updated : notification,
     ]);
   }
+
+  Future<void> sendMessage(String message) async {
+    final farmId = ref.read(authProvider).valueOrNull?.selectedFarm?.id;
+    if (farmId == null) throw StateError('No farm selected.');
+    await ref
+        .read(notificationsApiProvider)
+        .sendMessage(farmId: farmId, message: message);
+    ref.invalidateSelf();
+  }
 }

@@ -12,7 +12,16 @@ class NotificationsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final notifications = ref.watch(notificationsProvider);
     return Scaffold(
-      appBar: AppBar(title: const Text('Notifications')),
+      appBar: AppBar(
+        title: const Text('Notifications'),
+        actions: [
+          IconButton(
+            tooltip: 'Message CRM',
+            icon: const Icon(Icons.chat_outlined),
+            onPressed: () => _showMessageComposer(context, ref),
+          ),
+        ],
+      ),
       body: notifications.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) =>
@@ -38,6 +47,64 @@ class NotificationsPage extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _showMessageComposer(BuildContext context, WidgetRef ref) async {
+    final controller = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    final sent = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Message Pig World CRM'),
+        content: Form(
+          key: formKey,
+          child: TextFormField(
+            controller: controller,
+            maxLines: 5,
+            maxLength: 1000,
+            autofocus: true,
+            decoration: const InputDecoration(
+              labelText: 'Message',
+              hintText: 'Ask the CRM team for help...',
+              alignLabelWithHint: true,
+            ),
+            validator: (value) => value == null || value.trim().isEmpty
+                ? 'Write a message first.'
+                : null,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              if (!formKey.currentState!.validate()) return;
+              try {
+                await ref
+                    .read(notificationsProvider.notifier)
+                    .sendMessage(controller.text.trim());
+                if (dialogContext.mounted) Navigator.pop(dialogContext, true);
+              } catch (error) {
+                if (dialogContext.mounted) {
+                  ScaffoldMessenger.of(
+                    dialogContext,
+                  ).showSnackBar(SnackBar(content: Text('$error')));
+                }
+              }
+            },
+            child: const Text('Send'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    if (sent == true && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Message sent to the CRM team.')),
+      );
+    }
   }
 }
 
