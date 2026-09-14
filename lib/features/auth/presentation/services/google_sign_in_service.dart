@@ -21,9 +21,13 @@ class GoogleSignInService {
 
   static void validateConfiguration(String clientId) {
     final normalized = clientId.trim();
-    if (normalized.isEmpty || !normalized.contains('googleusercontent.com')) {
+    if (normalized.isEmpty) {
+      return;
+    }
+
+    if (!normalized.contains('googleusercontent.com')) {
       throw const GoogleSignInConfigurationException(
-        'Google sign-in is not configured yet. Add the Firebase web client ID as GOOGLE_WEB_CLIENT_ID and rebuild the app.',
+        'Google sign-in is not configured correctly. The Firebase web client ID must contain a googleusercontent.com domain.',
       );
     }
   }
@@ -35,26 +39,35 @@ class GoogleSignInService {
     try {
       validateConfiguration(webClientId);
       if (Firebase.apps.isEmpty) await Firebase.initializeApp();
-      await GoogleSignIn.instance.initialize(serverClientId: webClientId);
+
+      if (webClientId.isNotEmpty) {
+        await GoogleSignIn.instance.initialize(serverClientId: webClientId);
+      } else {
+        await GoogleSignIn.instance.initialize();
+      }
+
       final account = await GoogleSignIn.instance.authenticate();
       final authentication = account.authentication;
-      final credential = GoogleAuthProvider.credential(
-        idToken: authentication.idToken,
-      );
+      final idToken = authentication.idToken;
+      if (idToken == null || idToken.isEmpty) {
+        throw StateError('Google did not return an ID token for sign-in.');
+      }
+
+      final credential = GoogleAuthProvider.credential(idToken: idToken);
       final firebaseAuth = _providedFirebaseAuth ?? FirebaseAuth.instance;
       final userCredential = await firebaseAuth.signInWithCredential(
         credential,
       );
-      final idToken = await userCredential.user?.getIdToken();
-      if (idToken == null) {
+      final firebaseIdToken = await userCredential.user?.getIdToken();
+      if (firebaseIdToken == null) {
         throw StateError('Google did not return an authentication token.');
       }
-      return idToken;
+      return firebaseIdToken;
     } on GoogleSignInException catch (error) {
       if (error.code == GoogleSignInExceptionCode.clientConfigurationError ||
           error.code == GoogleSignInExceptionCode.providerConfigurationError) {
         throw const GoogleSignInConfigurationException(
-          'Google sign-in is not configured for this app yet. Add the Firebase web client ID and rebuild the app.',
+          'Google sign-in is not configured for this app yet. Ensure Firebase is set up and the Google web client is available.',
         );
       }
       rethrow;

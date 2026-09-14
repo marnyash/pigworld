@@ -1,10 +1,14 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../../app/routes/app_routes.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
 
-class PaymentMethodPage extends StatefulWidget {
+class PaymentMethodPage extends ConsumerStatefulWidget {
   const PaymentMethodPage({super.key, required this.selectedPlan});
 
   final Map<String, dynamic> selectedPlan;
@@ -23,11 +27,99 @@ class PaymentMethodPage extends StatefulWidget {
   }
 
   @override
-  State<PaymentMethodPage> createState() => _PaymentMethodPageState();
+  ConsumerState<PaymentMethodPage> createState() => _PaymentMethodPageState();
 }
 
-class _PaymentMethodPageState extends State<PaymentMethodPage> {
+class _PaymentMethodPageState extends ConsumerState<PaymentMethodPage> {
   String _selectedMethod = 'M-Pesa';
+  bool _isSubmitting = false;
+
+  Future<void> _handleProceed() async {
+    final amount = widget.selectedPlan['amount'];
+    final currency = widget.selectedPlan['currency'] ?? 'KES';
+    final planCode = widget.selectedPlan['code'] ?? widget.selectedPlan['name'];
+    final selectedFarm = ref.read(authProvider).valueOrNull?.selectedFarm;
+
+    if (_selectedMethod != 'M-Pesa') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '$_selectedMethod is not available for this payment flow yet.',
+          ),
+        ),
+      );
+      return;
+    }
+
+    if (selectedFarm == null || selectedFarm.id.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Select a farm before starting the payment.'),
+        ),
+      );
+      return;
+    }
+
+    if (planCode == null || planCode.toString().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('This plan is missing its payment code.')),
+      );
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+
+    try {
+      final response = await ref
+          .read(dioProvider)
+          .post(
+            '/farms/${selectedFarm.id}/subscription/payment',
+            data: {'plan': planCode.toString()},
+          );
+
+      final payment = response.data['payment'] is Map
+          ? Map<String, dynamic>.from(response.data['payment'] as Map)
+          : <String, dynamic>{};
+
+      if (!mounted) return;
+
+      final resultDescription =
+          (payment['result_description'] ??
+                  'M-Pesa prompt sent. Check your phone and enter your PIN.')
+              .toString();
+
+      context.go(
+        AppRoutes.paymentStatus,
+        extra: {
+          'amount': amount,
+          'currency': currency,
+          'payment_method': _selectedMethod,
+          'merchant_request_id': payment['merchant_request_id'] ?? '',
+          'checkout_request_id': payment['checkout_request_id'] ?? '',
+          'result_description': resultDescription,
+        },
+      );
+    } on DioException catch (error) {
+      if (!mounted) return;
+      final message = error.response?.data is Map
+          ? (error.response!.data['message'] ??
+                error.response!.data['error'] ??
+                'Unable to start the M-Pesa payment.')
+          : 'Unable to start the M-Pesa payment.';
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message.toString())));
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Unable to start the M-Pesa payment: $error')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -104,20 +196,14 @@ class _PaymentMethodPageState extends State<PaymentMethodPage> {
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(
-                  onPressed: () => context.go(
-                    AppRoutes.paymentStatus,
-                    extra: {
-                      'amount': amount,
-                      'currency': currency,
-                      'payment_method': _selectedMethod,
-                      'result_description': _selectedMethod == 'M-Pesa'
-                          ? 'M-Pesa prompt sent. Check your phone and enter your PIN.'
-                          : _selectedMethod == 'Airtel Money'
-                          ? 'Airtel Money request sent. Approve the transaction on your mobile wallet.'
-                          : 'Bank transfer initiated. Complete the transfer using your bank app or branch.',
-                    },
-                  ),
-                  child: const Text('Proceed'),
+                  onPressed: _isSubmitting ? null : _handleProceed,
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          height: 18,
+                          width: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text('Proceed'),
                 ),
               ),
             ],

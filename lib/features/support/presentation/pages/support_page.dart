@@ -50,8 +50,19 @@ class _SupportPageState extends State<SupportPage> {
   }
 
   Future<void> _openContact(Uri uri, String service) async {
-    if (await launchUrl(uri, mode: LaunchMode.externalApplication)) return;
+    if (!await canLaunchUrl(uri)) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('This device cannot open $service.')),
+      );
+      return;
+    }
+
+    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+
     if (!mounted) return;
+    if (launched) return;
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Could not open $service on this device.')),
     );
