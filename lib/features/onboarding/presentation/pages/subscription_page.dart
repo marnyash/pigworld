@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes/app_routes.dart';
+import '../../../../app/theme/app_colors.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 
@@ -17,7 +18,6 @@ class _SubscriptionPageState extends ConsumerState<SubscriptionPage> {
   String? _plan;
   List<Map<String, dynamic>> _plans = [];
   bool _loadingPlans = true;
-  bool _saving = false;
 
   Map<String, dynamic>? get _selectedPlan => _plans
       .cast<Map<String, dynamic>?>()
@@ -66,169 +66,119 @@ class _SubscriptionPageState extends ConsumerState<SubscriptionPage> {
   }
 
   Future<void> _continue() async {
-    final farmId = ref.read(authProvider).valueOrNull?.selectedFarm?.id;
-    if (farmId == null) {
-      context.go(AppRoutes.home);
-      return;
-    }
-    setState(() => _saving = true);
-    try {
-      final response = await ref
-          .read(dioProvider)
-          .post('/farms/$farmId/subscription/payment', data: {'plan': _plan});
-      if (mounted) {
-        final payment = response.data['payment'] as Map<String, dynamic>? ?? {};
-        final amount = payment['amount'] is num
-            ? payment['amount'] as num
-            : num.tryParse(payment['amount']?.toString() ?? '0') ?? 0;
-        final currency = (payment['currency'] ?? 'KES').toString();
-        final merchantRequestId = (payment['merchant_request_id'] ?? '')
-            .toString();
-        final checkoutRequestId = (payment['checkout_request_id'] ?? '')
-            .toString();
-        final resultDescription =
-            (payment['result_description'] ??
-                    'M-Pesa prompt sent. Check your phone and enter your PIN.')
-                .toString();
+    if (_selectedPlan == null) return;
 
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(resultDescription)));
-
-        context.go(
-          AppRoutes.paymentStatus,
-          extra: {
-            'amount': amount,
-            'currency': currency,
-            'merchant_request_id': merchantRequestId,
-            'checkout_request_id': checkoutRequestId,
-            'result_description': resultDescription,
-          },
-        );
-      }
-    } on DioException catch (error) {
-      if (mounted) {
-        final message = error.response?.data is Map<String, dynamic>
-            ? (error.response?.data['message'] as String?)
-            : null;
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(message ?? 'Could not start M-Pesa payment.')),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _saving = false);
-    }
+    context.go(
+      AppRoutes.paymentMethod,
+      extra: {'selected_plan': _selectedPlan},
+    );
   }
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Choose subscription')),
+    appBar: AppBar(title: const Text('Subscription')),
     body: ListView(
       padding: const EdgeInsets.all(24),
       children: [
         Text(
-          'Choose a plan for your farm',
+          'Your subscription',
           style: Theme.of(context).textTheme.headlineSmall,
         ),
         const SizedBox(height: 8),
-        const Text('You can change your plan later from farm settings.'),
-        const SizedBox(height: 24),
-        _PaymentPromptCard(
-          phone: ref.read(authProvider).valueOrNull?.user.phone,
-          motherPigCount:
-              ref
-                  .read(authProvider)
-                  .valueOrNull
-                  ?.selectedFarm
-                  ?.motherPigCount ??
-              0,
-          plan: _selectedPlan,
+        const Text(
+          'This is selected automatically for your farm based on the number of mother pigs in your CRM data.',
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 24),
         if (_loadingPlans)
           const Center(child: CircularProgressIndicator())
-        else if (_plans.isEmpty)
-          const Text('No subscription plans are available yet.')
-        else
-          ..._plans.map(
-            (plan) => Card(
-              margin: const EdgeInsets.only(bottom: 12),
-              child: RadioListTile<String>(
-                value: plan['code'] as String,
-                // ignore: deprecated_member_use
-                groupValue: _plan,
-                // ignore: deprecated_member_use
-                onChanged: (value) => setState(() => _plan = value),
-                title: Text(
-                  '${plan['name']} - ${plan['amount']} ${plan['currency']}',
-                ),
-                subtitle: Text(
-                  '${plan['description'] ?? ''}\n${plan['pig_limit'] == null ? 'Unlimited pigs' : 'Up to ${plan['pig_limit']} pigs'}',
-                ),
-                isThreeLine: true,
-              ),
+        else if (_selectedPlan == null)
+          Card(
+            color: AppColors.surface,
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Text('No subscription matches your farm size yet.'),
             ),
-          ),
+          )
+        else
+          _SubscriptionPlanCard(plan: _selectedPlan!),
         const SizedBox(height: 16),
         FilledButton(
-          onPressed: _saving || _loadingPlans || _plan == null
-              ? null
-              : _continue,
-          child: _saving
-              ? const CircularProgressIndicator()
-              : const Text('Pay with M-Pesa'),
+          onPressed: _loadingPlans || _selectedPlan == null ? null : _continue,
+          child: const Text('Proceed'),
         ),
       ],
     ),
   );
 }
 
-class _PaymentPromptCard extends StatelessWidget {
-  const _PaymentPromptCard({
-    required this.phone,
-    required this.motherPigCount,
-    required this.plan,
-  });
+class _SubscriptionPlanCard extends StatelessWidget {
+  const _SubscriptionPlanCard({required this.plan});
 
-  final String? phone;
-  final int motherPigCount;
-  final Map<String, dynamic>? plan;
+  final Map<String, dynamic> plan;
 
   @override
   Widget build(BuildContext context) {
-    final amount = plan?['amount'];
-    final currency = plan?['currency'] ?? 'KES';
-    final phoneText = phone == null || phone!.trim().isEmpty
-        ? 'Add a phone number to your account before paying.'
-        : 'The M-Pesa prompt will be sent to $phone.';
+    final amount = plan['amount'];
+    final currency = plan['currency'] ?? 'KES';
+    final pigLimit = plan['pig_limit'];
+    final name = plan['name'] ?? 'Subscription';
+    final description = plan['description'] ?? 'Farm subscription';
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.phone_android_outlined),
-                const SizedBox(width: 8),
-                Text(
-                  'M-Pesa payment',
-                  style: Theme.of(context).textTheme.titleMedium,
+    final color = switch (name.toString().toLowerCase()) {
+      'starter' => AppColors.primaryContainer,
+      'growth' => AppColors.warningContainer,
+      'enterprise' => AppColors.secondaryContainer,
+      _ => AppColors.primaryContainer,
+    };
+    final accentColor = switch (name.toString().toLowerCase()) {
+      'starter' => AppColors.primaryGreen,
+      'growth' => AppColors.warmGold,
+      'enterprise' => AppColors.pigPink,
+      _ => AppColors.primaryGreen,
+    };
+
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: accentColor.withAlpha(180), width: 2),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.workspace_premium_rounded, color: accentColor),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  name,
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: accentColor,
+                    fontWeight: FontWeight.w700,
+                  ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text('$motherPigCount mother pigs'),
-            if (amount != null) Text('Amount: $amount $currency'),
-            const SizedBox(height: 8),
-            Text(phoneText),
-            if (phone != null && phone!.trim().isNotEmpty)
-              const Text(
-                'Tap Pay with M-Pesa, then enter your M-Pesa PIN on your phone.',
               ),
-          ],
-        ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Text(
+            '$amount $currency',
+            style: Theme.of(
+              context,
+            ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 8),
+          Text(description),
+          const SizedBox(height: 12),
+          Text(
+            pigLimit == null
+                ? 'Unlimited pig capacity'
+                : 'Up to $pigLimit mother pigs',
+            style: Theme.of(context).textTheme.bodyMedium,
+          ),
+        ],
       ),
     );
   }

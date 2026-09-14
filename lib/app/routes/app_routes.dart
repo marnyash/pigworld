@@ -21,6 +21,7 @@ abstract final class AppRoutes {
   static const splash = '/splash';
   static const login = '/login';
   static const forgotPassword = '/forgot-password';
+  static const otpVerification = '/otp-verification';
   static const farmSelection = '/farm-selection';
   static const farmManagement = '/farm-management';
   static const sessionExpired = '/session-expired';
@@ -30,6 +31,7 @@ abstract final class AppRoutes {
   static const accountType = '/account-type';
   static const herdSetup = '/herd-setup';
   static const subscription = '/subscription';
+  static const paymentMethod = '/payment-method';
   static const paymentStatus = '/payment-status';
   static const createAccount = '/create-account';
 }

@@ -156,6 +156,177 @@ class _SupportPageState extends State<SupportPage> {
   );
 }
 
+class _LiveChatSheet extends StatelessWidget {
+  const _LiveChatSheet();
+
+  @override
+  Widget build(BuildContext context) => DraggableScrollableSheet(
+    initialChildSize: 0.8,
+    minChildSize: 0.5,
+    maxChildSize: 0.9,
+    expand: false,
+    builder: (context, scrollController) => Container(
+      decoration: const BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
+      ),
+      child: Column(
+        children: [
+          const SizedBox(height: 10),
+          Container(
+            width: 52,
+            height: 5,
+            decoration: BoxDecoration(
+              color: AppColors.outline,
+              borderRadius: BorderRadius.circular(999),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+            child: Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'Live Chat',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  icon: const Icon(Icons.close),
+                ),
+              ],
+            ),
+          ),
+          Expanded(
+            child: ListView(
+              controller: scrollController,
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryContainer,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Text(
+                    'Please leave a short message and our support team will reply as soon as possible.',
+                    style: Theme.of(context).textTheme.bodyMedium,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                TextField(
+                  minLines: 5,
+                  maxLines: 8,
+                  decoration: const InputDecoration(
+                    hintText: 'Type your message here...',
+                    border: OutlineInputBorder(),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Live chat request sent. Our team will reply soon.',
+                          ),
+                        ),
+                      );
+                    },
+                    child: const Text('Send message'),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
+class _SupportDrawer extends StatelessWidget {
+  const _SupportDrawer({required this.onOpenContact, required this.onCall});
+
+  final Future<void> Function(Uri uri, String service) onOpenContact;
+  final Future<void> Function() onCall;
+
+  @override
+  Widget build(BuildContext context) => Drawer(
+    child: SafeArea(
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.support_agent_outlined,
+                size: 28,
+                color: AppColors.primaryGreen,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Support Center',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          ListTile(
+            leading: const Icon(Icons.chat_bubble_outline),
+            title: const Text('Open live chat'),
+            onTap: () {
+              Navigator.of(context).pop();
+              showModalBottomSheet<void>(
+                context: context,
+                isScrollControlled: true,
+                backgroundColor: Colors.transparent,
+                builder: (_) => const _LiveChatSheet(),
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.phone_outlined),
+            title: const Text('Call support'),
+            onTap: () async {
+              Navigator.of(context).pop();
+              await onOpenContact(
+                Uri.parse('tel:+254705030550'),
+                'the phone app',
+              );
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.local_hospital_outlined),
+            title: const Text('Vet emergency'),
+            onTap: () async {
+              Navigator.of(context).pop();
+              await onCall();
+            },
+          ),
+          const Divider(),
+          ListTile(
+            leading: const Icon(Icons.help_outline),
+            title: const Text('FAQ'),
+            onTap: () {
+              Navigator.of(context).pop();
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Open the FAQ section below.')),
+              );
+            },
+          ),
+        ],
+      ),
+    ),
+  );
+}
+
 // Support Header Widget
 class _SupportHeader extends StatelessWidget {
   @override

@@ -9,6 +9,7 @@ abstract final class RouteGuard {
     '/splash',
     '/login',
     '/forgot-password',
+    '/otp-verification',
     '/session-expired',
     '/permissions',
     '/language',
@@ -17,6 +18,7 @@ abstract final class RouteGuard {
     '/create-account',
     '/herd-setup',
     '/subscription',
+    '/payment-method',
     '/farm-selection',
   };
 

@@ -1,4 +1,4 @@
-package pigworld.com
+package com.pigworld
 
 import io.flutter.embedding.android.FlutterActivity
 

@@ -3,6 +3,13 @@ import 'package:flutter/foundation.dart';
 
 /// Logs request/response line info in debug builds only; headers and bodies are never logged since they may carry tokens or PII.
 class LoggingInterceptor extends Interceptor {
+  static bool shouldLogError(DioException err) {
+    final isRefreshFailure =
+        err.requestOptions.path.contains('/auth/refresh') &&
+        err.response?.statusCode == 422;
+    return !isRefreshFailure;
+  }
+
   @override
   void onRequest(RequestOptions options, RequestInterceptorHandler handler) {
     if (kDebugMode) debugPrint('--> ${options.method} ${options.uri}');
@@ -22,7 +29,7 @@ class LoggingInterceptor extends Interceptor {
 
   @override
   void onError(DioException err, ErrorInterceptorHandler handler) {
-    if (kDebugMode) {
+    if (kDebugMode && shouldLogError(err)) {
       debugPrint(
         '<-- ERROR ${err.response?.statusCode} ${err.requestOptions.uri}: ${err.message}',
       );

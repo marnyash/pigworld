@@ -11,6 +11,7 @@ class PaymentStatusPage extends StatelessWidget {
     required this.merchantRequestId,
     required this.checkoutRequestId,
     this.resultDescription,
+    this.paymentMethod = 'M-Pesa',
   });
 
   final num amount;
@@ -18,6 +19,7 @@ class PaymentStatusPage extends StatelessWidget {
   final String merchantRequestId;
   final String checkoutRequestId;
   final String? resultDescription;
+  final String paymentMethod;
 
   factory PaymentStatusPage.fromExtra(Object? extra) {
     final payload = extra is Map
@@ -35,14 +37,21 @@ class PaymentStatusPage extends StatelessWidget {
           (payload['checkout_request_id'] ?? payload['checkoutRequestId'] ?? '')
               .toString(),
       resultDescription: payload['result_description']?.toString(),
+      paymentMethod: (payload['payment_method'] ?? 'M-Pesa').toString(),
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final normalizedMethod = paymentMethod.isEmpty ? 'M-Pesa' : paymentMethod;
     final message =
         resultDescription ??
         'Check your phone and enter your PIN to confirm the payment.';
+    final heading = switch (normalizedMethod) {
+      'Airtel Money' => 'Airtel Money payment requested',
+      'Bank transfer' => 'Bank transfer requested',
+      _ => 'M-Pesa payment requested',
+    };
 
     return Scaffold(
       appBar: AppBar(title: const Text('Payment status')),
@@ -60,13 +69,18 @@ class PaymentStatusPage extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
-                        children: const [
-                          Icon(Icons.phone_android_outlined, size: 32),
-                          SizedBox(width: 12),
+                        children: [
+                          Icon(
+                            normalizedMethod == 'Bank transfer'
+                                ? Icons.account_balance_outlined
+                                : Icons.phone_android_outlined,
+                            size: 32,
+                          ),
+                          const SizedBox(width: 12),
                           Expanded(
                             child: Text(
-                              'M-Pesa payment requested',
-                              style: TextStyle(
+                              heading,
+                              style: const TextStyle(
                                 fontSize: 22,
                                 fontWeight: FontWeight.w600,
                               ),
@@ -100,10 +114,14 @@ class PaymentStatusPage extends StatelessWidget {
                       const SizedBox(height: 8),
                       Text(message),
                       const SizedBox(height: 16),
-                      Text(
-                        'Check your phone for the M-Pesa prompt and enter your PIN to complete the transaction.',
-                        style: Theme.of(context).textTheme.bodyMedium,
-                      ),
+                      Text(switch (normalizedMethod) {
+                        'Airtel Money' =>
+                          'Open your Airtel Money wallet and approve the payment request to complete the transaction.',
+                        'Bank transfer' =>
+                          'Use your banking app or branch transfer to complete the payment for this subscription.',
+                        _ =>
+                          'Check your phone for the M-Pesa prompt and enter your PIN to complete the transaction.',
+                      }, style: Theme.of(context).textTheme.bodyMedium),
                       if (merchantRequestId.isNotEmpty ||
                           checkoutRequestId.isNotEmpty) ...[
                         const SizedBox(height: 20),

@@ -18,6 +18,7 @@ import '../../features/support/presentation/pages/support_page.dart';
 import '../../features/auth/presentation/pages/forgot_password_page.dart';
 import '../../features/auth/presentation/pages/farm_selection_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
+import '../../features/auth/presentation/pages/otp_verification_page.dart';
 import '../../features/auth/presentation/pages/session_expired_page.dart';
 import '../../features/auth/presentation/pages/splash_page.dart';
 import '../../features/auth/presentation/pages/create_account_page.dart';
@@ -25,6 +26,7 @@ import '../../features/onboarding/presentation/pages/country_page.dart';
 import '../../features/onboarding/presentation/pages/account_type_page.dart';
 import '../../features/onboarding/presentation/pages/herd_setup_page.dart';
 import '../../features/onboarding/presentation/pages/subscription_page.dart';
+import '../../features/onboarding/presentation/pages/payment_method_page.dart';
 import '../../features/onboarding/presentation/pages/language_page.dart';
 import '../../features/onboarding/presentation/pages/permissions_page.dart';
 import '../../features/subscription/presentation/pages/payment_status_page.dart';
@@ -81,6 +83,10 @@ abstract final class AppRouter {
         builder: (context, state) => const SubscriptionPage(),
       ),
       GoRoute(
+        path: AppRoutes.paymentMethod,
+        builder: (context, state) => PaymentMethodPage.fromExtra(state.extra),
+      ),
+      GoRoute(
         path: AppRoutes.paymentStatus,
         builder: (context, state) => PaymentStatusPage.fromExtra(state.extra),
       ),
@@ -91,6 +97,13 @@ abstract final class AppRouter {
       GoRoute(
         path: AppRoutes.forgotPassword,
         builder: (context, state) => const ForgotPasswordPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.otpVerification,
+        builder: (context, state) {
+          final email = state.uri.queryParameters['email'] ?? '';
+          return OtpVerificationPage(email: email);
+        },
       ),
       GoRoute(
         path: AppRoutes.sessionExpired,

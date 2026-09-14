@@ -9,10 +9,16 @@ import '../services/google_sign_in_service.dart';
 import '../widgets/login_form.dart';
 import '../widgets/server_settings_dialog.dart';
 
-class LoginPage extends ConsumerWidget {
+class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key});
+
   @override
-  Widget build(BuildContext context, WidgetRef ref) => Scaffold(
+  ConsumerState<LoginPage> createState() => _LoginPageState();
+}
+
+class _LoginPageState extends ConsumerState<LoginPage> {
+  @override
+  Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
       backgroundColor: Colors.transparent,
       elevation: 0,
@@ -52,17 +58,62 @@ class LoginPage extends ConsumerWidget {
                       );
                       return;
                     }
-                    final session = await ref.read(loginUseCaseProvider)(
-                      identifier,
-                      password,
-                      rememberMe: rememberMe,
-                    );
-                    await ref
-                        .read(authServiceProvider)
-                        .setRememberMe(rememberMe);
-                    await ref.read(sessionManagerProvider).markActive();
-                    ref.read(authProvider.notifier).setSession(session);
-                    if (context.mounted) context.go(AppRoutes.home);
+
+                    try {
+                      final session = await ref.read(loginUseCaseProvider)(
+                        identifier,
+                        password,
+                        rememberMe: rememberMe,
+                      );
+                      await ref
+                          .read(authServiceProvider)
+                          .setRememberMe(rememberMe);
+                      await ref.read(sessionManagerProvider).markActive();
+                      ref.read(authProvider.notifier).setSession(session);
+
+                      final email = session.user.email.trim();
+                      if (email.isEmpty) {
+                        if (context.mounted) context.go(AppRoutes.home);
+                        return;
+                      }
+
+                      try {
+                        await ref.read(forgotPasswordUseCaseProvider)(email);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'OTP code sent to your registered email.',
+                              ),
+                            ),
+                          );
+                          context.go(
+                            '${AppRoutes.otpVerification}?email=${Uri.encodeComponent(email)}',
+                          );
+                        }
+                        return;
+                      } catch (_) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Login succeeded, but the OTP could not be sent. Please try again.',
+                              ),
+                            ),
+                          );
+                        }
+                      }
+                    } catch (_) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Unable to sign in. Please check your credentials and try again.',
+                            ),
+                          ),
+                        );
+                      }
+                    }
                   },
                 ),
                 const SizedBox(height: 12),
