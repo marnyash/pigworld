@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:record/record.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
+import '../../../notifications/data/notifications_api.dart';
+import '../../../notifications/presentation/providers/notifications_provider.dart';
 
 class SupportPage extends StatefulWidget {
   const SupportPage({super.key});
@@ -72,192 +79,440 @@ class _SupportPageState extends State<SupportPage> {
       _openContact(Uri.parse('tel:+254705030550'), 'the phone app');
 
   void _openLiveChat() {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const _LiveChatPage()));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Consumer(
+      builder: (context, ref, child) {
+        final notifications =
+            ref.watch(notificationsProvider).valueOrNull ??
+            const <FarmNotification>[];
+        final crmMessage = notifications.cast<FarmNotification?>().firstWhere(
+          (notification) => notification?.type == 'crm_message',
+          orElse: () => null,
+        );
+        final customerCareName = crmMessage?.title.trim().isNotEmpty == true
+            ? crmMessage!.title.trim()
+            : 'Customer Care';
+
+        return Scaffold(
+          endDrawer: _SupportDrawer(
+            onOpenContact: _openContact,
+            onCall: callVeterinary,
+          ),
+          appBar: AppBar(
+            title: const Text('Customer Support'),
+            leading: IconButton(
+              tooltip: 'Back to home',
+              icon: const Icon(Icons.arrow_back),
+              onPressed: () => context.go(AppRoutes.home),
+            ),
+            actions: [
+              Builder(
+                builder: (context) => IconButton(
+                  tooltip: 'Guidance and contacts',
+                  icon: const Icon(Icons.menu_open),
+                  onPressed: () => Scaffold.of(context).openEndDrawer(),
+                ),
+              ),
+            ],
+            centerTitle: true,
+          ),
+          body: ListView(
+            padding: const EdgeInsets.fromLTRB(
+              AppDimensions.pagePadding,
+              AppDimensions.pagePadding,
+              AppDimensions.pagePadding,
+              32,
+            ),
+            children: [
+              _SupportHeader(
+                customerCareName: customerCareName,
+                onEmergencyCall: callVeterinary,
+              ),
+              const SizedBox(height: AppDimensions.spacingLarge),
+              Text('Live chat', style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: AppDimensions.spacingMedium),
+              _LiveChatPreview(
+                customerCareName: customerCareName,
+                message: crmMessage?.body,
+                onOpenChat: _openLiveChat,
+              ),
+              const SizedBox(height: AppDimensions.spacingLarge),
+              Text(
+                'Contact Options',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: AppDimensions.spacingMedium),
+              _ContactOptionsSection(onOpenContact: _openContact),
+              const SizedBox(height: AppDimensions.spacingLarge),
+              _EmergencyVeterinaryCard(onCall: callVeterinary),
+              const SizedBox(height: AppDimensions.spacingLarge),
+              Text(
+                'Frequently Asked Questions',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: AppDimensions.spacingMedium),
+              _FAQSection(),
+              const SizedBox(height: AppDimensions.spacingLarge),
+              Text(
+                'Submit a Ticket',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: AppDimensions.spacingMedium),
+              _TicketSubmissionForm(
+                subjectController: subjectController,
+                descriptionController: descriptionController,
+                selectedCategory: selectedCategory,
+                onCategoryChanged: (value) {
+                  setState(() => selectedCategory = value ?? 'General');
+                },
+                onSubmit: submitTicket,
+              ),
+              const SizedBox(height: AppDimensions.spacingLarge),
+              Text(
+                'User Guide & Tutorials',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+              const SizedBox(height: AppDimensions.spacingMedium),
+              _UserGuideSection(),
+            ],
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _LiveChatPage extends StatefulWidget {
+  const _LiveChatPage();
+
+  @override
+  State<_LiveChatPage> createState() => _LiveChatPageState();
+}
+
+class _LiveChatPageState extends State<_LiveChatPage> {
+  final _messageController = TextEditingController();
+  final _imagePicker = ImagePicker();
+  final _recorder = AudioRecorder();
+  XFile? _photo;
+  PlatformFile? _document;
+  String? _voicePath;
+  bool _isRecording = false;
+
+  bool get _hasAttachment =>
+      _photo != null || _document != null || _voicePath != null;
+
+  @override
+  void dispose() {
+    _messageController.dispose();
+    _recorder.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickPhoto(ImageSource source) async {
+    final photo = await _imagePicker.pickImage(
+      source: source,
+      imageQuality: 85,
+    );
+    if (!mounted || photo == null) return;
+    setState(() => _photo = photo);
+  }
+
+  Future<void> _pickDocument() async {
+    final result = await FilePicker.pickFiles(withData: false);
+    if (!mounted || result == null || result.files.isEmpty) return;
+    setState(() => _document = result.files.single);
+  }
+
+  Future<void> _startRecording() async {
+    if (!await _recorder.hasPermission()) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Microphone permission is required.')),
+      );
+      return;
+    }
+
+    final directory = await getTemporaryDirectory();
+    final path =
+        '${directory.path}/pigworld_chat_${DateTime.now().millisecondsSinceEpoch}.m4a';
+    await _recorder.start(const RecordConfig(), path: path);
+    if (mounted) setState(() => _isRecording = true);
+  }
+
+  Future<void> _stopRecording() async {
+    final path = await _recorder.stop();
+    if (!mounted) return;
+    setState(() {
+      _isRecording = false;
+      _voicePath = path;
+    });
+  }
+
+  void _clearAttachment() {
+    setState(() {
+      _photo = null;
+      _document = null;
+      _voicePath = null;
+    });
+  }
+
+  void _sendMessage() {
+    final text = _messageController.text.trim();
+    if (text.isEmpty && !_hasAttachment) return;
+
+    final attachmentLabel = _photo != null
+        ? 'photo'
+        : _document != null
+        ? 'document'
+        : _voicePath != null
+        ? 'voice note'
+        : null;
+    final suffix = attachmentLabel == null ? '' : ' with $attachmentLabel';
+
+    _messageController.clear();
+    _clearAttachment();
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Message$suffix sent to Customer Care.')),
+    );
+  }
+
+  void _showAttachmentOptions() {
     showModalBottomSheet<void>(
       context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => const _LiveChatSheet(),
+      builder: (sheetContext) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Photo from gallery'),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                _pickPhoto(ImageSource.gallery);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined),
+              title: const Text('Take a photo'),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                _pickPhoto(ImageSource.camera);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.insert_drive_file_outlined),
+              title: const Text('Document'),
+              onTap: () {
+                Navigator.pop(sheetContext);
+                _pickDocument();
+              },
+            ),
+          ],
+        ),
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    endDrawer: _SupportDrawer(
-      onOpenContact: _openContact,
-      onCall: callVeterinary,
-    ),
     appBar: AppBar(
-      title: const Text('Customer Support'),
-      leading: IconButton(
-        tooltip: 'Back to home',
-        icon: const Icon(Icons.arrow_back),
-        onPressed: () => context.go(AppRoutes.home),
+      title: const Row(
+        children: [
+          CircleAvatar(
+            radius: 16,
+            backgroundColor: AppColors.primaryGreen,
+            child: Icon(Icons.support_agent, color: Colors.white, size: 19),
+          ),
+          SizedBox(width: 10),
+          Text('Customer Care'),
+        ],
       ),
       actions: [
-        Builder(
-          builder: (context) => IconButton(
-            tooltip: 'Guidance and contacts',
-            icon: const Icon(Icons.menu_open),
-            onPressed: () => Scaffold.of(context).openEndDrawer(),
-          ),
+        IconButton(
+          tooltip: 'Close chat',
+          onPressed: () => Navigator.of(context).pop(),
+          icon: const Icon(Icons.close),
         ),
       ],
-      centerTitle: true,
     ),
-    body: ListView(
-      padding: const EdgeInsets.fromLTRB(
-        AppDimensions.pagePadding,
-        AppDimensions.pagePadding,
-        AppDimensions.pagePadding,
-        32,
-      ),
-      children: [
-        // Support Header
-        _SupportHeader(),
-        const SizedBox(height: AppDimensions.spacingLarge),
-
-        // Quick Actions
-        Text('Get Help Quickly', style: Theme.of(context).textTheme.titleLarge),
-        const SizedBox(height: AppDimensions.spacingMedium),
-        _QuickActionsSection(onOpenChat: _openLiveChat),
-        const SizedBox(height: AppDimensions.spacingLarge),
-
-        // Contact Options
-        Text('Contact Options', style: Theme.of(context).textTheme.titleLarge),
-        const SizedBox(height: AppDimensions.spacingMedium),
-        _ContactOptionsSection(onOpenContact: _openContact),
-        const SizedBox(height: AppDimensions.spacingLarge),
-
-        // Emergency Veterinary Help
-        _EmergencyVeterinaryCard(onCall: callVeterinary),
-        const SizedBox(height: AppDimensions.spacingLarge),
-
-        // FAQ Section
-        Text(
-          'Frequently Asked Questions',
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
-        const SizedBox(height: AppDimensions.spacingMedium),
-        _FAQSection(),
-        const SizedBox(height: AppDimensions.spacingLarge),
-
-        // Submit a Ticket
-        Text('Submit a Ticket', style: Theme.of(context).textTheme.titleLarge),
-        const SizedBox(height: AppDimensions.spacingMedium),
-        _TicketSubmissionForm(
-          subjectController: subjectController,
-          descriptionController: descriptionController,
-          selectedCategory: selectedCategory,
-          onCategoryChanged: (value) {
-            setState(() => selectedCategory = value ?? 'General');
-          },
-          onSubmit: submitTicket,
-        ),
-        const SizedBox(height: AppDimensions.spacingLarge),
-
-        // User Guide
-        Text(
-          'User Guide & Tutorials',
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
-        const SizedBox(height: AppDimensions.spacingMedium),
-        _UserGuideSection(),
-      ],
-    ),
-  );
-}
-
-class _LiveChatSheet extends StatelessWidget {
-  const _LiveChatSheet();
-
-  @override
-  Widget build(BuildContext context) => DraggableScrollableSheet(
-    initialChildSize: 0.8,
-    minChildSize: 0.5,
-    maxChildSize: 0.9,
-    expand: false,
-    builder: (context, scrollController) => Container(
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(22)),
-      ),
+    body: SafeArea(
       child: Column(
         children: [
-          const SizedBox(height: 10),
-          Container(
-            width: 52,
-            height: 5,
-            decoration: BoxDecoration(
-              color: AppColors.outline,
-              borderRadius: BorderRadius.circular(999),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-            child: Row(
-              children: [
-                const Expanded(
-                  child: Text(
-                    'Live Chat',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
-                  ),
-                ),
-                IconButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: const Icon(Icons.close),
-                ),
-              ],
-            ),
-          ),
           Expanded(
             child: ListView(
-              controller: scrollController,
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
               children: [
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: AppColors.primaryContainer,
+                    color: const Color(0xFFE7F6EC),
                     borderRadius: BorderRadius.circular(16),
                   ),
-                  child: Text(
-                    'Please leave a short message and our support team will reply as soon as possible.',
-                    style: Theme.of(context).textTheme.bodyMedium,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  minLines: 5,
-                  maxLines: 8,
-                  decoration: const InputDecoration(
-                    hintText: 'Type your message here...',
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Live chat request sent. Our team will reply soon.',
-                          ),
+                  child: const Row(
+                    children: [
+                      CircleAvatar(
+                        backgroundColor: AppColors.primaryGreen,
+                        child: Icon(Icons.support_agent, color: Colors.white),
+                      ),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          'Customer Care is online. Please leave a message and our team will reply as soon as possible.',
                         ),
-                      );
-                    },
-                    child: const Text('Send message'),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFF0F0F0),
+                      borderRadius: BorderRadius.only(
+                        topLeft: Radius.circular(4),
+                        topRight: Radius.circular(16),
+                        bottomRight: Radius.circular(16),
+                        bottomLeft: Radius.circular(16),
+                      ),
+                    ),
+                    child: const Text('How can we help with your farm today?'),
                   ),
                 ),
               ],
+            ),
+          ),
+          if (_hasAttachment)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: _AttachmentPreview(
+                photo: _photo,
+                document: _document,
+                voicePath: _voicePath,
+                onRemove: _clearAttachment,
+              ),
+            ),
+          Material(
+            color: Theme.of(context).colorScheme.surface,
+            elevation: 8,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  IconButton(
+                    tooltip: 'Attach photo or document',
+                    onPressed: _showAttachmentOptions,
+                    icon: const Icon(Icons.attach_file),
+                  ),
+                  Expanded(
+                    child: TextField(
+                      controller: _messageController,
+                      minLines: 1,
+                      maxLines: 5,
+                      textCapitalization: TextCapitalization.sentences,
+                      decoration: InputDecoration(
+                        hintText: _isRecording
+                            ? 'Recording voice note...'
+                            : 'Type a message',
+                        filled: true,
+                        fillColor: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(24),
+                          borderSide: BorderSide.none,
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  IconButton(
+                    tooltip: _isRecording
+                        ? 'Stop voice recording'
+                        : 'Record voice message',
+                    onPressed: _isRecording ? _stopRecording : _startRecording,
+                    color: _isRecording ? AppColors.danger : null,
+                    icon: Icon(
+                      _isRecording ? Icons.stop_circle : Icons.mic_none,
+                    ),
+                  ),
+                  IconButton(
+                    tooltip: 'Send message',
+                    onPressed: _sendMessage,
+                    icon: const Icon(Icons.send),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
       ),
     ),
   );
+}
+
+class _AttachmentPreview extends StatelessWidget {
+  const _AttachmentPreview({
+    required this.photo,
+    required this.document,
+    required this.voicePath,
+    required this.onRemove,
+  });
+
+  final XFile? photo;
+  final PlatformFile? document;
+  final String? voicePath;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final name = photo != null
+        ? photo!.name
+        : document != null
+        ? document!.name
+        : 'Voice note';
+    final icon = photo != null
+        ? Icons.image_outlined
+        : document != null
+        ? Icons.insert_drive_file_outlined
+        : Icons.mic_none;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: AppColors.primaryGreen),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis),
+          ),
+          IconButton(
+            tooltip: 'Remove attachment',
+            onPressed: onRemove,
+            icon: const Icon(Icons.close),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 class _SupportDrawer extends StatelessWidget {
@@ -294,11 +549,8 @@ class _SupportDrawer extends StatelessWidget {
             title: const Text('Open live chat'),
             onTap: () {
               Navigator.of(context).pop();
-              showModalBottomSheet<void>(
-                context: context,
-                isScrollControlled: true,
-                backgroundColor: Colors.transparent,
-                builder: (_) => const _LiveChatSheet(),
+              Navigator.of(context).push(
+                MaterialPageRoute<void>(builder: (_) => const _LiveChatPage()),
               );
             },
           ),
@@ -338,153 +590,229 @@ class _SupportDrawer extends StatelessWidget {
   );
 }
 
-// Support Header Widget
-class _SupportHeader extends StatelessWidget {
+class _LiveChatPreview extends StatelessWidget {
+  const _LiveChatPreview({
+    required this.customerCareName,
+    required this.message,
+    required this.onOpenChat,
+  });
+
+  final String customerCareName;
+  final String? message;
+  final VoidCallback onOpenChat;
+
   @override
   Widget build(BuildContext context) => Card(
-    color: AppColors.deepGreen,
-    child: Padding(
-      padding: const EdgeInsets.all(AppDimensions.spacingLarge),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    clipBehavior: Clip.antiAlias,
+    child: Column(
+      children: [
+        Container(
+          color: const Color(0xFFE7F6EC),
+          padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+          child: Row(
             children: [
-              CircleAvatar(
-                radius: 28,
-                backgroundColor: AppColors.inverseText.withValues(alpha: 0.18),
-                child: const Icon(
-                  Icons.support_agent_outlined,
-                  color: AppColors.inverseText,
-                  size: 28,
-                ),
+              const CircleAvatar(
+                backgroundColor: AppColors.primaryGreen,
+                child: Icon(Icons.support_agent, color: Colors.white),
               ),
-              const SizedBox(width: AppDimensions.spacingMedium),
+              const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'We\'re Here to Help',
-                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        color: AppColors.inverseText,
+                      customerCareName,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: AppColors.success,
-                            shape: BoxShape.circle,
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          'Online',
-                          style: Theme.of(context).textTheme.bodySmall
-                              ?.copyWith(color: AppColors.inverseMutedText),
-                        ),
-                      ],
+                    Text(
+                      'Customer Care · online',
+                      style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ],
                 ),
               ),
+              const Icon(Icons.verified, color: AppColors.primaryGreen),
             ],
           ),
-          const SizedBox(height: AppDimensions.spacingMedium),
-          Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppDimensions.spacingMedium,
-              vertical: AppDimensions.spacingSmall,
-            ),
-            decoration: BoxDecoration(
-              color: AppColors.inverseText.withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(AppDimensions.radius),
-            ),
-            child: Text(
-              '⏱️ Average response time: 2-4 hours',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: AppColors.inverseText),
-            ),
+        ),
+        Container(
+          color: const Color(0xFFF3FBF5),
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.only(
+                      topLeft: Radius.circular(4),
+                      topRight: Radius.circular(16),
+                      bottomRight: Radius.circular(16),
+                      bottomLeft: Radius.circular(16),
+                    ),
+                  ),
+                  child: Text('Hi there! We\'re here to help with your farm.'),
+                ),
+              ),
+              if (message != null && message!.trim().isNotEmpty) ...[
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    decoration: const BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.all(Radius.circular(16)),
+                    ),
+                    child: Text(message!),
+                  ),
+                ),
+              ],
+              const SizedBox(height: 14),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: onOpenChat,
+                  icon: const Icon(Icons.chat_bubble_outline),
+                  label: const Text('Continue live chat'),
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      ],
     ),
   );
 }
 
-// Quick Actions Section
-class _QuickActionsSection extends StatelessWidget {
-  final VoidCallback onOpenChat;
+// Support Header Widget
+class _SupportHeader extends StatelessWidget {
+  const _SupportHeader({
+    required this.customerCareName,
+    required this.onEmergencyCall,
+  });
 
-  const _QuickActionsSection({required this.onOpenChat});
+  final String customerCareName;
+  final VoidCallback onEmergencyCall;
 
   @override
-  Widget build(BuildContext context) => Row(
+  Widget build(BuildContext context) => Stack(
+    clipBehavior: Clip.none,
     children: [
-      Expanded(
-        child: _ActionCard(
-          icon: Icons.chat_bubble_outline,
-          label: 'Live Chat',
-          onTap: onOpenChat,
+      Card(
+        color: AppColors.deepGreen,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            AppDimensions.spacingLarge,
+            AppDimensions.spacingLarge,
+            88,
+            AppDimensions.spacingLarge,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 28,
+                    backgroundColor: AppColors.inverseText.withValues(
+                      alpha: 0.18,
+                    ),
+                    child: const Icon(
+                      Icons.support_agent_outlined,
+                      color: AppColors.inverseText,
+                      size: 28,
+                    ),
+                  ),
+                  const SizedBox(width: AppDimensions.spacingMedium),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'We\'re here to help',
+                          style: Theme.of(context).textTheme.titleLarge
+                              ?.copyWith(color: AppColors.inverseText),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Container(
+                              width: 8,
+                              height: 8,
+                              decoration: BoxDecoration(
+                                color: AppColors.success,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              'Online',
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: AppColors.inverseMutedText),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          customerCareName,
+                          style: Theme.of(context).textTheme.bodySmall
+                              ?.copyWith(
+                                color: AppColors.inverseText,
+                                fontWeight: FontWeight.w600,
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppDimensions.spacingMedium),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppDimensions.spacingMedium,
+                  vertical: AppDimensions.spacingSmall,
+                ),
+                decoration: BoxDecoration(
+                  color: AppColors.inverseText.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(AppDimensions.radius),
+                ),
+                child: Text(
+                  'Average response time: 2-4 hours',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: AppColors.inverseText),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
-      const SizedBox(width: AppDimensions.spacingMedium),
-      Expanded(
-        child: _ActionCard(
-          icon: Icons.help_outline,
-          label: 'FAQ',
-          onTap: () {},
-        ),
-      ),
-      const SizedBox(width: AppDimensions.spacingMedium),
-      Expanded(
-        child: _ActionCard(
-          icon: Icons.video_library_outlined,
-          label: 'Tutorials',
-          onTap: () {},
+      Positioned(
+        right: 18,
+        bottom: 18,
+        child: FloatingActionButton(
+          heroTag: 'support-emergency-vet',
+          mini: true,
+          backgroundColor: AppColors.danger,
+          foregroundColor: AppColors.inverseText,
+          tooltip: 'Call emergency vet',
+          onPressed: onEmergencyCall,
+          child: const Icon(Icons.phone_in_talk_outlined),
         ),
       ),
     ],
-  );
-}
-
-// Action Card Widget
-class _ActionCard extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  const _ActionCard({
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) => Card(
-    child: InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(AppDimensions.radius),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 12),
-        child: Column(
-          children: [
-            Icon(icon, color: AppColors.primaryGreen, size: 28),
-            const SizedBox(height: 8),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              style: Theme.of(context).textTheme.labelSmall,
-            ),
-          ],
-        ),
-      ),
-    ),
   );
 }
 

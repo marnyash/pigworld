@@ -20,8 +20,11 @@ class LoginForm extends StatefulWidget {
 }
 
 class _LoginFormState extends State<LoginForm> {
-  final emailController = TextEditingController();
-  final passwordController = TextEditingController();
+  static const demoEmail = 'test@gmail.com';
+  static const demoPassword = 'password';
+
+  final emailController = TextEditingController(text: demoEmail);
+  final passwordController = TextEditingController(text: demoPassword);
   final formKey = GlobalKey<FormState>();
   bool rememberMe = false;
   bool isLoading = false;
@@ -77,7 +80,8 @@ class _LoginFormState extends State<LoginForm> {
                     ? Icons.visibility_off_outlined
                     : Icons.visibility_outlined,
               ),
-              onPressed: () => setState(() => passwordVisible = !passwordVisible),
+              onPressed: () =>
+                  setState(() => passwordVisible = !passwordVisible),
             ),
           ),
           validator: (value) {

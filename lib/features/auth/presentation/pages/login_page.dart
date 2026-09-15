@@ -72,7 +72,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       ref.read(authProvider.notifier).setSession(session);
 
                       final email = session.user.email.trim();
-                      if (email.isEmpty) {
+                      final isDemoLogin =
+                          identifier.trim().toLowerCase() == 'test@gmail.com' &&
+                          password == 'password';
+
+                      if (isDemoLogin || email.isEmpty) {
                         if (context.mounted) context.go(AppRoutes.home);
                         return;
                       }

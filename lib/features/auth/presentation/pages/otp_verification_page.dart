@@ -13,7 +13,9 @@ class OtpVerificationPage extends StatefulWidget {
 }
 
 class _OtpVerificationPageState extends State<OtpVerificationPage> {
-  final _otpController = TextEditingController();
+  static const _demoOtp = '123456';
+
+  final _otpController = TextEditingController(text: _demoOtp);
   final _formKey = GlobalKey<FormState>();
 
   @override
@@ -24,9 +26,7 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(
-      title: const Text('OTP verification'),
-    ),
+    appBar: AppBar(title: const Text('OTP verification')),
     body: SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -56,17 +56,26 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                   if (!RegExp(r'^\d{4,6}$').hasMatch(code)) {
                     return 'Enter a valid 4-6 digit OTP';
                   }
+                  if (code != _demoOtp) {
+                    return 'Use the demo OTP code: 123456';
+                  }
                   return null;
                 },
               ),
               const SizedBox(height: 20),
               FilledButton(
                 onPressed: () {
-                  if (!(_formKey.currentState?.validate() ?? false)) return;
+                  final code = _otpController.text.trim();
+                  if (code.isEmpty) {
+                    _formKey.currentState?.validate();
+                    return;
+                  }
+                  if (code != _demoOtp) {
+                    _formKey.currentState?.validate();
+                    return;
+                  }
                   ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('OTP verified successfully.'),
-                    ),
+                    const SnackBar(content: Text('OTP verified successfully.')),
                   );
                   context.go(AppRoutes.home);
                 },
@@ -77,7 +86,9 @@ class _OtpVerificationPageState extends State<OtpVerificationPage> {
                 onPressed: () {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text('A new OTP can be requested from the login screen.'),
+                      content: Text(
+                        'A new OTP can be requested from the login screen.',
+                      ),
                     ),
                   );
                 },
