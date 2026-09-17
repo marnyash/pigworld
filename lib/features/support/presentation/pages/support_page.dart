@@ -224,9 +224,9 @@ class _LiveChatPageState extends State<_LiveChatPage> {
   }
 
   Future<void> _pickDocument() async {
-    final result = await FilePicker.pickFiles(withData: false);
-    if (!mounted || result == null || result.files.isEmpty) return;
-    setState(() => _document = result.files.single);
+    final result = await FilePicker.pickFiles();
+    if (!mounted || result.isEmpty) return;
+    setState(() => _document = result.single);
   }
 
   Future<void> _startRecording() async {

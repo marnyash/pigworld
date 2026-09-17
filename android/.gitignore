@@ -1,4 +1,7 @@
-gradle-wrapper.jar
+key.properties
+*.jks
+*.keystore
+*.p12gradle-wrapper.jar
 /.gradle
 /captures/
 /gradlew
