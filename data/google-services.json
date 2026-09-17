@@ -1,41 +1,33 @@
 {
   "project_info": {
-    "project_number": "781587000833",
-    "project_id": "pigworld-c9c70",
-    "storage_bucket": "pigworld-c9c70.firebasestorage.app"
+    "project_number": "279793601563",
+    "project_id": "pig-world-smart",
+    "storage_bucket": "pig-world-smart.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:781587000833:android:3f4b06c14f2e0575d3da00",
+        "mobilesdk_app_id": "1:279793601563:android:6552565bb0bd8d7230bcbe",
         "android_client_info": {
           "package_name": "com.pigworld"
         }
       },
       "oauth_client": [
         {
-          "client_id": "781587000833-fd2jt6h2r2qgubo1ej49tt02tiankniv.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.pigworld",
-            "certificate_hash": "3d4d440a4b1c514779ab8dc322e6fea5b5fd866d"
-          }
-        },
-        {
-          "client_id": "781587000833-hchjk18iqfbafnacpujkmufqr2ff3p3e.apps.googleusercontent.com",
+          "client_id": "279793601563-5kqo573nflvigogaibeljgk5em21a1mpu.apps.googleusercontent.com",
           "client_type": 3
         }
       ],
       "api_key": [
         {
-          "current_key": "AIzaSyAGDY1OIKEjRndiEqZ_8Vfw07boVU6YURk"
+          "current_key": "AIzaSyCyi8DN89WFYMot4aCm-tCXsA_u3US4FQ"
         }
       ],
       "services": {
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "781587000833-hchjk18iqfbafnacpujkmufqr2ff3p3e.apps.googleusercontent.com",
+              "client_id": "279793601563-5kqo573nflvigogaibeljgk5em21a1mpu.apps.googleusercontent.com",
               "client_type": 3
             }
           ]

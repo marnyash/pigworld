@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'routes/app_router.dart';
+import 'routes/app_routes.dart';
 import '../shared/providers/theme_provider.dart';
 import '../shared/providers/connectivity_provider.dart';
 import '../features/onboarding/presentation/providers/onboarding_provider.dart';
+import '../features/notifications/data/notifications_api.dart';
+import '../features/notifications/presentation/providers/notifications_provider.dart';
 import 'theme/app_theme.dart';
 
 class MyApp extends StatelessWidget {
@@ -83,9 +87,108 @@ class _OfflineBannerOverlay extends ConsumerWidget {
               ),
             ),
           ),
+        const _NotificationBanner(),
         Expanded(child: child ?? const SizedBox.shrink()),
       ],
     );
+  }
+}
+
+class _NotificationBanner extends ConsumerStatefulWidget {
+  const _NotificationBanner();
+
+  @override
+  ConsumerState<_NotificationBanner> createState() =>
+      _NotificationBannerState();
+}
+
+class _NotificationBannerState extends ConsumerState<_NotificationBanner> {
+  String? _dismissedNotificationId;
+
+  @override
+  Widget build(BuildContext context) {
+    final notification = ref
+        .watch(notificationsProvider)
+        .valueOrNull
+        ?.firstWhereOrNull((item) => !item.isRead);
+
+    if (notification == null || notification.id == _dismissedNotificationId) {
+      return const SizedBox.shrink();
+    }
+
+    final color = switch (notification.severity) {
+      'danger' => Colors.red,
+      'warning' => Colors.orange,
+      'success' => Colors.green,
+      _ => Theme.of(context).colorScheme.primary,
+    };
+
+    return Material(
+      color: color,
+      child: SafeArea(
+        bottom: false,
+        child: InkWell(
+          onTap: () => _openNotification(notification),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
+            child: Row(
+              children: [
+                const Icon(Icons.notifications_active_outlined, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        notification.title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      Text(
+                        notification.body,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(color: Colors.white),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Dismiss notification banner',
+                  icon: const Icon(Icons.close, color: Colors.white),
+                  onPressed: () => setState(
+                    () => _dismissedNotificationId = notification.id,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openNotification(FarmNotification notification) async {
+    try {
+      await ref
+          .read(notificationsProvider.notifier)
+          .markAsRead(notification.id);
+    } finally {
+      if (mounted) context.push(AppRoutes.notifications);
+    }
+  }
+}
+
+extension on Iterable<FarmNotification> {
+  FarmNotification? firstWhereOrNull(bool Function(FarmNotification) test) {
+    for (final item in this) {
+      if (test(item)) return item;
+    }
+    return null;
   }
 }
 
