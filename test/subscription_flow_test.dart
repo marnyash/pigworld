@@ -124,6 +124,6 @@ void main() {
 
     expect(called, isTrue);
     expect(lastPath, '/farms/farm-1/subscription/payment');
-    expect(lastData, {'plan': 'starter'});
+    expect(lastData, {'plan': 'starter', 'phone': '254746933820'});
   });
 }

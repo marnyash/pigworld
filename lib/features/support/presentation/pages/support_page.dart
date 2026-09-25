@@ -188,14 +188,14 @@ class _SupportPageState extends State<SupportPage> {
   }
 }
 
-class _LiveChatPage extends StatefulWidget {
+class _LiveChatPage extends ConsumerStatefulWidget {
   const _LiveChatPage();
 
   @override
-  State<_LiveChatPage> createState() => _LiveChatPageState();
+  ConsumerState<_LiveChatPage> createState() => _LiveChatPageState();
 }
 
-class _LiveChatPageState extends State<_LiveChatPage> {
+class _LiveChatPageState extends ConsumerState<_LiveChatPage> {
   final _messageController = TextEditingController();
   final _imagePicker = ImagePicker();
   final _recorder = AudioRecorder();
@@ -203,6 +203,7 @@ class _LiveChatPageState extends State<_LiveChatPage> {
   PlatformFile? _document;
   String? _voicePath;
   bool _isRecording = false;
+  bool _isSending = false;
 
   bool get _hasAttachment =>
       _photo != null || _document != null || _voicePath != null;
@@ -224,9 +225,9 @@ class _LiveChatPageState extends State<_LiveChatPage> {
   }
 
   Future<void> _pickDocument() async {
-    final result = await FilePicker.pickFiles(withData: false);
-    if (!mounted || result == null || result.files.isEmpty) return;
-    setState(() => _document = result.files.single);
+    final result = await FilePicker.pickFiles();
+    if (!mounted || result.isEmpty) return;
+    setState(() => _document = result.single);
   }
 
   Future<void> _startRecording() async {
@@ -262,24 +263,35 @@ class _LiveChatPageState extends State<_LiveChatPage> {
     });
   }
 
-  void _sendMessage() {
+  Future<void> _sendMessage() async {
     final text = _messageController.text.trim();
     if (text.isEmpty && !_hasAttachment) return;
+    if (text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Add a message before sending an attachment.'),
+        ),
+      );
+      return;
+    }
 
-    final attachmentLabel = _photo != null
-        ? 'photo'
-        : _document != null
-        ? 'document'
-        : _voicePath != null
-        ? 'voice note'
-        : null;
-    final suffix = attachmentLabel == null ? '' : ' with $attachmentLabel';
-
-    _messageController.clear();
-    _clearAttachment();
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Message$suffix sent to Customer Care.')),
-    );
+    setState(() => _isSending = true);
+    try {
+      await ref.read(notificationsProvider.notifier).sendMessage(text);
+      if (!mounted) return;
+      _messageController.clear();
+      _clearAttachment();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Message sent to Customer Care.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not send message: $error')));
+    } finally {
+      if (mounted) setState(() => _isSending = false);
+    }
   }
 
   void _showAttachmentOptions() {
@@ -319,147 +331,183 @@ class _LiveChatPageState extends State<_LiveChatPage> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(
-      title: const Row(
-        children: [
-          CircleAvatar(
-            radius: 16,
-            backgroundColor: AppColors.primaryGreen,
-            child: Icon(Icons.support_agent, color: Colors.white, size: 19),
+  Widget build(BuildContext context) {
+    final notifications =
+        ref.watch(notificationsProvider).valueOrNull ??
+        const <FarmNotification>[];
+    final messages =
+        notifications
+            .where(
+              (notification) =>
+                  notification.type == 'crm_message' ||
+                  notification.type == 'crm_message_sent',
+            )
+            .toList()
+          ..sort((left, right) => left.createdAt.compareTo(right.createdAt));
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Row(
+          children: [
+            CircleAvatar(
+              radius: 16,
+              backgroundColor: AppColors.primaryGreen,
+              child: Icon(Icons.support_agent, color: Colors.white, size: 19),
+            ),
+            SizedBox(width: 10),
+            Text('Customer Care'),
+          ],
+        ),
+        actions: [
+          IconButton(
+            tooltip: 'Close chat',
+            onPressed: () => Navigator.of(context).pop(),
+            icon: const Icon(Icons.close),
           ),
-          SizedBox(width: 10),
-          Text('Customer Care'),
         ],
       ),
-      actions: [
-        IconButton(
-          tooltip: 'Close chat',
-          onPressed: () => Navigator.of(context).pop(),
-          icon: const Icon(Icons.close),
-        ),
-      ],
-    ),
-    body: SafeArea(
-      child: Column(
-        children: [
-          Expanded(
-            child: ListView(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE7F6EC),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Row(
-                    children: [
-                      CircleAvatar(
-                        backgroundColor: AppColors.primaryGreen,
-                        child: Icon(Icons.support_agent, color: Colors.white),
-                      ),
-                      SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          'Customer Care is online. Please leave a message and our team will reply as soon as possible.',
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 18),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 10,
-                    ),
-                    decoration: const BoxDecoration(
-                      color: Color(0xFFF0F0F0),
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(4),
-                        topRight: Radius.circular(16),
-                        bottomRight: Radius.circular(16),
-                        bottomLeft: Radius.circular(16),
-                      ),
-                    ),
-                    child: const Text('How can we help with your farm today?'),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (_hasAttachment)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: _AttachmentPreview(
-                photo: _photo,
-                document: _document,
-                voicePath: _voicePath,
-                onRemove: _clearAttachment,
-              ),
-            ),
-          Material(
-            color: Theme.of(context).colorScheme.surface,
-            elevation: 8,
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
+      body: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
                 children: [
-                  IconButton(
-                    tooltip: 'Attach photo or document',
-                    onPressed: _showAttachmentOptions,
-                    icon: const Icon(Icons.attach_file),
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE7F6EC),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Row(
+                      children: [
+                        CircleAvatar(
+                          backgroundColor: AppColors.primaryGreen,
+                          child: Icon(Icons.support_agent, color: Colors.white),
+                        ),
+                        SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Customer Care is online. Please leave a message and our team will reply as soon as possible.',
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                  Expanded(
-                    child: TextField(
-                      controller: _messageController,
-                      minLines: 1,
-                      maxLines: 5,
-                      textCapitalization: TextCapitalization.sentences,
-                      decoration: InputDecoration(
-                        hintText: _isRecording
-                            ? 'Recording voice note...'
-                            : 'Type a message',
-                        filled: true,
-                        fillColor: Theme.of(
-                          context,
-                        ).colorScheme.surfaceContainerHighest,
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(24),
-                          borderSide: BorderSide.none,
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 10,
-                        ),
+                  const SizedBox(height: 18),
+                  if (messages.isEmpty)
+                    const _ChatBubble(
+                      text: 'How can we help with your farm today?',
+                      fromCustomerCare: true,
+                    )
+                  else
+                    ...messages.map(
+                      (message) => _ChatBubble(
+                        text: message.body,
+                        fromCustomerCare: message.type == 'crm_message',
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 4),
-                  IconButton(
-                    tooltip: _isRecording
-                        ? 'Stop voice recording'
-                        : 'Record voice message',
-                    onPressed: _isRecording ? _stopRecording : _startRecording,
-                    color: _isRecording ? AppColors.danger : null,
-                    icon: Icon(
-                      _isRecording ? Icons.stop_circle : Icons.mic_none,
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: 'Send message',
-                    onPressed: _sendMessage,
-                    icon: const Icon(Icons.send),
-                  ),
                 ],
               ),
             ),
-          ),
-        ],
+            if (_hasAttachment)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+                child: _AttachmentPreview(
+                  photo: _photo,
+                  document: _document,
+                  voicePath: _voicePath,
+                  onRemove: _clearAttachment,
+                ),
+              ),
+            Material(
+              color: Theme.of(context).colorScheme.surface,
+              elevation: 8,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    IconButton(
+                      tooltip: 'Attach photo or document',
+                      onPressed: _showAttachmentOptions,
+                      icon: const Icon(Icons.attach_file),
+                    ),
+                    Expanded(
+                      child: TextField(
+                        controller: _messageController,
+                        minLines: 1,
+                        maxLines: 5,
+                        textCapitalization: TextCapitalization.sentences,
+                        decoration: InputDecoration(
+                          hintText: _isRecording
+                              ? 'Recording voice note...'
+                              : 'Type a message',
+                          filled: true,
+                          fillColor: Theme.of(
+                            context,
+                          ).colorScheme.surfaceContainerHighest,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(24),
+                            borderSide: BorderSide.none,
+                          ),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 10,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 4),
+                    IconButton(
+                      tooltip: _isRecording
+                          ? 'Stop voice recording'
+                          : 'Record voice message',
+                      onPressed: _isSending
+                          ? null
+                          : _isRecording
+                          ? _stopRecording
+                          : _startRecording,
+                      color: _isRecording ? AppColors.danger : null,
+                      icon: Icon(
+                        _isRecording ? Icons.stop_circle : Icons.mic_none,
+                      ),
+                    ),
+                    IconButton(
+                      tooltip: 'Send message',
+                      onPressed: _isSending ? null : _sendMessage,
+                      icon: const Icon(Icons.send),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ChatBubble extends StatelessWidget {
+  const _ChatBubble({required this.text, required this.fromCustomerCare});
+
+  final String text;
+  final bool fromCustomerCare;
+
+  @override
+  Widget build(BuildContext context) => Align(
+    alignment: fromCustomerCare ? Alignment.centerLeft : Alignment.centerRight,
+    child: Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      decoration: BoxDecoration(
+        color: fromCustomerCare ? const Color(0xFFF0F0F0) : AppColors.deepGreen,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(color: fromCustomerCare ? null : Colors.white),
       ),
     ),
   );

@@ -31,14 +31,40 @@ class PaymentMethodPage extends ConsumerStatefulWidget {
 }
 
 class _PaymentMethodPageState extends ConsumerState<PaymentMethodPage> {
+  static const _defaultTestMpesaNumber = '0746933820';
   String _selectedMethod = 'M-Pesa';
   bool _isSubmitting = false;
+
+  String _normalizeKenyanPhone(String? rawPhone) {
+    final digits = (rawPhone ?? _defaultTestMpesaNumber).replaceAll(
+      RegExp(r'[^0-9+]'),
+      '',
+    );
+    final cleaned = digits.startsWith('+') ? digits.substring(1) : digits;
+
+    if (cleaned.startsWith('0')) {
+      return '254${cleaned.substring(1)}';
+    }
+
+    if (cleaned.startsWith('254')) {
+      return cleaned;
+    }
+
+    if (cleaned.isEmpty) {
+      return '254${_defaultTestMpesaNumber.substring(1)}';
+    }
+
+    return '254$cleaned';
+  }
 
   Future<void> _handleProceed() async {
     final amount = widget.selectedPlan['amount'];
     final currency = widget.selectedPlan['currency'] ?? 'KES';
     final planCode = widget.selectedPlan['code'] ?? widget.selectedPlan['name'];
     final selectedFarm = ref.read(authProvider).valueOrNull?.selectedFarm;
+    final phone = _normalizeKenyanPhone(
+      ref.read(authProvider).valueOrNull?.user.phone,
+    );
 
     if (_selectedMethod != 'M-Pesa') {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -74,7 +100,7 @@ class _PaymentMethodPageState extends ConsumerState<PaymentMethodPage> {
           .read(dioProvider)
           .post(
             '/farms/${selectedFarm.id}/subscription/payment',
-            data: {'plan': planCode.toString()},
+            data: {'plan': planCode.toString(), 'phone': phone},
           );
 
       final payment = response.data['payment'] is Map
