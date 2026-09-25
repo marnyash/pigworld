@@ -31,15 +31,26 @@ class PaymentMethodPage extends ConsumerStatefulWidget {
 }
 
 class _PaymentMethodPageState extends ConsumerState<PaymentMethodPage> {
-  static const _defaultTestMpesaNumber = '0746933820';
   String _selectedMethod = 'M-Pesa';
   bool _isSubmitting = false;
+  late final TextEditingController _phoneController;
 
-  String _normalizeKenyanPhone(String? rawPhone) {
-    final digits = (rawPhone ?? _defaultTestMpesaNumber).replaceAll(
-      RegExp(r'[^0-9+]'),
-      '',
+  @override
+  void initState() {
+    super.initState();
+    _phoneController = TextEditingController(
+      text: ref.read(authProvider).valueOrNull?.user.phone ?? '',
     );
+  }
+
+  @override
+  void dispose() {
+    _phoneController.dispose();
+    super.dispose();
+  }
+
+  String? _normalizeKenyanPhone(String rawPhone) {
+    final digits = rawPhone.replaceAll(RegExp(r'[^0-9+]'), '');
     final cleaned = digits.startsWith('+') ? digits.substring(1) : digits;
 
     if (cleaned.startsWith('0')) {
@@ -50,11 +61,7 @@ class _PaymentMethodPageState extends ConsumerState<PaymentMethodPage> {
       return cleaned;
     }
 
-    if (cleaned.isEmpty) {
-      return '254${_defaultTestMpesaNumber.substring(1)}';
-    }
-
-    return '254$cleaned';
+    return cleaned.isEmpty ? null : '254$cleaned';
   }
 
   Future<void> _handleProceed() async {
@@ -62,9 +69,7 @@ class _PaymentMethodPageState extends ConsumerState<PaymentMethodPage> {
     final currency = widget.selectedPlan['currency'] ?? 'KES';
     final planCode = widget.selectedPlan['code'] ?? widget.selectedPlan['name'];
     final selectedFarm = ref.read(authProvider).valueOrNull?.selectedFarm;
-    final phone = _normalizeKenyanPhone(
-      ref.read(authProvider).valueOrNull?.user.phone,
-    );
+    final phone = _normalizeKenyanPhone(_phoneController.text);
 
     if (_selectedMethod != 'M-Pesa') {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -73,6 +78,13 @@ class _PaymentMethodPageState extends ConsumerState<PaymentMethodPage> {
             '$_selectedMethod is not available for this payment flow yet.',
           ),
         ),
+      );
+      return;
+    }
+
+    if (phone == null || !RegExp(r'^254[17]\d{8}$').hasMatch(phone)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter a valid Kenyan M-Pesa number.')),
       );
       return;
     }
@@ -202,6 +214,18 @@ class _PaymentMethodPageState extends ConsumerState<PaymentMethodPage> {
                 selected: _selectedMethod,
                 onSelected: (value) => setState(() => _selectedMethod = value),
               ),
+              if (_selectedMethod == 'M-Pesa') ...[
+                const SizedBox(height: 16),
+                TextField(
+                  controller: _phoneController,
+                  keyboardType: TextInputType.phone,
+                  decoration: const InputDecoration(
+                    labelText: 'M-Pesa phone number',
+                    hintText: '0712 345 678',
+                    prefixIcon: Icon(Icons.phone_outlined),
+                  ),
+                ),
+              ],
               const SizedBox(height: 12),
               _PaymentOption(
                 title: 'Airtel Money',
