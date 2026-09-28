@@ -171,10 +171,11 @@ class _PaymentMethodPageState extends ConsumerState<PaymentMethodPage> {
     return Scaffold(
       appBar: AppBar(title: const Text('Payment method')),
       body: SafeArea(
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
             children: [
               Text(
                 'How would you like to pay?',
@@ -245,7 +246,7 @@ class _PaymentMethodPageState extends ConsumerState<PaymentMethodPage> {
                 selected: _selectedMethod,
                 onSelected: (value) => setState(() => _selectedMethod = value),
               ),
-              const Spacer(),
+              const SizedBox(height: 24),
               SizedBox(
                 width: double.infinity,
                 child: FilledButton(

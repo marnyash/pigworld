@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:proj/features/auth/presentation/pages/login_page.dart';
 import 'package:proj/features/auth/presentation/pages/otp_verification_page.dart';
@@ -7,7 +8,9 @@ void main() {
   testWidgets('login page stays password-first and does not offer OTP sign-in', (
     WidgetTester tester,
   ) async {
-    await tester.pumpWidget(const MaterialApp(home: LoginPage()));
+    await tester.pumpWidget(
+      const ProviderScope(child: MaterialApp(home: LoginPage())),
+    );
 
     expect(find.text('Use OTP'), findsNothing);
     expect(find.text('Sign in'), findsOneWidget);
@@ -17,13 +20,19 @@ void main() {
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
-      const MaterialApp(
-        home: OtpVerificationPage(email: 'user@pigworld.com'),
+      const ProviderScope(
+        child: MaterialApp(
+          home: OtpVerificationPage(
+            challengeId: 'challenge-test',
+            destination: 'u***@pigworld.com',
+            rememberMe: false,
+          ),
+        ),
       ),
     );
 
     expect(find.text('OTP verification'), findsOneWidget);
-    expect(find.textContaining('user@pigworld.com'), findsOneWidget);
-    expect(find.text('Verify OTP'), findsOneWidget);
+    expect(find.textContaining('u***@pigworld.com'), findsOneWidget);
+    expect(find.text('Verify and sign in'), findsOneWidget);
   });
 }

@@ -24,14 +24,16 @@ void main() {
     tester,
   ) async {
     await tester.pumpWidget(
-      MaterialApp(
-        home: PaymentMethodPage(
-          selectedPlan: {
-            'name': 'Growth',
-            'amount': 2500,
-            'currency': 'KES',
-            'description': 'For growing teams and herds.',
-          },
+      ProviderScope(
+        child: MaterialApp(
+          home: PaymentMethodPage(
+            selectedPlan: {
+              'name': 'Growth',
+              'amount': 2500,
+              'currency': 'KES',
+              'description': 'For growing teams and herds.',
+            },
+          ),
         ),
       ),
     );
@@ -114,6 +116,7 @@ void main() {
       ),
     );
 
+    await tester.ensureVisible(find.text('Proceed'));
     await tester.tap(find.text('Proceed'));
     await tester.pump();
     await tester.pumpAndSettle();

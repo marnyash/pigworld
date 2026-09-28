@@ -226,13 +226,14 @@ class _HerdSetupPageState extends ConsumerState<HerdSetupPage> {
               : () => setState(() => _step--),
           child: const Text('Back'),
         ),
-          TextButton(
-            onPressed: () async {
-              await ref.read(onboardingStorageProvider).markCompleted();
-              if (mounted) context.go(AppRoutes.createAccount);
-            },
-            child: const Text('Skip'),
-          ),
+        TextButton(
+          onPressed: () async {
+            await ref.read(onboardingStorageProvider).markCompleted();
+            if (!context.mounted) return;
+            context.go(AppRoutes.createAccount);
+          },
+          child: const Text('Skip'),
+        ),
         const Spacer(),
         FilledButton(
           onPressed: _next,
