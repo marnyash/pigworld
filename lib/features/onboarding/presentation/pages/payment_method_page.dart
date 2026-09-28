@@ -142,14 +142,21 @@ class _PaymentMethodPageState extends ConsumerState<PaymentMethodPage> {
       );
     } on DioException catch (error) {
       if (!mounted) return;
-      final message = error.response?.data is Map
-          ? (error.response!.data['message'] ??
-                error.response!.data['error'] ??
-                'Unable to start the M-Pesa payment.')
-          : 'Unable to start the M-Pesa payment.';
+      final data = error.response?.data is Map
+          ? Map<String, dynamic>.from(error.response!.data as Map)
+          : <String, dynamic>{};
+      final message = (data['message'] ?? data['error'] ??
+              'Unable to start the M-Pesa payment.')
+          .toString();
+      final details = [
+        if (data['provider_code'] != null) 'Code ${data['provider_code']}',
+        if (data['reference'] != null) 'Reference ${data['reference']}',
+      ];
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text(message.toString())));
+      ).showSnackBar(
+        SnackBar(content: Text(details.isEmpty ? message : '$message (${details.join(', ')})')),
+      );
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
