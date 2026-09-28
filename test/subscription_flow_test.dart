@@ -92,11 +92,7 @@ void main() {
         role: UserRole.farmOwner,
       ),
       farms: const [Farm(id: 'farm-1', name: 'Demo Farm', motherPigCount: 12)],
-      selectedFarm: const Farm(
-        id: 'farm-1',
-        name: 'Demo Farm',
-        motherPigCount: 12,
-      ),
+      selectedFarm: null,
     );
 
     await tester.pumpWidget(

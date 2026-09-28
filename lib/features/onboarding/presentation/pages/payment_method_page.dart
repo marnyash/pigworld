@@ -68,7 +68,10 @@ class _PaymentMethodPageState extends ConsumerState<PaymentMethodPage> {
     final amount = widget.selectedPlan['amount'];
     final currency = widget.selectedPlan['currency'] ?? 'KES';
     final planCode = widget.selectedPlan['code'] ?? widget.selectedPlan['name'];
-    final selectedFarm = ref.read(authProvider).valueOrNull?.selectedFarm;
+    final session = ref.read(authProvider).valueOrNull;
+    final selectedFarm =
+      session?.selectedFarm ??
+      (session?.farms.length == 1 ? session!.farms.first : null);
     final phone = _normalizeKenyanPhone(_phoneController.text);
 
     if (_selectedMethod != 'M-Pesa') {
