@@ -44,6 +44,70 @@ class NotificationsApi {
   NotificationsApi(this._dio);
   final Dio _dio;
 
+  Future<Map<String, dynamic>?> fetchSupportConversation(String farmId) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/farms/$farmId/support-conversation',
+      );
+      final data = response.data?['data'];
+      return data is Map<String, dynamic> ? data : null;
+    } on DioException catch (error) {
+      if (error.response?.statusCode == 404) {
+        return _fetchLegacySupportConversation(farmId);
+      }
+      throw ErrorHandler.from(error);
+    }
+  }
+
+  Future<void> markSupportConversationRead(String farmId) async {
+    try {
+      await _dio.patch<void>('/farms/$farmId/support-conversation/read');
+    } on DioException catch (error) {
+      if (error.response?.statusCode == 404) {
+        final conversation = await _fetchLegacySupportConversation(farmId);
+        final messages = conversation?['messages'] as List<dynamic>? ?? const [];
+        for (final message in messages.whereType<Map<String, dynamic>>()) {
+          if (message['sender_role'] == 'crm') {
+            await markAsRead(farmId: farmId, notificationId: '${message['id']}');
+          }
+        }
+        return;
+      }
+      throw ErrorHandler.from(error);
+    }
+  }
+
+  Future<Map<String, dynamic>?> _fetchLegacySupportConversation(
+    String farmId,
+  ) async {
+    final notifications = await fetch(farmId);
+    final messages = notifications
+        .where((notification) =>
+            notification.type == 'crm_message' ||
+            notification.type == 'crm_message_sent')
+        .toList()
+      ..sort((left, right) => left.createdAt.compareTo(right.createdAt));
+    if (messages.isEmpty) return null;
+
+    return {
+      'id': 'legacy-$farmId',
+      'farm_id': farmId,
+      'status': 'open',
+      'assigned_agent': null,
+      'messages': messages
+          .map((message) => {
+                'id': message.id,
+                'sender_role': message.type == 'crm_message' ? 'crm' : 'app',
+                'sender_name': message.type == 'crm_message'
+                    ? (message.title.isEmpty ? 'Customer Support' : message.title)
+                    : 'You',
+                'body': message.body,
+                'created_at': message.createdAt.toIso8601String(),
+              })
+          .toList(),
+    };
+  }
+
   Future<List<FarmNotification>> fetch(String farmId) async {
     try {
       final response = await _dio.get<Map<String, dynamic>>(
@@ -86,13 +150,26 @@ class NotificationsApi {
   }) async {
     try {
       final response = await _dio.post<Map<String, dynamic>>(
-        '/farms/$farmId/notifications/messages',
+        '/farms/$farmId/support-conversation/messages',
         data: {'message': message},
       );
       return FarmNotification.fromJson(
         response.data!['data'] as Map<String, dynamic>,
       );
     } on DioException catch (error) {
+      if (error.response?.statusCode == 404) {
+        try {
+          final legacyResponse = await _dio.post<Map<String, dynamic>>(
+            '/farms/$farmId/notifications/messages',
+            data: {'message': message},
+          );
+          return FarmNotification.fromJson(
+            legacyResponse.data!['data'] as Map<String, dynamic>,
+          );
+        } on DioException catch (legacyError) {
+          throw ErrorHandler.from(legacyError);
+        }
+      }
       throw ErrorHandler.from(error);
     }
   }

@@ -22,7 +22,9 @@ class LanguageCard extends StatelessWidget {
         ? Theme.of(context).colorScheme.primaryContainer
         : Theme.of(context).colorScheme.surface,
     child: AnimatedContainer(
-      duration: const Duration(milliseconds: 220),
+      duration: MediaQuery.of(context).disableAnimations
+          ? Duration.zero
+          : const Duration(milliseconds: 220),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
@@ -71,7 +73,9 @@ class LanguageCard extends StatelessWidget {
                 ),
               ),
               AnimatedSwitcher(
-                duration: const Duration(milliseconds: 180),
+                duration: MediaQuery.of(context).disableAnimations
+                    ? Duration.zero
+                    : const Duration(milliseconds: 180),
                 child: selected
                     ? Icon(
                         Icons.check_circle,

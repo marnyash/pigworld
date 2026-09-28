@@ -149,7 +149,9 @@ class _CreateAccountPageState extends ConsumerState<CreateAccountPage> {
             ),
             const SizedBox(height: 8),
             AnimatedSwitcher(
-              duration: const Duration(milliseconds: 260),
+              duration: MediaQuery.of(context).disableAnimations
+                  ? Duration.zero
+                  : const Duration(milliseconds: 260),
               child: Text(
                 _roles.firstWhere((entry) => entry.$1 == _role).$3,
                 key: ValueKey(_role),

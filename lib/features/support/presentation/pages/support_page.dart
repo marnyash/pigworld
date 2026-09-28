@@ -9,6 +9,8 @@ import 'package:url_launcher/url_launcher.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import 'support_chat_page.dart';
 import '../../../notifications/data/notifications_api.dart';
 import '../../../notifications/presentation/providers/notifications_provider.dart';
 
@@ -78,10 +80,12 @@ class _SupportPageState extends State<SupportPage> {
   Future<void> callVeterinary() =>
       _openContact(Uri.parse('tel:+254705030550'), 'the phone app');
 
-  void _openLiveChat() {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute<void>(builder: (_) => const _LiveChatPage()));
+  void _openLiveChat(WidgetRef ref) {
+    final farmId = ref.read(authProvider).valueOrNull?.selectedFarm?.id;
+    if (farmId == null) return;
+    Navigator.of(context).push<void>(
+      MaterialPageRoute<void>(builder: (_) => SupportChatPage(farmId: farmId)),
+    );
   }
 
   @override
@@ -140,7 +144,7 @@ class _SupportPageState extends State<SupportPage> {
               _LiveChatPreview(
                 customerCareName: customerCareName,
                 message: crmMessage?.body,
-                onOpenChat: _openLiveChat,
+                onOpenChat: () => _openLiveChat(ref),
               ),
               const SizedBox(height: AppDimensions.spacingLarge),
               Text(
