@@ -78,7 +78,7 @@ class _CountryPageState extends ConsumerState<CountryPage> {
           padding: const EdgeInsets.fromLTRB(24, 30, 24, 24),
           children: [
             const OnboardingHeader(
-              eyebrow: 'Step 2 of 4',
+              eyebrow: 'Step 2 of 4 · Farm location',
               title: 'Where is your farm?',
               subtitle:
                   'We use this to tailor currency, dates, weather, and regional reports.',
@@ -128,6 +128,13 @@ class _CountryPageState extends ConsumerState<CountryPage> {
           TextButton(
             onPressed: () => context.go(AppRoutes.language),
             child: const Text('Back'),
+          ),
+          TextButton(
+            onPressed: () async {
+              await ref.read(onboardingStorageProvider).markCompleted();
+              if (context.mounted) context.go(AppRoutes.createAccount);
+            },
+            child: const Text('Skip'),
           ),
           const Spacer(),
           Flexible(

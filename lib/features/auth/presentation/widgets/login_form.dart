@@ -20,11 +20,8 @@ class LoginForm extends StatefulWidget {
 }
 
 class _LoginFormState extends State<LoginForm> {
-  static const demoEmail = 'test@gmail.com';
-  static const demoPassword = 'password';
-
-  final emailController = TextEditingController(text: demoEmail);
-  final passwordController = TextEditingController(text: demoPassword);
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
   final formKey = GlobalKey<FormState>();
   bool rememberMe = false;
   bool isLoading = false;
@@ -47,7 +44,7 @@ class _LoginFormState extends State<LoginForm> {
           keyboardType: TextInputType.emailAddress,
           decoration: const InputDecoration(
             labelText: 'Email or phone number',
-            prefixIcon: Icon(Icons.email_outlined),
+            prefixIcon: Icon(Icons.alternate_email),
           ),
           validator: (value) {
             final input = value?.trim() ?? '';

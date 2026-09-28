@@ -94,7 +94,7 @@ class _HerdSetupPageState extends ConsumerState<HerdSetupPage> {
         padding: const EdgeInsets.all(24),
         children: [
           OnboardingHeader(
-            eyebrow: 'Farm setup • Step ${_step + 1} of 3',
+            eyebrow: 'Step 4 of 4 · Farm setup • ${_step + 1} of 3',
             title: _step == 0
                 ? 'Start with your herd'
                 : _step == 1
@@ -226,6 +226,13 @@ class _HerdSetupPageState extends ConsumerState<HerdSetupPage> {
               : () => setState(() => _step--),
           child: const Text('Back'),
         ),
+          TextButton(
+            onPressed: () async {
+              await ref.read(onboardingStorageProvider).markCompleted();
+              if (mounted) context.go(AppRoutes.createAccount);
+            },
+            child: const Text('Skip'),
+          ),
         const Spacer(),
         FilledButton(
           onPressed: _next,

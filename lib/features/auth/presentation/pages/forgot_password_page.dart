@@ -1,6 +1,7 @@
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../../../../app/routes/app_routes.dart';
 import 'package:proj/app/theme/app_colors.dart';
 import '../providers/auth_providers.dart';
 
@@ -33,7 +34,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
     try {
       await ref.read(forgotPasswordUseCaseProvider)(_email.text.trim());
       if (mounted) setState(() => _sent = true);
-    } on DioException {
+    } on Object {
       if (mounted) {
         setState(() => _error = 'Could not send reset link. Please try again.');
       }
@@ -66,10 +67,29 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                   : null,
             ),
             if (_sent) ...[
-              const SizedBox(height: 16),
-              const Text(
-                'If an account exists for that email, a reset link has been sent.',
-                style: TextStyle(color: AppColors.success),
+              const SizedBox(height: 18),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: AppColors.successContainer,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Email has been sent',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.success,
+                      ),
+                    ),
+                    SizedBox(height: 6),
+                    Text(
+                      'If this address is registered, a password reset link is on its way. Check your inbox and spam folder.',
+                    ),
+                  ],
+                ),
               ),
             ],
             if (_error != null) ...[
@@ -80,16 +100,22 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
               ),
             ],
             const SizedBox(height: 16),
-            FilledButton(
-              onPressed: _sent || _submitting ? null : _submit,
-              child: _submitting
-                  ? const SizedBox(
-                      height: 16,
-                      width: 16,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                  : const Text('Send reset link'),
-            ),
+            if (_sent)
+              OutlinedButton(
+                onPressed: () => context.go(AppRoutes.login),
+                child: const Text('Back to sign in'),
+              )
+            else
+              FilledButton(
+                onPressed: _submitting ? null : _submit,
+                child: _submitting
+                    ? const SizedBox(
+                        height: 16,
+                        width: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Send reset link'),
+              ),
           ],
         ),
       ),

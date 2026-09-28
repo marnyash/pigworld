@@ -1,7 +1,7 @@
 import '../../../../security/authorization/roles.dart';
 import '../../domain/entities/farm.dart';
+import '../../domain/entities/login_challenge.dart';
 import '../../domain/entities/session.dart';
-import '../../domain/entities/user.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasource/auth_local_datasource.dart';
 import '../datasource/auth_remote_datasource.dart';
@@ -9,70 +9,32 @@ import '../models/login_request.dart';
 import '../models/register_request.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
-  static const _demoEmail = 'test@gmail.com';
-  static const _demoPassword = 'password';
-
   const AuthRepositoryImpl({required this.remote, required this.local});
 
   final AuthRemoteDataSource remote;
   final AuthLocalDataSource local;
 
   @override
-  Future<Session> login(
+  Future<LoginChallenge> login(
     String email,
     String password, {
     bool rememberMe = false,
   }) async {
-    try {
-      final response = await remote.login(
-        LoginRequest(
-          identifier: email,
-          password: password,
-          rememberMe: rememberMe,
-        ),
-      );
-      final session = response.toEntity();
-      await local.saveSession(session);
-      return session;
-    } on Object {
-      final normalizedEmail = email.trim().toLowerCase();
-      if (normalizedEmail == _demoEmail && password == _demoPassword) {
-        final demoSession = Session(
-          accessToken: 'demo-access-token',
-          refreshToken: 'demo-refresh-token',
-          user: const User(
-            id: 'demo-user',
-            name: 'Demo User',
-            email: _demoEmail,
-            phone: '+254700000000',
-            role: UserRole.farmOwner,
-          ),
-          farms: const [
-            Farm(
-              id: 'demo-farm',
-              name: 'Demo Farm',
-              location: 'Nairobi',
-              inviteCode: 'DEMO',
-              motherPigCount: 12,
-              registeredPigletCount: 8,
-              pregnantPigCount: 3,
-            ),
-          ],
-          selectedFarm: const Farm(
-            id: 'demo-farm',
-            name: 'Demo Farm',
-            location: 'Nairobi',
-            inviteCode: 'DEMO',
-            motherPigCount: 12,
-            registeredPigletCount: 8,
-            pregnantPigCount: 3,
-          ),
-        );
-        await local.saveSession(demoSession);
-        return demoSession;
-      }
-      rethrow;
-    }
+    final challenge = await remote.login(
+      LoginRequest(
+        identifier: email,
+        password: password,
+        rememberMe: rememberMe,
+      ),
+    );
+    return LoginChallenge(id: challenge.challengeId, destination: challenge.destination);
+  }
+
+  @override
+  Future<Session> verifyLoginOtp(String challengeId, String code) async {
+    final session = (await remote.verifyLoginOtp(challengeId, code)).toEntity();
+    await local.saveSession(session);
+    return session;
   }
 
   @override

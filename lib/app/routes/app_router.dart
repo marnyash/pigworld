@@ -101,8 +101,14 @@ abstract final class AppRouter {
       GoRoute(
         path: AppRoutes.otpVerification,
         builder: (context, state) {
-          final email = state.uri.queryParameters['email'] ?? '';
-          return OtpVerificationPage(email: email);
+          final challengeId = state.uri.queryParameters['challengeId'] ?? '';
+          final destination = state.uri.queryParameters['destination'] ?? '';
+          final rememberMe = state.uri.queryParameters['rememberMe'] == 'true';
+          return OtpVerificationPage(
+            challengeId: challengeId,
+            destination: destination,
+            rememberMe: rememberMe,
+          );
         },
       ),
       GoRoute(

@@ -16,6 +16,7 @@ class GoogleSignInService {
     'GOOGLE_WEB_CLIENT_ID',
     defaultValue: '',
   );
+  static Future<void>? _initialization;
 
   static String get webClientId => _defaultWebClientId;
 
@@ -37,14 +38,7 @@ class GoogleSignInService {
     // it here keeps an unavailable platform/configuration from blocking app
     // startup before the first screen can render.
     try {
-      validateConfiguration(webClientId);
-      if (Firebase.apps.isEmpty) await Firebase.initializeApp();
-
-      if (webClientId.isNotEmpty) {
-        await GoogleSignIn.instance.initialize(serverClientId: webClientId);
-      } else {
-        await GoogleSignIn.instance.initialize();
-      }
+      await _ensureInitialized();
 
       final account = await GoogleSignIn.instance.authenticate();
       final authentication = account.authentication;
@@ -64,6 +58,9 @@ class GoogleSignInService {
       }
       return firebaseIdToken;
     } on GoogleSignInException catch (error) {
+      if (error.code == GoogleSignInExceptionCode.canceled) {
+        throw const GoogleSignInCancelledException();
+      }
       if (error.code == GoogleSignInExceptionCode.clientConfigurationError ||
           error.code == GoogleSignInExceptionCode.providerConfigurationError) {
         throw const GoogleSignInConfigurationException(
@@ -71,6 +68,26 @@ class GoogleSignInService {
         );
       }
       rethrow;
+    }
+  }
+
+  Future<void> _ensureInitialized() async {
+    final pending = _initialization ??= _initialize();
+    try {
+      await pending;
+    } on Object {
+      _initialization = null;
+      rethrow;
+    }
+  }
+
+  Future<void> _initialize() async {
+    validateConfiguration(webClientId);
+    if (Firebase.apps.isEmpty) await Firebase.initializeApp();
+    if (webClientId.isNotEmpty) {
+      await GoogleSignIn.instance.initialize(serverClientId: webClientId);
+    } else {
+      await GoogleSignIn.instance.initialize();
     }
   }
 }
@@ -83,4 +100,8 @@ class GoogleSignInConfigurationException implements Exception {
   @override
   String toString() =>
       message.isEmpty ? 'GoogleSignInConfigurationException' : message;
+}
+
+class GoogleSignInCancelledException implements Exception {
+  const GoogleSignInCancelledException();
 }

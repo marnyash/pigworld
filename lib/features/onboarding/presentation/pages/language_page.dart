@@ -47,7 +47,7 @@ class _LanguagePageState extends ConsumerState<LanguagePage> {
           padding: const EdgeInsets.fromLTRB(24, 30, 24, 24),
           children: [
             const OnboardingHeader(
-              eyebrow: 'Step 1 of 4',
+              eyebrow: 'Step 1 of 4 · Language',
               title: 'Choose your language',
               subtitle:
                   'Pick the language that feels most natural. You can change it later.',
@@ -83,6 +83,13 @@ class _LanguagePageState extends ConsumerState<LanguagePage> {
           TextButton(
             onPressed: () => context.go(AppRoutes.permissions),
             child: const Text('Back'),
+          ),
+          TextButton(
+            onPressed: () async {
+              await ref.read(onboardingStorageProvider).markCompleted();
+              if (context.mounted) context.go(AppRoutes.createAccount);
+            },
+            child: const Text('Skip'),
           ),
           const Spacer(),
           Flexible(

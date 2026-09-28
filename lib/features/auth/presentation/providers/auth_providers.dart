@@ -18,6 +18,7 @@ import '../../domain/usecases/logout.dart';
 import '../../domain/usecases/refresh_session.dart';
 import '../../domain/usecases/register.dart';
 import '../../domain/usecases/select_farm.dart';
+import '../../domain/usecases/verify_login_otp.dart';
 import 'auth_provider.dart';
 
 final authServiceProvider = Provider<AuthService>((ref) => AuthService());
@@ -63,6 +64,9 @@ final authRepositoryProvider = Provider<AuthRepository>(
 
 final loginUseCaseProvider = Provider(
   (ref) => Login(ref.watch(authRepositoryProvider)),
+);
+final verifyLoginOtpUseCaseProvider = Provider(
+  (ref) => VerifyLoginOtp(ref.watch(authRepositoryProvider)),
 );
 final loginWithGoogleUseCaseProvider = Provider(
   (ref) => LoginWithGoogle(ref.watch(authRepositoryProvider)),

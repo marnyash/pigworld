@@ -46,7 +46,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   style: Theme.of(context).textTheme.headlineMedium,
                 ),
                 const SizedBox(height: 8),
-                const Text('Sign in to manage your Pig World farm.'),
+                const Text('Sign in to manage Pig World Smart.'),
                 const SizedBox(height: 24),
                 LoginForm(
                   onSubmit: (identifier, password, rememberMe) async {
@@ -60,52 +60,20 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     }
 
                     try {
-                      final session = await ref.read(loginUseCaseProvider)(
+                      final challenge = await ref.read(loginUseCaseProvider)(
                         identifier,
                         password,
                         rememberMe: rememberMe,
                       );
-                      await ref
-                          .read(authServiceProvider)
-                          .setRememberMe(rememberMe);
-                      await ref.read(sessionManagerProvider).markActive();
-                      ref.read(authProvider.notifier).setSession(session);
-
-                      final email = session.user.email.trim();
-                      final isDemoLogin =
-                          identifier.trim().toLowerCase() == 'test@gmail.com' &&
-                          password == 'password';
-
-                      if (isDemoLogin || email.isEmpty) {
-                        if (context.mounted) context.go(AppRoutes.home);
-                        return;
-                      }
-
-                      try {
-                        await ref.read(forgotPasswordUseCaseProvider)(email);
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'OTP code sent to your registered email.',
-                              ),
-                            ),
-                          );
-                          context.go(
-                            '${AppRoutes.otpVerification}?email=${Uri.encodeComponent(email)}',
-                          );
-                        }
-                        return;
-                      } catch (_) {
-                        if (context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                'Login succeeded, but the OTP could not be sent. Please try again.',
-                              ),
-                            ),
-                          );
-                        }
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('A sign-in code was sent to your email.'),
+                          ),
+                        );
+                        context.go(
+                          '${AppRoutes.otpVerification}?challengeId=${Uri.encodeComponent(challenge.id)}&destination=${Uri.encodeComponent(challenge.destination)}&rememberMe=$rememberMe',
+                        );
                       }
                     } catch (_) {
                       if (context.mounted) {
@@ -157,12 +125,14 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                 ),
                               );
                             }
+                          } on GoogleSignInCancelledException {
+                            return;
                           } catch (_) {
                             if (context.mounted) {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
                                   content: Text(
-                                    'Google sign-in could not be completed. Please try again.',
+                                    'Google sign-in failed. Check the Firebase app configuration and authorized OAuth client IDs, then try again.',
                                   ),
                                 ),
                               );

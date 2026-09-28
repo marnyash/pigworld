@@ -41,7 +41,7 @@ class AccountTypePage extends ConsumerWidget {
           children: [
             const OnboardingHeader(
               title: 'Choose your account type',
-              eyebrow: 'Step 3 of 4',
+              eyebrow: 'Step 3 of 4 · Account type',
               subtitle:
                   'Choose the role that best matches your work on the farm.',
             ),
@@ -78,6 +78,13 @@ class AccountTypePage extends ConsumerWidget {
           TextButton(
             onPressed: () => context.go(AppRoutes.country),
             child: const Text('Back'),
+          ),
+          TextButton(
+            onPressed: () async {
+              await ref.read(onboardingStorageProvider).markCompleted();
+              if (context.mounted) context.go(AppRoutes.createAccount);
+            },
+            child: const Text('Skip'),
           ),
           const Spacer(),
           FilledButton(

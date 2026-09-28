@@ -1,13 +1,15 @@
 import '../../../../security/authorization/roles.dart';
 import '../entities/farm.dart';
+import '../entities/login_challenge.dart';
 import '../entities/session.dart';
 
 abstract interface class AuthRepository {
-  Future<Session> login(
+  Future<LoginChallenge> login(
     String email,
     String password, {
     bool rememberMe = false,
   });
+  Future<Session> verifyLoginOtp(String challengeId, String code);
   Future<Session> loginWithGoogle(String idToken);
   Future<Session> register({
     required String name,

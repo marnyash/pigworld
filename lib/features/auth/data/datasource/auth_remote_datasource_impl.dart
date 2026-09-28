@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 
 import '../../../../core/errors/error_handler.dart';
 import '../models/login_request.dart';
+import '../models/login_challenge_response.dart';
 import '../models/login_response.dart';
 import '../models/register_request.dart';
 import 'auth_remote_datasource.dart';
@@ -12,8 +13,24 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   final Dio _dio;
 
   @override
-  Future<LoginResponse> login(LoginRequest request) =>
-      _postForSession('/auth/login', request.toJson());
+  Future<LoginChallengeResponse> login(LoginRequest request) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/auth/login',
+        data: request.toJson(),
+      );
+      return LoginChallengeResponse.fromJson(response.data!);
+    } on DioException catch (error) {
+      throw ErrorHandler.from(error);
+    }
+  }
+
+  @override
+  Future<LoginResponse> verifyLoginOtp(String challengeId, String code) =>
+      _postForSession('/auth/verify-otp', {
+        'challenge_id': challengeId,
+        'code': code,
+      });
 
   @override
   Future<LoginResponse> loginWithGoogle(String idToken) =>
