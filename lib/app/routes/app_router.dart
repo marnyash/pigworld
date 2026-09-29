@@ -6,7 +6,7 @@ import '../../features/herd/presentation/pages/herd_page.dart';
 import '../../features/health/presentation/pages/health_page.dart';
 import '../../features/breeding/presentation/pages/breeding_page.dart';
 import '../../features/feed/presentation/pages/feed_page.dart';
-import '../../features/feed/presentation/pages/inventory_page.dart';
+import '../../features/inventory/presentation/pages/inventory_page.dart';
 import '../../features/growth/presentation/pages/growth_page.dart';
 import '../../features/finance/presentation/pages/finance_page.dart';
 import '../../features/sales/presentation/pages/sales_page.dart';

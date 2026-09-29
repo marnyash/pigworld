@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import '../../../../app/routes/app_routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../shared/components/bottom_navigation.dart';
 import '../../data/feed_api.dart';
@@ -31,26 +33,6 @@ class _FeedPageState extends ConsumerState<FeedPage> {
           icon: const Icon(Icons.menu_rounded),
           onPressed: () => navigationScaffoldKey.currentState?.openDrawer(),
         ),
-        actions: [
-          IconButton(
-            tooltip: 'Search feed',
-            icon: const Icon(Icons.search_rounded),
-            onPressed: () => _showSearch(feed.valueOrNull),
-          ),
-          Badge(
-            smallSize: 8,
-            child: IconButton(
-              tooltip: 'Feed alerts',
-              icon: const Icon(Icons.notifications_none_rounded),
-              onPressed: () => _showAlerts(feed.valueOrNull),
-            ),
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showAddStockDialog,
-        icon: const Icon(Icons.add_rounded),
-        label: const Text('Add Feed'),
       ),
       body: feed.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -69,99 +51,24 @@ class _FeedPageState extends ConsumerState<FeedPage> {
               );
             }
           },
-          onAddFeed: _showAddStockDialog,
           onRecord: () => _showUsageDialog(snapshot),
-          onOrder: () => ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                'Supplier ordering will be available once suppliers are connected.',
-              ),
-            ),
-          ),
+          onOpenInventory: () => context.go(AppRoutes.inventory),
         ),
       ),
     );
   }
 
-  Future<void> _showAddStockDialog() async {
-    final name = TextEditingController();
-    final quantity = TextEditingController();
-    String unit = 'kg';
-    try {
-      await showDialog<void>(
-        context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: const Text('Add feed stock'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: name,
-                textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(labelText: 'Feed name'),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: quantity,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
-                ),
-                decoration: const InputDecoration(labelText: 'Quantity'),
-              ),
-              const SizedBox(height: 12),
-              DropdownButtonFormField<String>(
-                initialValue: unit,
-                decoration: const InputDecoration(labelText: 'Unit'),
-                items: const [
-                  DropdownMenuItem(value: 'kg', child: Text('Kilograms (kg)')),
-                  DropdownMenuItem(value: 'bags', child: Text('Bags')),
-                ],
-                onChanged: (value) => unit = value ?? unit,
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () async {
-                final amount = double.tryParse(quantity.text) ?? 0;
-                if (name.text.trim().isEmpty || amount <= 0) return;
-                try {
-                  await ref
-                      .read(feedProvider.notifier)
-                      .addStock(
-                        name: name.text.trim(),
-                        quantity: amount,
-                        unit: unit,
-                      );
-                  if (dialogContext.mounted) Navigator.pop(dialogContext);
-                } catch (error) {
-                  if (dialogContext.mounted) {
-                    ScaffoldMessenger.of(
-                      dialogContext,
-                    ).showSnackBar(SnackBar(content: Text('$error')));
-                  }
-                }
-              },
-              child: const Text('Add stock'),
-            ),
-          ],
-        ),
-      );
-    } finally {
-      name.dispose();
-      quantity.dispose();
-    }
-  }
-
   Future<void> _showUsageDialog(FeedSnapshot snapshot) async {
     if (snapshot.stock.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Add feed stock before recording feeding.'),
+        SnackBar(
+          content: const Text(
+            'Add feed stock in Inventory before recording feeding.',
+          ),
+          action: SnackBarAction(
+            label: 'Inventory',
+            onPressed: () => context.go(AppRoutes.inventory),
+          ),
         ),
       );
       return;
@@ -234,49 +141,6 @@ class _FeedPageState extends ConsumerState<FeedPage> {
       quantity.dispose();
     }
   }
-
-  void _showSearch(FeedSnapshot? snapshot) {
-    showSearch<void>(
-      context: context,
-      delegate: _FeedSearchDelegate(snapshot?.stock ?? const []),
-    );
-  }
-
-  void _showAlerts(FeedSnapshot? snapshot) {
-    final low =
-        snapshot?.stock.where((item) => item.quantity <= 50).toList() ?? [];
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      builder: (context) => Padding(
-        padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Feed alerts', style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 16),
-            _AlertRow(
-              icon: Icons.warning_amber_rounded,
-              color: AppColors.warning,
-              title: low.isEmpty
-                  ? 'No low-stock feeds'
-                  : '${low.length} feed type${low.length == 1 ? '' : 's'} running low',
-              detail: low.isEmpty
-                  ? 'Inventory is above the 50 kg reorder level.'
-                  : low.map((item) => item.name).join(', '),
-            ),
-            const _AlertRow(
-              icon: Icons.event_busy_rounded,
-              color: AppColors.danger,
-              title: 'Expiry dates need tracking',
-              detail: 'Add expiry dates when this inventory data is available.',
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 class _Dashboard extends StatelessWidget {
@@ -284,21 +148,19 @@ class _Dashboard extends StatelessWidget {
     required this.snapshot,
     required this.schedule,
     required this.onScheduleChanged,
-    required this.onAddFeed,
     required this.onRecord,
-    required this.onOrder,
+    required this.onOpenInventory,
   });
   final FeedSnapshot snapshot;
   final Map<String, bool> schedule;
   final void Function(String, bool) onScheduleChanged;
-  final VoidCallback onAddFeed, onRecord, onOrder;
+  final VoidCallback onRecord, onOpenInventory;
 
   @override
   Widget build(BuildContext context) {
     final usedToday = snapshot.usage
         .where((item) => _isToday(item.usedAt))
         .fold<double>(0, (sum, item) => sum + item.quantity);
-    final low = snapshot.stock.where((item) => item.quantity <= 50).length;
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 104),
       children: [
@@ -308,7 +170,7 @@ class _Dashboard extends StatelessWidget {
         ),
         const SizedBox(height: 4),
         Text(
-          'Monitor stock, feeding routines and consumption at a glance.',
+          'Track feeding routines and daily consumption.',
           style: Theme.of(
             context,
           ).textTheme.bodyMedium?.copyWith(color: AppColors.mutedText),
@@ -317,25 +179,11 @@ class _Dashboard extends StatelessWidget {
         _SummaryGrid(
           metrics: [
             _Metric(
-              'Total feed stock',
-              _quantity(snapshot.totalQuantity),
-              _stockUnit(snapshot.stock),
-              Icons.inventory_2_rounded,
-              AppColors.primaryGreen,
-            ),
-            _Metric(
               'Used today',
               _quantity(usedToday),
               _usageUnit(snapshot.usage, snapshot.stock),
               Icons.restaurant_rounded,
               AppColors.aqua,
-            ),
-            _Metric(
-              'Low stock alert',
-              '$low',
-              low == 1 ? 'feed type' : 'feed types',
-              Icons.warning_amber_rounded,
-              AppColors.warning,
             ),
             const _Metric(
               'Monthly feed cost',
@@ -347,29 +195,14 @@ class _Dashboard extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 28),
-        const _SectionHeader(title: 'Quick actions'),
+        const _SectionHeader(title: 'Feeding actions'),
         const SizedBox(height: 12),
-        _QuickActions(onAdd: onAddFeed, onRecord: onRecord, onOrder: onOrder),
+        _FeedingActions(onRecord: onRecord, onOpenInventory: onOpenInventory),
         const SizedBox(height: 28),
         const _SectionHeader(title: 'Feeding schedule', action: 'Today'),
         const SizedBox(height: 12),
         _ScheduleCard(values: schedule, onChanged: onScheduleChanged),
         const SizedBox(height: 28),
-        _SectionHeader(
-          title: 'Feed inventory',
-          action: '${snapshot.stock.length} types',
-        ),
-        const SizedBox(height: 12),
-        if (snapshot.stock.isEmpty)
-          const _EmptyInventory()
-        else
-          ...snapshot.stock.map(
-            (stock) => Padding(
-              padding: const EdgeInsets.only(bottom: 10),
-              child: _InventoryCard(stock: stock),
-            ),
-          ),
-        const SizedBox(height: 18),
         _SectionHeader(
           title: 'Daily consumption',
           action:
@@ -381,13 +214,6 @@ class _Dashboard extends StatelessWidget {
         const _SectionHeader(title: 'Feed analytics', action: 'Last 7 days'),
         const SizedBox(height: 12),
         _AnalyticsCard(usage: snapshot.usage),
-        const SizedBox(height: 28),
-        const _SectionHeader(title: 'Alerts'),
-        const SizedBox(height: 12),
-        _AlertsCard(
-          lowStock: low,
-          afternoonDone: schedule['Afternoon'] == true,
-        ),
       ],
     );
   }
@@ -491,64 +317,34 @@ class _SectionHeader extends StatelessWidget {
   );
 }
 
-class _QuickActions extends StatelessWidget {
-  const _QuickActions({
-    required this.onAdd,
+class _FeedingActions extends StatelessWidget {
+  const _FeedingActions({
     required this.onRecord,
-    required this.onOrder,
+    required this.onOpenInventory,
   });
-  final VoidCallback onAdd, onRecord, onOrder;
+
+  final VoidCallback onRecord;
+  final VoidCallback onOpenInventory;
+
   @override
   Widget build(BuildContext context) => Row(
     children: [
-      _Action(
-        icon: Icons.add_circle_outline_rounded,
-        label: 'Add Feed',
-        onTap: onAdd,
-      ),
-      _Action(icon: Icons.edit_note_rounded, label: 'Record', onTap: onRecord),
-      _Action(icon: Icons.sync_rounded, label: 'Update', onTap: onAdd),
-      _Action(
-        icon: Icons.shopping_cart_outlined,
-        label: 'Order',
-        onTap: onOrder,
-      ),
-    ],
-  );
-}
-
-class _Action extends StatelessWidget {
-  const _Action({required this.icon, required this.label, required this.onTap});
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  @override
-  Widget build(BuildContext context) => Expanded(
-    child: InkWell(
-      borderRadius: BorderRadius.circular(12),
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Column(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppColors.primaryContainer,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: AppColors.deepGreen, size: 21),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.labelSmall,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
+      Expanded(
+        child: FilledButton.icon(
+          onPressed: onRecord,
+          icon: const Icon(Icons.edit_note_rounded),
+          label: const Text('Record feeding'),
         ),
       ),
-    ),
+      const SizedBox(width: 12),
+      Expanded(
+        child: OutlinedButton.icon(
+          onPressed: onOpenInventory,
+          icon: const Icon(Icons.inventory_2_outlined),
+          label: const Text('Feed stock'),
+        ),
+      ),
+    ],
   );
 }
 
@@ -616,109 +412,6 @@ class _ScheduleRow extends StatelessWidget {
     trailing: Checkbox(
       value: checked,
       onChanged: (value) => onChanged(value ?? false),
-    ),
-  );
-}
-
-class _InventoryCard extends StatelessWidget {
-  const _InventoryCard({required this.stock});
-  final FeedStock stock;
-  @override
-  Widget build(BuildContext context) {
-    final low = stock.quantity <= 50;
-    final level = (stock.quantity / 500).clamp(0.0, 1.0);
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(9),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryContainer,
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(
-                    Icons.grass_rounded,
-                    color: AppColors.primaryGreen,
-                  ),
-                ),
-                const SizedBox(width: 11),
-                Expanded(
-                  child: Text(
-                    stock.name,
-                    style: Theme.of(context).textTheme.titleMedium,
-                  ),
-                ),
-                Text(
-                  '${_quantity(stock.quantity)} ${stock.unit}',
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: low ? AppColors.danger : AppColors.deepGreen,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 11),
-            Text(
-              'Supplier: ${stock.location?.trim().isNotEmpty == true ? stock.location : 'Not assigned'}  •  Cost: —',
-              style: Theme.of(
-                context,
-              ).textTheme.bodySmall?.copyWith(color: AppColors.mutedText),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Expiry: Not recorded',
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: low ? AppColors.warning : AppColors.mutedText,
-              ),
-            ),
-            const SizedBox(height: 10),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(99),
-              child: LinearProgressIndicator(
-                value: level,
-                minHeight: 7,
-                color: low ? AppColors.warning : AppColors.primaryGreen,
-                backgroundColor: AppColors.primaryContainer,
-              ),
-            ),
-            const SizedBox(height: 5),
-            Text(
-              low
-                  ? 'Low stock — reorder soon'
-                  : '${(level * 100).round()}% of target stock',
-              style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                color: low ? AppColors.warning : AppColors.mutedText,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyInventory extends StatelessWidget {
-  const _EmptyInventory();
-  @override
-  Widget build(BuildContext context) => Card(
-    child: Padding(
-      padding: const EdgeInsets.all(20),
-      child: Row(
-        children: [
-          const Icon(Icons.inventory_2_outlined, color: AppColors.mutedText),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              'No feed has been added yet. Use Add Feed to begin tracking your inventory.',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-          ),
-        ],
-      ),
     ),
   );
 }
@@ -899,67 +592,6 @@ class _ChartBar extends StatelessWidget {
   );
 }
 
-class _AlertsCard extends StatelessWidget {
-  const _AlertsCard({required this.lowStock, required this.afternoonDone});
-  final int lowStock;
-  final bool afternoonDone;
-  @override
-  Widget build(BuildContext context) => Card(
-    child: Column(
-      children: [
-        _AlertRow(
-          icon: Icons.warning_amber_rounded,
-          color: AppColors.warning,
-          title: lowStock == 0
-              ? 'No low-stock feed'
-              : '$lowStock low-stock alert${lowStock == 1 ? '' : 's'}',
-          detail: lowStock == 0
-              ? 'All tracked feed is above the reorder level.'
-              : 'Review inventory and place an order soon.',
-        ),
-        const Divider(height: 1),
-        const _AlertRow(
-          icon: Icons.event_busy_rounded,
-          color: AppColors.danger,
-          title: 'Expiry dates not recorded',
-          detail: 'Add expiry details to receive expiry reminders.',
-        ),
-        const Divider(height: 1),
-        _AlertRow(
-          icon: afternoonDone
-              ? Icons.check_circle_outline_rounded
-              : Icons.notifications_active_outlined,
-          color: afternoonDone ? AppColors.success : AppColors.warning,
-          title: afternoonDone
-              ? 'Afternoon feeding complete'
-              : 'Afternoon feeding is pending',
-          detail: afternoonDone
-              ? 'The scheduled pens have been checked off.'
-              : 'Due at 13:00 for Pens B1, B2.',
-        ),
-      ],
-    ),
-  );
-}
-
-class _AlertRow extends StatelessWidget {
-  const _AlertRow({
-    required this.icon,
-    required this.color,
-    required this.title,
-    required this.detail,
-  });
-  final IconData icon;
-  final Color color;
-  final String title, detail;
-  @override
-  Widget build(BuildContext context) => ListTile(
-    leading: Icon(icon, color: color),
-    title: Text(title, style: Theme.of(context).textTheme.titleSmall),
-    subtitle: Text(detail),
-  );
-}
-
 class _ErrorView extends StatelessWidget {
   const _ErrorView({required this.error, required this.onRetry});
   final Object error;
@@ -998,48 +630,6 @@ class _ErrorView extends StatelessWidget {
       ),
     ),
   );
-}
-
-class _FeedSearchDelegate extends SearchDelegate<void> {
-  _FeedSearchDelegate(this.stock);
-  final List<FeedStock> stock;
-  @override
-  List<Widget>? buildActions(BuildContext context) => [
-    if (query.isNotEmpty)
-      IconButton(
-        onPressed: () => query = '',
-        icon: const Icon(Icons.clear_rounded),
-      ),
-  ];
-  @override
-  Widget? buildLeading(BuildContext context) => IconButton(
-    onPressed: () => close(context, null),
-    icon: const Icon(Icons.arrow_back_rounded),
-  );
-  @override
-  Widget buildResults(BuildContext context) => _results();
-  @override
-  Widget buildSuggestions(BuildContext context) => _results();
-  Widget _results() {
-    final matches = stock
-        .where((item) => item.name.toLowerCase().contains(query.toLowerCase()))
-        .toList();
-    if (matches.isEmpty) {
-      return const Center(child: Text('No matching feed found'));
-    }
-    return ListView(
-      children: [
-        for (final item in matches)
-          ListTile(
-            leading: const Icon(Icons.grass_rounded),
-            title: Text(item.name),
-            subtitle: Text(
-              '${_quantity(item.quantity)} ${item.unit} available',
-            ),
-          ),
-      ],
-    );
-  }
 }
 
 String _quantity(double value) => value == value.roundToDouble()

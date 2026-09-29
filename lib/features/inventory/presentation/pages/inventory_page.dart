@@ -6,6 +6,7 @@ import 'package:proj/features/inventory/presentation/pages/sections/stock_items_
 import 'package:proj/features/inventory/presentation/pages/sections/suppliers_section.dart';
 import 'package:proj/features/inventory/presentation/pages/sections/stock_movements_section.dart';
 import 'package:proj/features/inventory/presentation/pages/sections/alerts_section.dart';
+import 'package:proj/features/inventory/presentation/pages/sections/feed_stock_section.dart';
 import 'package:proj/features/inventory/presentation/providers/inventory_providers.dart';
 
 class InventoryPage extends ConsumerStatefulWidget {
@@ -22,7 +23,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 6, vsync: this);
+    _tabController = TabController(length: 7, vsync: this);
   }
 
   @override
@@ -47,6 +48,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage>
             Tab(text: 'Suppliers', icon: Icon(Icons.local_shipping_outlined)),
             Tab(text: 'Movements', icon: Icon(Icons.swap_horiz)),
             Tab(text: 'Alerts', icon: Icon(Icons.notifications_outlined)),
+            Tab(text: 'Feed Stock', icon: Icon(Icons.grass_outlined)),
           ],
         ),
       ),
@@ -59,6 +61,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage>
           const SuppliersSection(),
           const StockMovementsSection(),
           const AlertsSection(),
+          const FeedStockSection(),
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
