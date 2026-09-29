@@ -29,7 +29,10 @@ class FarmNotification {
       FarmNotification(
         id: '${json['id']}',
         type: '${json['type'] ?? 'general'}',
-        title: '${json['title'] ?? ''}',
+        title: '${json['title'] ?? ''}'.replaceAll(
+          'Pig World CRM',
+          'Pig World Smart Support',
+        ),
         body: '${json['body'] ?? ''}',
         severity: '${json['severity'] ?? 'info'}',
         createdAt: DateTime.tryParse('${json['created_at']}') ?? DateTime.now(),
@@ -65,10 +68,14 @@ class NotificationsApi {
     } on DioException catch (error) {
       if (error.response?.statusCode == 404) {
         final conversation = await _fetchLegacySupportConversation(farmId);
-        final messages = conversation?['messages'] as List<dynamic>? ?? const [];
+        final messages =
+            conversation?['messages'] as List<dynamic>? ?? const [];
         for (final message in messages.whereType<Map<String, dynamic>>()) {
           if (message['sender_role'] == 'crm') {
-            await markAsRead(farmId: farmId, notificationId: '${message['id']}');
+            await markAsRead(
+              farmId: farmId,
+              notificationId: '${message['id']}',
+            );
           }
         }
         return;
@@ -81,12 +88,15 @@ class NotificationsApi {
     String farmId,
   ) async {
     final notifications = await fetch(farmId);
-    final messages = notifications
-        .where((notification) =>
-            notification.type == 'crm_message' ||
-            notification.type == 'crm_message_sent')
-        .toList()
-      ..sort((left, right) => left.createdAt.compareTo(right.createdAt));
+    final messages =
+        notifications
+            .where(
+              (notification) =>
+                  notification.type == 'crm_message' ||
+                  notification.type == 'crm_message_sent',
+            )
+            .toList()
+          ..sort((left, right) => left.createdAt.compareTo(right.createdAt));
     if (messages.isEmpty) return null;
 
     return {
@@ -95,15 +105,17 @@ class NotificationsApi {
       'status': 'open',
       'assigned_agent': null,
       'messages': messages
-          .map((message) => {
-                'id': message.id,
-                'sender_role': message.type == 'crm_message' ? 'crm' : 'app',
-                'sender_name': message.type == 'crm_message'
-                    ? (message.title.isEmpty ? 'Customer Support' : message.title)
-                    : 'You',
-                'body': message.body,
-                'created_at': message.createdAt.toIso8601String(),
-              })
+          .map(
+            (message) => {
+              'id': message.id,
+              'sender_role': message.type == 'crm_message' ? 'crm' : 'app',
+              'sender_name': message.type == 'crm_message'
+                  ? (message.title.isEmpty ? 'Customer Support' : message.title)
+                  : 'You',
+              'body': message.body,
+              'created_at': message.createdAt.toIso8601String(),
+            },
+          )
           .toList(),
     };
   }

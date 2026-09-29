@@ -17,6 +17,8 @@ class LoginPage extends ConsumerStatefulWidget {
 }
 
 class _LoginPageState extends ConsumerState<LoginPage> {
+  bool _agreementAccepted = false;
+
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
@@ -49,7 +51,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 const Text('Sign in to manage Pig World Smart.'),
                 const SizedBox(height: 24),
                 LoginForm(
+                  canSubmit: _agreementAccepted,
                   onSubmit: (identifier, password, rememberMe) async {
+                    if (!_agreementAccepted) return;
                     if (identifier.isEmpty || password.isEmpty) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
@@ -68,7 +72,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('A sign-in code was sent to your email.'),
+                            content: Text(
+                              'A sign-in code was sent to your email.',
+                            ),
                           ),
                         );
                         context.go(
@@ -88,9 +94,45 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     }
                   },
                 ),
+                CheckboxListTile(
+                  key: const ValueKey('login-agreement-checkbox'),
+                  value: _agreementAccepted,
+                  contentPadding: EdgeInsets.zero,
+                  controlAffinity: ListTileControlAffinity.leading,
+                  onChanged: (accepted) =>
+                      setState(() => _agreementAccepted = accepted ?? false),
+                  title: Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      const Text('I agree to the '),
+                      InkWell(
+                        onTap: () => _showAgreement(context, 'User Agreement'),
+                        child: const Text(
+                          'User Agreement',
+                          style: TextStyle(
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                      const Text(' and '),
+                      InkWell(
+                        onTap: () => _showAgreement(context, 'Privacy Policy'),
+                        child: const Text(
+                          'Privacy Policy',
+                          style: TextStyle(
+                            decoration: TextDecoration.underline,
+                          ),
+                        ),
+                      ),
+                      const Text('.'),
+                    ],
+                  ),
+                ),
                 const SizedBox(height: 12),
                 OutlinedButton.icon(
-                  onPressed: defaultTargetPlatform == TargetPlatform.iOS
+                  onPressed: !_agreementAccepted
+                      ? null
+                      : defaultTargetPlatform == TargetPlatform.iOS
                       ? () => ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text(
@@ -173,4 +215,26 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       ),
     ),
   );
+
+  Future<void> _showAgreement(BuildContext context, String title) async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: Text(title),
+        content: SingleChildScrollView(
+          child: Text(
+            title == 'User Agreement'
+                ? 'By using Pig World Smart, you agree to use the app lawfully and provide accurate account and farm information. You are responsible for protecting your sign-in details. Farm information is used to provide farm management features and is handled according to the Privacy Policy. You may stop using the service at any time.'
+                : 'Pig World Smart uses account and farm information to provide farm management, support, notifications, and reporting. We use reasonable safeguards to protect this information and do not ask for your password in support messages. Contact support through the in-app customer support page for privacy questions.',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
+  }
 }

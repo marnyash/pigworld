@@ -84,6 +84,11 @@ final healthAnalyticsProvider = FutureProvider<Map<String, dynamic>>((
 // Health Overview Stats
 final healthOverviewProvider = FutureProvider<Map<String, int>>((ref) async {
   final records = await ref.watch(healthRecordsProvider.future);
+  final vaccinatedPigIds = <String>{
+    for (final record in records)
+      if (record.type == 'vaccination') record.pigId,
+  };
+
   return {
     'healthy': records.where((r) => r.status == 'healthy').length,
     'sick': records
@@ -93,6 +98,7 @@ final healthOverviewProvider = FutureProvider<Map<String, int>>((ref) async {
         .where((r) => r.type == 'vaccination' && r.status == 'due')
         .length,
     'under_treatment': records.where((r) => r.status == 'recovering').length,
+    'vaccinated': vaccinatedPigIds.length,
   };
 });
 

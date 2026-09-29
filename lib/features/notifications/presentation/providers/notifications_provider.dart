@@ -39,9 +39,16 @@ class NotificationsNotifier extends AsyncNotifier<List<FarmNotification>> {
   Future<void> sendMessage(String message) async {
     final farmId = ref.read(authProvider).valueOrNull?.selectedFarm?.id;
     if (farmId == null) throw StateError('No farm selected.');
-    await ref
+
+    final sent = await ref
         .read(notificationsApiProvider)
         .sendMessage(farmId: farmId, message: message);
-    ref.invalidateSelf();
+
+    final current = state.valueOrNull ?? const <FarmNotification>[];
+    /* Keep the active list stable while appending the new sent message. */
+    state = AsyncData([
+      sent,
+      ...current,
+    ]);
   }
 }

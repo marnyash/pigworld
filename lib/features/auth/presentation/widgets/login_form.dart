@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 class LoginForm extends StatefulWidget {
   const LoginForm({
     required this.onSubmit,
+    this.canSubmit = true,
     this.useOtp = false,
     this.onOtpToggle,
     this.onSendOtp,
@@ -11,6 +12,7 @@ class LoginForm extends StatefulWidget {
 
   final Future<void> Function(String email, String password, bool rememberMe)
   onSubmit;
+  final bool canSubmit;
   final bool useOtp;
   final VoidCallback? onOtpToggle;
   final Future<void> Function(String email)? onSendOtp;
@@ -98,7 +100,7 @@ class _LoginFormState extends State<LoginForm> {
         ),
         const SizedBox(height: 16),
         FilledButton(
-          onPressed: isLoading
+          onPressed: isLoading || !widget.canSubmit
               ? null
               : () async {
                   if (!(formKey.currentState?.validate() ?? false)) return;

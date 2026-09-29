@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../l10n/generated/app_localizations.dart';
 import 'routes/app_router.dart';
 import 'routes/app_routes.dart';
 import '../shared/providers/theme_provider.dart';
 import '../shared/providers/connectivity_provider.dart';
-import '../features/onboarding/presentation/providers/onboarding_provider.dart';
+import '../features/settings/presentation/providers/settings_providers.dart';
 import '../features/notifications/data/notifications_api.dart';
 import '../features/notifications/presentation/providers/notifications_provider.dart';
 import 'theme/app_theme.dart';
@@ -26,30 +26,14 @@ class _AppRoot extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return MaterialApp.router(
-      title: 'Pig World Smart App',
+      onGenerateTitle: (context) => AppLocalizations.of(context)!.appTitle,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: ref.watch(themeModeProvider),
       debugShowCheckedModeBanner: false,
-      locale: Locale(ref.watch(onboardingProvider).languageCode),
-      supportedLocales: const [
-        Locale('en'),
-        Locale('sw'),
-        Locale('fr'),
-        Locale('de'),
-        Locale('es'),
-        Locale('pt'),
-        Locale('ar'),
-        Locale('zh'),
-        Locale('hi'),
-        Locale('ru'),
-        Locale('ja'),
-        Locale('ko'),
-        Locale('tr'),
-        Locale('it'),
-        Locale('nl'),
-      ],
-      localizationsDelegates: GlobalMaterialLocalizations.delegates,
+      locale: Locale(ref.watch(appLanguageProvider)),
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
       routerConfig: AppRouter.router,
       builder: (context, child) => _OfflineBannerOverlay(child: child),
     );
@@ -77,7 +61,7 @@ class _OfflineBannerOverlay extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(vertical: 6),
                 child: Center(
                   child: Text(
-                    'No internet connection',
+                    AppLocalizations.of(context)!.noInternetConnection,
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.onError,
                       fontSize: 12,
@@ -158,7 +142,7 @@ class _NotificationBannerState extends ConsumerState<_NotificationBanner> {
                   ),
                 ),
                 IconButton(
-                  tooltip: 'Dismiss notification banner',
+                  tooltip: AppLocalizations.of(context)!.dismissNotificationBanner,
                   icon: const Icon(Icons.close, color: Colors.white),
                   onPressed: () => setState(
                     () => _dismissedNotificationId = notification.id,

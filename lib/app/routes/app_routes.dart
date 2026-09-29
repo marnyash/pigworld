@@ -7,6 +7,7 @@ abstract final class AppRoutes {
   static const breeding = '/breeding';
   static const settings = '/settings';
   static const feed = '/feed';
+  static const tasks = '/tasks';
   static const growth = '/growth';
   static const finance = '/finance';
   static const salesAndExpenses = '/sales-and-expenses';

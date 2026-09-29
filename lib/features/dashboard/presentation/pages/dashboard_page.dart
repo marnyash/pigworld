@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../../../l10n/generated/app_localizations.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
@@ -12,6 +13,7 @@ import '../../../../security/authorization/roles.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../notifications/presentation/providers/notifications_provider.dart';
 import '../../../notifications/data/notifications_api.dart';
+import '../../../health/presentation/providers/health_providers.dart';
 import '../../../../shared/components/bottom_navigation.dart';
 import '../providers/farm_overview_provider.dart';
 
@@ -43,6 +45,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final session = ref.watch(authProvider).valueOrNull;
     final farmId = session?.selectedFarm?.id;
     final overview = farmId == null
@@ -59,6 +62,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         : registeredHerdCount;
     final role = session?.user.role;
     final isAdmin = role == UserRole.farmOwner;
+    final healthOverview = ref.watch(healthOverviewProvider);
+    final pregnantCount = session?.selectedFarm?.pregnantPigCount ?? 0;
+    final vaccinatedCount = healthOverview.valueOrNull?['vaccinated'] ?? 0;
     final notifications =
         ref.watch(notificationsProvider).valueOrNull ??
         const <FarmNotification>[];
@@ -73,14 +79,14 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          tooltip: 'Open menu',
+          tooltip: l10n.openMenu,
           icon: const Icon(Icons.menu),
           onPressed: () => navigationScaffoldKey.currentState?.openDrawer(),
         ),
         title: Text(farmName),
         actions: [
           IconButton(
-            tooltip: 'Notifications',
+            tooltip: l10n.openNotifications,
             icon: const Icon(Icons.notifications_outlined),
             onPressed: () => context.go(AppRoutes.notifications),
           ),
@@ -109,9 +115,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                         color: Theme.of(context).colorScheme.error,
                       ),
                       const SizedBox(width: AppDimensions.spacingMedium),
-                      const Expanded(
+                      Expanded(
                         child: Text(
-                          'We could not load the latest farm overview.',
+                          l10n.overviewLoadFailed,
                         ),
                       ),
                       TextButton(
@@ -119,7 +125,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                             ? null
                             : () =>
                                   ref.invalidate(farmOverviewProvider(farmId)),
-                        child: const Text('Retry'),
+                        child: Text(l10n.retry),
                       ),
                     ],
                   ),
@@ -142,7 +148,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                         borderRadius: BorderRadius.circular(999),
                       ),
                       child: Text(
-                        'Farm overview',
+                        l10n.farmOverview,
                         style: TextStyle(
                           color: AppColors.inverseText,
                           fontSize: 12,
@@ -151,14 +157,14 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Good day, $firstName',
+                      '${l10n.goodDay}, $firstName',
                       style: Theme.of(context).textTheme.headlineSmall
                           ?.copyWith(color: AppColors.inverseText),
                     ),
                     const SizedBox(height: 6),
                     Text(
                       crmMessage?.body ??
-                          'Your farm is running smoothly today.',
+                          l10n.farmRunningSmoothly,
                       style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: AppColors.inverseMutedText,
                       ),
@@ -175,6 +181,12 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               ),
             ],
             const SizedBox(height: AppDimensions.spacingLarge),
+            _HerdStatusCard(
+              pregnant: pregnantCount,
+              vaccinated: vaccinatedCount,
+              active: herdCount,
+            ),
+            const SizedBox(height: AppDimensions.spacingLarge),
             GridView.count(
               crossAxisCount: 2,
               shrinkWrap: true,
@@ -185,25 +197,25 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               children: [
                 _StatCard(
                   icon: Icons.pets_outlined,
-                  label: 'Herd size',
+                  label: l10n.herdSize,
                   value: '$herdCount',
                   color: AppColors.primaryGreen,
                 ),
                 _StatCard(
                   icon: Icons.grass_outlined,
-                  label: 'Feed stock',
+                  label: l10n.feedStock,
                   value: overview.valueOrNull?['feed_stock']?.toString() ?? '—',
                   color: AppColors.warning,
                 ),
                 _StatCard(
                   icon: Icons.checklist_outlined,
-                  label: 'Tasks due',
+                  label: l10n.tasksDue,
                   value: overview.valueOrNull?['tasks_due']?.toString() ?? '—',
                   color: AppColors.danger,
                 ),
                 _StatCard(
                   icon: Icons.point_of_sale_outlined,
-                  label: 'Sales this week',
+                  label: l10n.salesThisWeek,
                   value:
                       overview.valueOrNull?['sales_this_week']?.toString() ??
                       '—',
@@ -220,7 +232,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               ),
             ],
             const SizedBox(height: AppDimensions.spacingLarge),
-            _SectionHeader(title: 'Quick actions'),
+            _SectionHeader(title: l10n.quickActions),
             const SizedBox(height: AppDimensions.spacingMedium),
             Wrap(
               spacing: AppDimensions.spacingMedium,
@@ -228,22 +240,28 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
               children: [
                 _QuickAction(
                   icon: Icons.pets_outlined,
-                  label: 'Herd',
+                  label: l10n.herd,
                   color: AppColors.pigPink,
                   onTap: () => context.go(AppRoutes.herd),
                 ),
                 _QuickAction(
                   icon: Icons.grass_outlined,
-                  label: 'Feed',
+                  label: l10n.feed,
                   color: AppColors.leaf,
                   onTap: () => context.go(AppRoutes.feed),
+                ),
+                _QuickAction(
+                  icon: Icons.check_circle_outline,
+                  label: l10n.tasks,
+                  color: AppColors.warmGold,
+                  onTap: () => context.go(AppRoutes.tasks),
                 ),
                 if (isAdmin ||
                     (role != null &&
                         RolePermissions.can(role, AppPermission.manageFinance)))
                   _QuickAction(
                     icon: Icons.account_balance_wallet_outlined,
-                    label: 'Finance',
+                    label: l10n.finance,
                     color: AppColors.warmGold,
                     onTap: () => context.go(AppRoutes.finance),
                   ),
@@ -252,27 +270,27 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                         RolePermissions.can(role, AppPermission.manageSales)))
                   _QuickAction(
                     icon: Icons.groups_outlined,
-                    label: 'Customers',
+                    label: l10n.customers,
                     color: AppColors.info,
                     onTap: () => context.go(AppRoutes.crm),
                   ),
                 _QuickAction(
                   icon: Icons.support_agent_outlined,
-                  label: 'Support',
+                  label: l10n.customerSupport,
                   color: AppColors.violet,
                   onTap: () => context.go(AppRoutes.support),
                 ),
                 if (isAdmin)
                   _QuickAction(
                     icon: Icons.group_outlined,
-                    label: 'Team & policies',
+                    label: l10n.teamAndPolicies,
                     color: AppColors.aqua,
                     onTap: () => context.go(AppRoutes.farmManagement),
                   ),
               ],
             ),
             const SizedBox(height: AppDimensions.spacingLarge),
-            _SectionHeader(title: 'Recent activity'),
+            _SectionHeader(title: l10n.recentActivity),
             const SizedBox(height: AppDimensions.spacingMedium),
             Card(
               child: Padding(
@@ -403,6 +421,79 @@ class _StatCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _HerdStatusCard extends StatelessWidget {
+  const _HerdStatusCard({
+    required this.pregnant,
+    required this.vaccinated,
+    required this.active,
+  });
+
+  final int pregnant;
+  final int vaccinated;
+  final int active;
+
+  @override
+  Widget build(BuildContext context) {
+    final metrics = [
+      _HerdStatusMetric(label: AppLocalizations.of(context)!.pregnant, value: '$pregnant', color: AppColors.pigPink),
+      _HerdStatusMetric(label: AppLocalizations.of(context)!.vaccinated, value: '$vaccinated', color: AppColors.info),
+      _HerdStatusMetric(label: AppLocalizations.of(context)!.active, value: '$active', color: AppColors.success),
+    ];
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AppDimensions.spacingLarge),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Pregnancy & vaccination',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+            const SizedBox(height: AppDimensions.spacingMedium),
+            Row(
+              children: metrics
+                  .map(
+                    (metric) => Expanded(
+                      child: Container(
+                        margin: const EdgeInsets.only(right: 8),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: metric.color.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(metric.label, style: Theme.of(context).textTheme.bodySmall),
+                            const SizedBox(height: 6),
+                            Text(metric.value, style: Theme.of(context).textTheme.headlineSmall),
+                          ],
+                        ),
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _HerdStatusMetric {
+  const _HerdStatusMetric({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
 }
 
 class _QuickAction extends StatelessWidget {

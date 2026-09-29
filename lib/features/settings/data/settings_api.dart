@@ -26,6 +26,57 @@ class SettingsApi {
     }
   }
 
+  Future<Map<String, dynamic>> requestFarmNameChange({
+    required String farmId,
+    required String requestedName,
+  }) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/farms/$farmId/name-change-requests',
+        data: {'requested_name': requestedName},
+      );
+      return Map<String, dynamic>.from(response.data?['data'] as Map);
+    } on DioException catch (error) {
+      throw ErrorHandler.from(error);
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> farmNameChangeRequests(
+    String farmId,
+  ) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/farms/$farmId/name-change-requests',
+      );
+      return (response.data?['data'] as List<dynamic>? ?? [])
+          .map((item) => Map<String, dynamic>.from(item as Map))
+          .toList();
+    } on DioException catch (error) {
+      throw ErrorHandler.from(error);
+    }
+  }
+
+  Future<Map<String, dynamic>> updateFarmLocation({
+    required String farmId,
+    required String location,
+    required double latitude,
+    required double longitude,
+  }) async {
+    try {
+      final response = await _dio.patch<Map<String, dynamic>>(
+        '/farms/$farmId',
+        data: {
+          'location': location,
+          'latitude': latitude,
+          'longitude': longitude,
+        },
+      );
+      return Map<String, dynamic>.from(response.data?['data'] as Map);
+    } on DioException catch (error) {
+      throw ErrorHandler.from(error);
+    }
+  }
+
   // Profile updates
   Future<void> updateProfile({
     required String farmId,

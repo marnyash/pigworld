@@ -16,7 +16,7 @@ class NotificationsPage extends ConsumerWidget {
         title: const Text('Notifications'),
         actions: [
           IconButton(
-            tooltip: 'Message CRM',
+            tooltip: 'Message customer support',
             icon: const Icon(Icons.chat_outlined),
             onPressed: () => _showMessageComposer(context, ref),
           ),
@@ -55,7 +55,7 @@ class NotificationsPage extends ConsumerWidget {
     final sent = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('Message Pig World CRM'),
+        title: const Text('Message customer support'),
         content: Form(
           key: formKey,
           child: TextFormField(
@@ -65,7 +65,7 @@ class NotificationsPage extends ConsumerWidget {
             autofocus: true,
             decoration: const InputDecoration(
               labelText: 'Message',
-              hintText: 'Ask the CRM team for help...',
+              hintText: 'Ask our customer support team for help...',
               alignLabelWithHint: true,
             ),
             validator: (value) => value == null || value.trim().isEmpty
@@ -102,7 +102,7 @@ class NotificationsPage extends ConsumerWidget {
     controller.dispose();
     if (sent == true && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Message sent to the CRM team.')),
+        const SnackBar(content: Text('Message sent to customer support.')),
       );
     }
   }

@@ -86,7 +86,7 @@ class _SubscriptionPageState extends ConsumerState<SubscriptionPage> {
         ),
         const SizedBox(height: 8),
         const Text(
-          'This is selected automatically for your farm based on the number of mother pigs in your CRM data.',
+          'This is selected automatically for your farm based on the number of mother pigs in your farm records.',
         ),
         const SizedBox(height: 24),
         if (_loadingPlans)

@@ -10,6 +10,8 @@ import 'package:proj/features/auth/presentation/providers/auth_providers.dart';
 import 'package:proj/features/onboarding/presentation/providers/onboarding_provider.dart';
 import 'package:proj/features/settings/data/settings_api.dart';
 import 'package:proj/features/settings/presentation/providers/settings_providers.dart';
+import 'package:proj/l10n/generated/app_localizations.dart';
+import 'package:proj/features/settings/presentation/widgets/farm_location_picker_dialog.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
@@ -20,24 +22,31 @@ class SettingsPage extends ConsumerStatefulWidget {
 
 class _SettingsPageState extends ConsumerState<SettingsPage> {
   Future<void> _changeLanguage(String language) async {
-    await ref.read(userPreferencesProvider.notifier).updateLanguage(language);
-    ref
-        .read(onboardingProvider.notifier)
-        .setLanguage(
-          name: language == 'sw' ? 'Swahili' : 'English',
-          code: language,
+    try {
+      await ref.read(userPreferencesProvider.notifier).updateLanguage(language);
+      ref
+          .read(onboardingProvider.notifier)
+          .setLanguage(
+            name: language == 'sw' ? 'Kiswahili' : 'English',
+            code: language,
+          );
+      if (mounted) _showMessage(AppLocalizations.of(context)!.languageChanged);
+    } catch (_) {
+      if (mounted) {
+        _showMessage(
+          AppLocalizations.of(context)!.languageChangeFailed,
+          isError: true,
         );
-    if (!mounted) return;
-    _showMessage(
-      'Language changed to ${SettingsHelper.getLanguageName(language)}.',
-    );
+      }
+    }
   }
 
   Future<void> _changeProfileName(Session? session) async {
     if (session == null) return;
+    final l10n = AppLocalizations.of(context)!;
     final name = await _editTextDialog(
-      'Change profile name',
-      'Profile name',
+      l10n.changeProfileNameTitle,
+      l10n.profileName,
       session.user.name,
     );
     if (name == null || !mounted) return;
@@ -62,56 +71,85 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               selectedFarm: session.selectedFarm,
             ),
           );
-      _showMessage('Profile name updated.');
+      _showMessage(l10n.profileNameUpdated);
     } catch (_) {
-      _showMessage('Could not update your profile name.', isError: true);
+      _showMessage(l10n.profileNameUpdateFailed, isError: true);
     }
   }
 
   Future<void> _changeFarmName(Session? session, Farm? farm) async {
     if (session == null || farm == null) return;
+    final l10n = AppLocalizations.of(context)!;
     final name = await _editTextDialog(
-      'Change farm name',
-      'Farm name',
+      l10n.farmNameTitle,
+      l10n.farmName,
       farm.name,
     );
     if (name == null || !mounted) return;
     try {
-      await SettingsApi(
-        ref.read(dioProvider),
-      ).renameFarm(farmId: farm.id, name: name);
+      await SettingsApi(ref.read(dioProvider)).requestFarmNameChange(
+        farmId: farm.id,
+        requestedName: name.trim(),
+      );
+      ref.invalidate(farmNameChangeRequestsProvider(farm.id));
       if (!mounted) return;
-      final renamedFarm = Farm(
+      _showMessage('Farm name change sent to Pig World Smart support for approval.');
+    } catch (_) {
+      _showMessage(l10n.farmNameUpdateFailed, isError: true);
+    }
+  }
+
+  Future<void> _changeFarmLocation(Session? session, Farm? farm) async {
+    if (session == null || farm == null) return;
+    final selection = await showDialog<FarmLocationSelection>(
+      context: context,
+      builder: (_) => FarmLocationPickerDialog(
+        initialAddress: farm.location,
+        initialLatitude: farm.latitude,
+        initialLongitude: farm.longitude,
+      ),
+    );
+    if (selection == null || !mounted) return;
+    try {
+      await SettingsApi(ref.read(dioProvider)).updateFarmLocation(
+        farmId: farm.id,
+        location: selection.address,
+        latitude: selection.latitude,
+        longitude: selection.longitude,
+      );
+      if (!mounted) return;
+      final updatedFarm = Farm(
         id: farm.id,
-        name: name,
-        location: farm.location,
+        name: farm.name,
+        location: selection.address,
+        latitude: selection.latitude,
+        longitude: selection.longitude,
         inviteCode: farm.inviteCode,
         motherPigCount: farm.motherPigCount,
         registeredPigletCount: farm.registeredPigletCount,
         pregnantPigCount: farm.pregnantPigCount,
         subscriptionPlan: farm.subscriptionPlan,
       );
-      ref
-          .read(authProvider.notifier)
-          .setSession(
-            Session(
-              accessToken: session.accessToken,
-              refreshToken: session.refreshToken,
-              user: session.user,
-              farms: [
-                for (final item in session.farms)
-                  item.id == farm.id ? renamedFarm : item,
-              ],
-              selectedFarm: renamedFarm,
-            ),
-          );
-      _showMessage('Farm name updated.');
+      ref.read(authProvider.notifier).setSession(
+        Session(
+          accessToken: session.accessToken,
+          refreshToken: session.refreshToken,
+          user: session.user,
+          farms: [
+            for (final item in session.farms)
+              item.id == farm.id ? updatedFarm : item,
+          ],
+          selectedFarm: updatedFarm,
+        ),
+      );
+      _showMessage('Farm location saved.');
     } catch (_) {
-      _showMessage('Could not update the farm name.', isError: true);
+      _showMessage('Could not save the farm location.', isError: true);
     }
   }
 
   Future<void> _setNewPassword() async {
+    final l10n = AppLocalizations.of(context)!;
     final passwords = await showDialog<(String, String)>(
       context: context,
       builder: (_) => const _PasswordDialog(),
@@ -123,12 +161,12 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         newPassword: passwords.$2,
       );
       if (mounted) {
-        _showMessage('Password updated.');
+        _showMessage(l10n.passwordUpdated);
       }
     } catch (_) {
       if (mounted) {
         _showMessage(
-          'Could not update the password. Check your current password.',
+          l10n.passwordUpdateFailed,
           isError: true,
         );
       }
@@ -157,19 +195,23 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final preferences = ref.watch(userPreferencesProvider).valueOrNull;
     final session = ref.watch(authProvider).valueOrNull;
     final farm = session?.selectedFarm ?? session?.farms.firstOrNull;
     final notificationSound = preferences?.notificationSound ?? 'default';
+    final nameRequests = farm == null
+      ? null
+      : ref.watch(farmNameChangeRequestsProvider(farm.id));
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
+      appBar: AppBar(title: Text(l10n.settings)),
       body: ListView(
         padding: const EdgeInsets.all(AppDimensions.pagePadding),
         children: [
           Card(
             child: ListTile(
               leading: const Icon(Icons.language_outlined),
-              title: const Text('Change language'),
+              title: Text(l10n.changeLanguage),
               subtitle: Text(
                 SettingsHelper.getLanguageName(preferences?.language ?? 'en'),
               ),
@@ -178,8 +220,21 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
             ),
           ),
           const SizedBox(height: AppDimensions.spacingLarge),
+          if (nameRequests?.valueOrNull?.isNotEmpty == true) ...[
+            Card(
+              child: ListTile(
+                leading: const Icon(Icons.hourglass_top_outlined),
+                title: const Text('Farm name change request'),
+                subtitle: Text(
+                  '${nameRequests!.valueOrNull!.first['requested_name']} · '
+                  '${nameRequests.valueOrNull!.first['status']}',
+                ),
+              ),
+            ),
+            const SizedBox(height: AppDimensions.spacingLarge),
+          ],
           Text(
-            'Account settings',
+            l10n.accountSettings,
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: AppDimensions.spacingMedium),
@@ -188,13 +243,13 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               children: [
                 _SettingsAction(
                   icon: Icons.person_outline,
-                  title: 'Change profile name',
+                  title: l10n.changeProfileName,
                   onTap: () => _changeProfileName(session),
                 ),
                 const Divider(height: 1),
                 _SettingsAction(
                   icon: Icons.agriculture_outlined,
-                  title: 'Change farm name',
+                  title: l10n.changeFarmName,
                   onTap: farm == null
                       ? null
                       : () => _changeFarmName(session, farm),
@@ -202,7 +257,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                 const Divider(height: 1),
                 _SettingsAction(
                   icon: Icons.lock_outline,
-                  title: 'Set new password',
+                  title: l10n.setNewPassword,
                   onTap: _setNewPassword,
                 ),
               ],
@@ -210,7 +265,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
           ),
           const SizedBox(height: AppDimensions.spacingLarge),
           Text(
-            'Farm configuration',
+            l10n.farmConfiguration,
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: AppDimensions.spacingMedium),
@@ -219,33 +274,32 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               children: [
                 _SettingsAction(
                   icon: Icons.location_on_outlined,
-                  title: 'Farm location',
-                  subtitle: farm?.location ?? 'Add your farm location',
-                  onTap: () =>
-                      _showMessage('Farm location settings are coming soon.'),
+                    title: l10n.farmLocation,
+                    subtitle: farm?.location ?? l10n.addFarmLocation,
+                    onTap: farm == null
+                        ? null
+                        : () => _changeFarmLocation(session, farm),
                 ),
                 const Divider(height: 1),
                 _SettingsAction(
                   icon: Icons.straighten_outlined,
-                  title: 'Herd units',
-                  subtitle: 'Kg, breeding cycles, and display units',
-                  onTap: () =>
-                      _showMessage('Herd units settings are coming soon.'),
+                    title: l10n.herdUnits,
+                    subtitle: l10n.herdUnitsDescription,
+                    onTap: () => _showMessage(l10n.herdUnitsComingSoon),
                 ),
                 const Divider(height: 1),
                 _SettingsAction(
                   icon: Icons.access_time_outlined,
-                  title: 'Timezone & date format',
-                  subtitle: 'Local farm time and reporting format',
-                  onTap: () =>
-                      _showMessage('Timezone settings are coming soon.'),
+                    title: l10n.timezoneAndDateFormat,
+                    subtitle: l10n.localTimeAndReportingFormat,
+                    onTap: () => _showMessage(l10n.timezoneComingSoon),
                 ),
               ],
             ),
           ),
           const SizedBox(height: AppDimensions.spacingLarge),
           Text(
-            'Billing & subscription',
+            l10n.billingAndSubscription,
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: AppDimensions.spacingMedium),
@@ -254,33 +308,30 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               children: [
                 _SettingsAction(
                   icon: Icons.credit_card_outlined,
-                  title: 'Current plan',
-                  subtitle: farm?.subscriptionPlan ?? 'Starter plan',
-                  onTap: () => _showMessage(
-                    'Subscription management is ready for the next milestone.',
-                  ),
+                  title: l10n.currentPlan,
+                  subtitle: farm?.subscriptionPlan ?? l10n.starterPlan,
+                  onTap: () => _showMessage(l10n.subscriptionReadyNextMilestone),
                 ),
                 const Divider(height: 1),
                 _SettingsAction(
                   icon: Icons.autorenew_outlined,
-                  title: 'Auto-renewal',
-                  subtitle: 'Enabled',
-                  onTap: () =>
-                      _showMessage('Auto-renewal settings are coming soon.'),
+                    title: l10n.autoRenewal,
+                    subtitle: l10n.enabled,
+                    onTap: () => _showMessage(l10n.autoRenewalComingSoon),
                 ),
                 const Divider(height: 1),
                 _SettingsAction(
                   icon: Icons.receipt_long_outlined,
-                  title: 'Billing history',
-                  subtitle: 'View invoices and payment activity',
-                  onTap: () => _showMessage('Billing history is coming soon.'),
+                  title: l10n.billingHistory,
+                  subtitle: l10n.viewInvoicesAndPayments,
+                  onTap: () => _showMessage(l10n.billingHistoryComingSoon),
                 ),
               ],
             ),
           ),
           const SizedBox(height: AppDimensions.spacingLarge),
           Text(
-            'Security & sessions',
+            l10n.securityAndSessions,
             style: Theme.of(context).textTheme.titleLarge,
           ),
           const SizedBox(height: AppDimensions.spacingMedium),
@@ -289,36 +340,34 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               children: [
                 _SettingsAction(
                   icon: Icons.devices_outlined,
-                  title: 'Active devices',
-                  subtitle: 'Manage sign-ins across your devices',
-                  onTap: () =>
-                      _showMessage('Device management is coming soon.'),
+                    title: l10n.activeDevices,
+                    subtitle: l10n.manageSignIns,
+                    onTap: () => _showMessage(l10n.deviceManagementComingSoon),
                 ),
                 const Divider(height: 1),
                 _SettingsAction(
                   icon: Icons.logout_outlined,
-                  title: 'Sign out of all devices',
-                  subtitle: 'Require re-login everywhere',
-                  onTap: () => _showMessage('Session reset is coming soon.'),
+                  title: l10n.signOutAllDevices,
+                  subtitle: l10n.requireRelogin,
+                  onTap: () => _showMessage(l10n.sessionResetComingSoon),
                 ),
                 const Divider(height: 1),
                 _SettingsAction(
                   icon: Icons.security_outlined,
-                  title: 'Privacy and access',
-                  subtitle: 'Role-based controls and session policy',
-                  onTap: () =>
-                      _showMessage('Access policy settings are coming soon.'),
+                    title: l10n.privacyAndAccess,
+                    subtitle: l10n.roleControlsAndSessionPolicy,
+                    onTap: () => _showMessage(l10n.accessPolicyComingSoon),
                 ),
               ],
             ),
           ),
           const SizedBox(height: AppDimensions.spacingLarge),
-          Text('Notifications', style: Theme.of(context).textTheme.titleLarge),
+          Text(l10n.notifications, style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: AppDimensions.spacingMedium),
           Card(
             child: ListTile(
               leading: const Icon(Icons.volume_up_outlined),
-              title: const Text('Notification sound'),
+              title: Text(l10n.notificationSound),
               subtitle: Text(_notificationSoundLabel(notificationSound)),
               trailing: const Icon(Icons.chevron_right),
               onTap: _showNotificationSoundPicker,
@@ -332,43 +381,43 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
   Future<void> _showLanguagePicker() => showDialog<void>(
     context: context,
     builder: (dialogContext) => SimpleDialog(
-      title: const Text('Change language'),
+      title: Text(AppLocalizations.of(context)!.changeLanguage),
       children: [
         SimpleDialogOption(
           onPressed: () {
             Navigator.pop(dialogContext);
             _changeLanguage('en');
           },
-          child: const Text('English'),
+          child: Text(AppLocalizations.of(context)!.english),
         ),
         SimpleDialogOption(
           onPressed: () {
             Navigator.pop(dialogContext);
             _changeLanguage('sw');
           },
-          child: const Text('Kiswahili'),
+          child: Text(AppLocalizations.of(context)!.kiswahili),
         ),
       ],
     ),
   );
 
   String _notificationSoundLabel(String sound) => switch (sound) {
-    'chime' => 'Chime',
-    'alert' => 'Alert',
-    'silent' => 'Silent',
-    _ => 'Phone default',
+    'chime' => AppLocalizations.of(context)!.chime,
+    'alert' => AppLocalizations.of(context)!.alert,
+    'silent' => AppLocalizations.of(context)!.silent,
+    _ => AppLocalizations.of(context)!.phoneDefault,
   };
 
   Future<void> _showNotificationSoundPicker() => showDialog<void>(
     context: context,
     builder: (dialogContext) => SimpleDialog(
-      title: const Text('Notification sound'),
+      title: Text(AppLocalizations.of(context)!.notificationSound),
       children: [
         for (final option in const [
-          ('default', 'Phone default'),
-          ('chime', 'Chime'),
-          ('alert', 'Alert'),
-          ('silent', 'Silent'),
+          ('default', 'default'),
+          ('chime', 'chime'),
+          ('alert', 'alert'),
+          ('silent', 'silent'),
         ])
           SimpleDialogOption(
             onPressed: () {
@@ -377,7 +426,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   .read(userPreferencesProvider.notifier)
                   .updateNotificationSound(option.$1);
             },
-            child: Text(option.$2),
+            child: Text(_notificationSoundLabel(option.$1)),
           ),
       ],
     ),
@@ -449,9 +498,9 @@ class _TextEditDialogState extends State<_TextEditDialog> {
     actions: [
       TextButton(
         onPressed: () => Navigator.pop(context),
-        child: const Text('Cancel'),
+        child: Text(AppLocalizations.of(context)!.cancel),
       ),
-      FilledButton(onPressed: _save, child: const Text('Save')),
+      FilledButton(onPressed: _save, child: Text(AppLocalizations.of(context)!.save)),
     ],
   );
 }
@@ -483,24 +532,24 @@ class _PasswordDialogState extends State<_PasswordDialog> {
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-    title: const Text('Set new password'),
+    title: Text(AppLocalizations.of(context)!.setNewPassword),
     content: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         TextField(
           controller: _currentController,
           obscureText: true,
-          decoration: const InputDecoration(labelText: 'Current password'),
+          decoration: InputDecoration(labelText: AppLocalizations.of(context)!.currentPassword),
         ),
         TextField(
           controller: _passwordController,
           obscureText: true,
-          decoration: const InputDecoration(labelText: 'New password'),
+          decoration: InputDecoration(labelText: AppLocalizations.of(context)!.newPassword),
         ),
         TextField(
           controller: _confirmationController,
           obscureText: true,
-          decoration: const InputDecoration(labelText: 'Confirm new password'),
+          decoration: InputDecoration(labelText: AppLocalizations.of(context)!.confirmNewPassword),
           onSubmitted: (_) => _updatePassword(),
         ),
       ],
@@ -508,9 +557,9 @@ class _PasswordDialogState extends State<_PasswordDialog> {
     actions: [
       TextButton(
         onPressed: () => Navigator.pop(context),
-        child: const Text('Cancel'),
+        child: Text(AppLocalizations.of(context)!.cancel),
       ),
-      FilledButton(onPressed: _updatePassword, child: const Text('Update')),
+      FilledButton(onPressed: _updatePassword, child: Text(AppLocalizations.of(context)!.update)),
     ],
   );
 }

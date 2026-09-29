@@ -73,6 +73,13 @@ class _CountryPageState extends ConsumerState<CountryPage> {
       });
     }
     return OnboardingScaffold(
+      topAction: TextButton(
+        onPressed: () async {
+          await ref.read(onboardingStorageProvider).markCompleted();
+          if (context.mounted) context.go(AppRoutes.createAccount);
+        },
+        child: const Text('Skip'),
+      ),
       body: OnboardingEntry(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(24, 30, 24, 24),
@@ -128,13 +135,6 @@ class _CountryPageState extends ConsumerState<CountryPage> {
           TextButton(
             onPressed: () => context.go(AppRoutes.language),
             child: const Text('Back'),
-          ),
-          TextButton(
-            onPressed: () async {
-              await ref.read(onboardingStorageProvider).markCompleted();
-              if (context.mounted) context.go(AppRoutes.createAccount);
-            },
-            child: const Text('Skip'),
           ),
           const Spacer(),
           Flexible(

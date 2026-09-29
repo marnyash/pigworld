@@ -35,6 +35,13 @@ class AccountTypePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final selectedRoles = ref.watch(onboardingProvider).roles;
     return OnboardingScaffold(
+      topAction: TextButton(
+        onPressed: () async {
+          await ref.read(onboardingStorageProvider).markCompleted();
+          if (context.mounted) context.go(AppRoutes.createAccount);
+        },
+        child: const Text('Skip'),
+      ),
       body: OnboardingEntry(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
@@ -78,13 +85,6 @@ class AccountTypePage extends ConsumerWidget {
           TextButton(
             onPressed: () => context.go(AppRoutes.country),
             child: const Text('Back'),
-          ),
-          TextButton(
-            onPressed: () async {
-              await ref.read(onboardingStorageProvider).markCompleted();
-              if (context.mounted) context.go(AppRoutes.createAccount);
-            },
-            child: const Text('Skip'),
           ),
           const Spacer(),
           FilledButton(

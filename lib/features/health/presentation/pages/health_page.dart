@@ -310,10 +310,16 @@ class _HealthPageState extends ConsumerState<HealthPage>
                 color: AppColors.warning,
               ),
               HealthOverviewCard(
-                label: 'Vaccinations Due',
-                value: stats['vaccinations_due']?.toString() ?? '0',
+                label: 'Vaccinated',
+                value: stats['vaccinated']?.toString() ?? '0',
                 icon: Icons.vaccines,
                 color: AppColors.info,
+              ),
+              HealthOverviewCard(
+                label: 'Vaccinations Due',
+                value: stats['vaccinations_due']?.toString() ?? '0',
+                icon: Icons.notifications_active,
+                color: AppColors.aqua,
               ),
               HealthOverviewCard(
                 label: 'Under Treatment',

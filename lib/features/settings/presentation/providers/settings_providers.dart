@@ -1,5 +1,8 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:proj/features/onboarding/presentation/providers/onboarding_provider.dart';
+import 'package:proj/features/auth/presentation/providers/auth_providers.dart';
+import 'package:proj/features/settings/data/settings_api.dart';
 import '../../data/settings_local_data_source.dart';
 import '../../domain/entities/backup_settings.dart';
 import '../../domain/entities/device_settings.dart';
@@ -21,10 +24,13 @@ class UserPreferencesNotifier extends AsyncNotifier<UserPreferences> {
   }
 
   Future<void> updateLanguage(String language) async {
+    if (language != 'en' && language != 'sw') {
+      throw ArgumentError.value(language, 'language', 'Unsupported language');
+    }
     final current = await future;
     final updated = current.copyWith(language: language);
     await ref.watch(settingsLocalDataSourceProvider).savePreferences(updated);
-    ref.invalidateSelf();
+    state = AsyncData(updated);
   }
 
   Future<void> updateTheme(bool isDarkMode) async {
@@ -79,6 +85,11 @@ final userPreferencesProvider =
     AsyncNotifierProvider<UserPreferencesNotifier, UserPreferences>(
       UserPreferencesNotifier.new,
     );
+
+final farmNameChangeRequestsProvider = FutureProvider.autoDispose
+    .family<List<Map<String, dynamic>>, String>((ref, farmId) {
+      return SettingsApi(ref.watch(dioProvider)).farmNameChangeRequests(farmId);
+    });
 
 // Security Settings Provider
 class SecuritySettingsNotifier extends AsyncNotifier<SecuritySettings> {
@@ -232,9 +243,19 @@ final appThemeProvider = StateProvider<bool>((ref) {
   return ref.watch(userPreferencesProvider).valueOrNull?.isDarkMode ?? false;
 });
 
-// Language Provider (for i18n at app level)
-final appLanguageProvider = StateProvider<String>((ref) {
-  return ref.watch(userPreferencesProvider).valueOrNull?.language ?? 'en';
+// The saved preference is authoritative after loading. During first-run
+// onboarding, use its selected language until preferences have loaded.
+final appLanguageProvider = Provider<String>((ref) {
+  final preferences = ref.watch(userPreferencesProvider);
+  final savedLanguage = preferences.valueOrNull?.language;
+  if (savedLanguage == 'en' || savedLanguage == 'sw') return savedLanguage!;
+  if (preferences.isLoading) {
+    final onboardingLanguage = ref.watch(onboardingProvider).languageCode;
+    if (onboardingLanguage == 'en' || onboardingLanguage == 'sw') {
+      return onboardingLanguage;
+    }
+  }
+  return 'en';
 });
 
 // Helper to get display text for settings options

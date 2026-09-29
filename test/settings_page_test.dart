@@ -2,13 +2,20 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:proj/features/settings/presentation/pages/settings_page.dart';
+import 'package:proj/l10n/generated/app_localizations.dart';
 
 void main() {
   testWidgets('settings page shows farm, billing and security sections', (
     tester,
   ) async {
     await tester.pumpWidget(
-      const ProviderScope(child: MaterialApp(home: SettingsPage())),
+      const ProviderScope(
+        child: MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: SettingsPage(),
+        ),
+      ),
     );
 
     await tester.pumpAndSettle();

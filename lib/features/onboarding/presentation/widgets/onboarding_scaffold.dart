@@ -7,18 +7,28 @@ class OnboardingScaffold extends StatelessWidget {
     required this.body,
     required this.actions,
     this.progress,
+    this.topAction,
     super.key,
   });
 
   final Widget body;
   final Widget actions;
   final double? progress;
+  final Widget? topAction;
 
   @override
   Widget build(BuildContext context) => Scaffold(
     body: SafeArea(
       child: Column(
         children: [
+          if (topAction != null)
+            Align(
+              alignment: Alignment.centerRight,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 16),
+                child: topAction!,
+              ),
+            ),
           if (progress != null)
             LinearProgressIndicator(
               value: progress,

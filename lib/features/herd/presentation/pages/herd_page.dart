@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
+import '../../../../l10n/generated/app_localizations.dart';
 import '../../../../shared/components/bottom_navigation.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../health/presentation/providers/health_providers.dart';
 import '../../domain/entities/animal.dart';
 import '../providers/herd_provider.dart';
 
@@ -13,20 +15,24 @@ class HerdPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context)!;
     final herd = ref.watch(herdProvider);
     final registeredFarm = ref.watch(authProvider).valueOrNull?.selectedFarm;
+    final healthOverview = ref.watch(healthOverviewProvider);
     final registeredHerdCount = registeredFarm?.registeredHerdCount ?? 0;
+    final vaccinatedCount = healthOverview.valueOrNull?['vaccinated'] ?? 0;
+    final pregnantCount = registeredFarm?.pregnantPigCount ?? 0;
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Herd'),
+        title: Text(l10n.herdPageTitle),
         leading: IconButton(
-          tooltip: 'Open menu',
+          tooltip: l10n.openMenu,
           icon: const Icon(Icons.menu),
           onPressed: () => navigationScaffoldKey.currentState?.openDrawer(),
         ),
         actions: [
           IconButton(
-            tooltip: 'Refresh herd',
+            tooltip: l10n.refreshHerd,
             onPressed: () => ref.invalidate(herdProvider),
             icon: const Icon(Icons.refresh),
           ),
@@ -35,7 +41,7 @@ class HerdPage extends ConsumerWidget {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showAddSowDialog(context, ref),
         icon: const Icon(Icons.add),
-        label: const Text('Add Pig'),
+        label: Text(l10n.addPig),
       ),
       body: herd.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -48,7 +54,7 @@ class HerdPage extends ConsumerWidget {
         ),
         data: (animals) {
           var searchQuery = '';
-          var statusFilter = 'All';
+          var statusFilter = 'all';
           return StatefulBuilder(
             builder: (context, setLocalState) {
               final filteredAnimals = animals.where((animal) {
@@ -57,7 +63,7 @@ class HerdPage extends ConsumerWidget {
                         .toLowerCase()
                         .contains(searchQuery.toLowerCase());
                 return matchesSearch &&
-                    (statusFilter == 'All' || animal.status == statusFilter);
+                    (statusFilter == 'all' || animal.status == statusFilter);
               }).toList();
               final displayedHerdCount = animals.length > registeredHerdCount
                   ? animals.length
@@ -75,8 +81,8 @@ class HerdPage extends ConsumerWidget {
                     TextField(
                       onChanged: (value) =>
                           setLocalState(() => searchQuery = value),
-                      decoration: const InputDecoration(
-                        hintText: 'Search Pig ID, breed, pen, or RFID',
+                      decoration: InputDecoration(
+                        hintText: l10n.searchAnimals,
                         prefixIcon: Icon(Icons.search),
                       ),
                     ),
@@ -84,13 +90,18 @@ class HerdPage extends ConsumerWidget {
                     SingleChildScrollView(
                       scrollDirection: Axis.horizontal,
                       child: Row(
-                        children: ['All', 'active', 'sold', 'deceased']
+                        children: ['all', 'active', 'sold', 'deceased']
                             .map(
                               (status) => Padding(
                                 padding: const EdgeInsets.only(right: 8),
                                 child: FilterChip(
                                   label: Text(
-                                    status == 'All' ? 'All pigs' : status,
+                                    switch (status) {
+                                      'all' => l10n.allPigs,
+                                      'active' => l10n.active,
+                                      'sold' => l10n.sold,
+                                      _ => l10n.deceased,
+                                    },
                                   ),
                                   selected: statusFilter == status,
                                   onSelected: (_) => setLocalState(
@@ -107,7 +118,7 @@ class HerdPage extends ConsumerWidget {
                       children: [
                         Expanded(
                           child: _HerdSummary(
-                            label: 'Registered herd',
+                            label: l10n.registeredHerd,
                             value: '$displayedHerdCount',
                             icon: Icons.pets_outlined,
                             color: AppColors.primaryGreen,
@@ -116,7 +127,7 @@ class HerdPage extends ConsumerWidget {
                         const SizedBox(width: AppDimensions.spacingMedium),
                         Expanded(
                           child: _HerdSummary(
-                            label: 'Active',
+                            label: l10n.active,
                             value:
                                 '${animals.where((animal) => animal.status == 'active').length}',
                             icon: Icons.favorite_border,
@@ -124,6 +135,12 @@ class HerdPage extends ConsumerWidget {
                           ),
                         ),
                       ],
+                    ),
+                    const SizedBox(height: AppDimensions.spacingMedium),
+                    _HerdStatusSummary(
+                      pregnant: pregnantCount,
+                      vaccinated: vaccinatedCount,
+                      active: animals.where((animal) => animal.status == 'active').length,
                     ),
                     if (registeredHerdCount > 0) ...[
                       const SizedBox(height: AppDimensions.spacingMedium),
@@ -138,11 +155,11 @@ class HerdPage extends ConsumerWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          'Your animals',
+                          l10n.yourAnimals,
                           style: Theme.of(context).textTheme.titleLarge,
                         ),
                         Text(
-                          '${filteredAnimals.length} shown',
+                          '${filteredAnimals.length} ${l10n.shown}',
                           style: Theme.of(context).textTheme.bodySmall,
                         ),
                       ],
@@ -162,12 +179,12 @@ class HerdPage extends ConsumerWidget {
                               SizedBox(height: 12),
                               Text(
                                 searchQuery.isEmpty
-                                    ? 'No pigs found'
-                                    : 'No matching pigs found',
+                                    ? l10n.noPigsFound
+                                    : l10n.noMatchingPigs,
                               ),
                               SizedBox(height: 4),
                               Text(
-                                'Add a pig or adjust your search and filters.',
+                                l10n.adjustSearchOrFilters,
                                 textAlign: TextAlign.center,
                               ),
                             ],
@@ -393,6 +410,90 @@ class HerdPage extends ConsumerWidget {
       notesController.dispose();
     }
   }
+}
+
+class _HerdStatusSummary extends StatelessWidget {
+  const _HerdStatusSummary({
+    required this.pregnant,
+    required this.vaccinated,
+    required this.active,
+  });
+
+  final int pregnant;
+  final int vaccinated;
+  final int active;
+
+  @override
+  Widget build(BuildContext context) {
+    final items = [
+      _HerdStatusMetric(label: AppLocalizations.of(context).pregnant, value: '$pregnant', color: AppColors.pigPink),
+      _HerdStatusMetric(label: AppLocalizations.of(context).vaccinated, value: '$vaccinated', color: AppColors.info),
+      _HerdStatusMetric(label: AppLocalizations.of(context).active, value: '$active', color: AppColors.success),
+    ];
+
+    return Container(
+      padding: const EdgeInsets.all(AppDimensions.spacingMedium),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppDimensions.radius),
+        border: Border.all(color: AppColors.outline),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            AppLocalizations.of(context).herdStatus,
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
+          const SizedBox(height: AppDimensions.spacingMedium),
+          Row(
+            children: items
+                .map(
+                  (item) => Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: 8),
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: item.color.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              item.label,
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              item.value,
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                )
+                .toList(),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HerdStatusMetric {
+  const _HerdStatusMetric({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
 }
 
 class _RegistrationSummary extends StatelessWidget {

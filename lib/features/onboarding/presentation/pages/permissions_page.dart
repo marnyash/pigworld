@@ -15,9 +15,11 @@ class PermissionsPage extends ConsumerWidget {
     final state = ref.watch(onboardingProvider);
     return Scaffold(
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(24, 32, 24, 24),
+        child: Stack(
           children: [
+            ListView(
+              padding: const EdgeInsets.fromLTRB(24, 76, 24, 24),
+              children: [
             const OnboardingHeader(
               title: 'Stay in the loop',
               subtitle:
@@ -89,14 +91,19 @@ class PermissionsPage extends ConsumerWidget {
               child: const Text('Allow all'),
             ),
             const SizedBox(height: 10),
-            OutlinedButton(
-              onPressed: () => context.go(AppRoutes.language),
-              child: const Text('Skip for now'),
-            ),
-            const SizedBox(height: 10),
             TextButton(
               onPressed: () => context.go(AppRoutes.language),
               child: const Text('Continue'),
+            ),
+              ],
+            ),
+            Positioned(
+              top: 0,
+              right: 16,
+              child: TextButton(
+                onPressed: () => context.go(AppRoutes.language),
+                child: const Text('Skip'),
+              ),
             ),
           ],
         ),

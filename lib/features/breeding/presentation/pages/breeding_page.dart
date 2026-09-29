@@ -51,6 +51,12 @@ class _BreedingPageState extends State<BreedingPage> {
             context,
           ).textTheme.bodyMedium?.copyWith(color: AppColors.mutedText),
         ),
+        const SizedBox(height: 18),
+        _BreedingOverviewCard(
+          pregnant: 12,
+          dueSoon: 4,
+          vaccinated: 48,
+        ),
         const SizedBox(height: 20),
         _Calendar(
           month: _month,
@@ -188,6 +194,76 @@ class _BreedingPageState extends State<BreedingPage> {
       sowController.dispose();
     }
   }
+}
+
+class _BreedingOverviewCard extends StatelessWidget {
+  const _BreedingOverviewCard({
+    required this.pregnant,
+    required this.dueSoon,
+    required this.vaccinated,
+  });
+
+  final int pregnant;
+  final int dueSoon;
+  final int vaccinated;
+
+  @override
+  Widget build(BuildContext context) {
+    final items = [
+      _Metric(label: 'Pregnant', value: '$pregnant', color: AppColors.pigPink),
+      _Metric(label: 'Due soon', value: '$dueSoon', color: AppColors.warmGold),
+      _Metric(label: 'Vaccinated', value: '$vaccinated', color: AppColors.info),
+    ];
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Breeding overview', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 12),
+            Row(
+              children: items
+                  .map(
+                    (item) => Expanded(
+                      child: Container(
+                        margin: const EdgeInsets.only(right: 8),
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: item.color.withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(item.label, style: Theme.of(context).textTheme.bodySmall),
+                            const SizedBox(height: 6),
+                            Text(item.value, style: Theme.of(context).textTheme.headlineSmall),
+                          ],
+                        ),
+                      ),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Metric {
+  const _Metric({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
 }
 
 class _Calendar extends StatelessWidget {

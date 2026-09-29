@@ -1,14 +1,23 @@
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
+import '../../../../features/reports/domain/entities/report_metrics.dart';
+import '../../../../features/reports/presentation/providers/reports_providers.dart';
 import '../../../../shared/components/bottom_navigation.dart';
 
-class SalesPage extends StatelessWidget {
+class SalesPage extends ConsumerWidget {
   const SalesPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final metrics = ref.watch(reportMetricsProvider).valueOrNull ??
+        ReportMetrics.defaults();
+    final currency = NumberFormat.currency(symbol: 'KSh ', decimalDigits: 0);
     final sales = <_SaleRecord>[
       const _SaleRecord(
         invoice: 'INV-2026-001',
@@ -91,7 +100,12 @@ class SalesPage extends StatelessWidget {
             subtitle: 'Pig sales, customer balances, and profit tracking.',
           ),
           const SizedBox(height: AppDimensions.spacingLarge),
-          const _OverviewGrid(),
+          _OverviewGrid(
+            todaySales: currency.format(metrics.totalRevenue),
+            monthlyRevenue: currency.format(metrics.totalRevenue),
+            pigsSold: metrics.salesCount.toString(),
+            outstanding: currency.format(metrics.totalExpenses),
+          ),
           const SizedBox(height: AppDimensions.spacingLarge),
           _SectionHeader(title: 'New Sale'),
           const SizedBox(height: AppDimensions.spacingMedium),
@@ -311,25 +325,35 @@ class _HeaderCard extends StatelessWidget {
 }
 
 class _OverviewGrid extends StatelessWidget {
-  const _OverviewGrid();
+  const _OverviewGrid({
+    required this.todaySales,
+    required this.monthlyRevenue,
+    required this.pigsSold,
+    required this.outstanding,
+  });
+
+  final String todaySales;
+  final String monthlyRevenue;
+  final String pigsSold;
+  final String outstanding;
 
   @override
   Widget build(BuildContext context) {
     final items = [
-      const _MetricCard(
+      _MetricCard(
         label: "Today's Sales",
-        value: 'KSh 42,000',
+        value: todaySales,
         color: AppColors.success,
       ),
-      const _MetricCard(
+      _MetricCard(
         label: 'Monthly Revenue',
-        value: 'KSh 318,500',
+        value: monthlyRevenue,
         color: AppColors.primaryGreen,
       ),
-      const _MetricCard(label: 'Pigs Sold', value: '17', color: AppColors.info),
-      const _MetricCard(
+      _MetricCard(label: 'Pigs Sold', value: pigsSold, color: AppColors.info),
+      _MetricCard(
         label: 'Outstanding',
-        value: 'KSh 26,400',
+        value: outstanding,
         color: AppColors.warning,
       ),
     ];
@@ -702,7 +726,7 @@ class _RevenuePainter extends CustomPainter {
       final x = size.width * index / (labels.length - 1);
       final textPainter = TextPainter(
         text: TextSpan(text: labels[index], style: textStyle),
-        textDirection: TextDirection.ltr,
+        textDirection: ui.TextDirection.ltr,
       );
       textPainter.layout();
       textPainter.paint(

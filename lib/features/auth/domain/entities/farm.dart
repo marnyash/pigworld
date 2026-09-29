@@ -3,6 +3,8 @@ class Farm {
     required this.id,
     required this.name,
     this.location,
+    this.latitude,
+    this.longitude,
     this.inviteCode,
     this.motherPigCount = 0,
     this.registeredPigletCount = 0,
@@ -13,6 +15,8 @@ class Farm {
   final String id;
   final String name;
   final String? location;
+  final double? latitude;
+  final double? longitude;
   final String? inviteCode;
   final int motherPigCount;
   final int registeredPigletCount;

@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:proj/app/theme/app_dimensions.dart';
 import 'package:proj/features/settings/presentation/providers/settings_providers.dart';
+import 'package:proj/l10n/generated/app_localizations.dart';
 
 class AppPreferencesSection extends ConsumerWidget {
   const AppPreferencesSection({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l10n = AppLocalizations.of(context);
     final preferences = ref.watch(userPreferencesProvider);
 
     return preferences.when(
@@ -21,13 +23,13 @@ class AppPreferencesSection extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Language',
+                    l10n.languageLabel,
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: AppDimensions.spacingMedium),
                   _buildDropdown(
                     context,
-                    'Select Language',
+                    l10n.selectLanguage,
                     prefs.language,
                     [('en', 'English'), ('sw', 'Kiswahili')],
                     (value) {
@@ -51,7 +53,7 @@ class AppPreferencesSection extends ConsumerWidget {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Dark Mode',
+                        l10n.darkMode,
                         style: Theme.of(context).textTheme.titleMedium,
                       ),
                       Switch(
@@ -65,7 +67,7 @@ class AppPreferencesSection extends ConsumerWidget {
                     ],
                   ),
                   Text(
-                    'Use dark theme for reduced eye strain',
+                    l10n.darkModeDescription,
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ],
@@ -80,13 +82,13 @@ class AppPreferencesSection extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Measurement Units',
+                    l10n.measurementUnits,
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: AppDimensions.spacingMedium),
                   _buildDropdown(
                     context,
-                    'Weight Unit',
+                    l10n.weightUnit,
                     prefs.weightUnit,
                     [('kg', 'Kilograms (kg)'), ('lb', 'Pounds (lb)')],
                     (value) {
@@ -107,13 +109,13 @@ class AppPreferencesSection extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Date Format',
+                    l10n.dateFormat,
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: AppDimensions.spacingMedium),
                   _buildDropdown(
                     context,
-                    'Select Format',
+                    l10n.selectFormat,
                     prefs.dateFormat,
                     [
                       ('dd/MM/yyyy', 'DD/MM/YYYY'),
@@ -138,13 +140,13 @@ class AppPreferencesSection extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Currency',
+                    l10n.currency,
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                   const SizedBox(height: AppDimensions.spacingMedium),
                   _buildDropdown(
                     context,
-                    'Select Currency',
+                    l10n.selectCurrency,
                     prefs.currency,
                     [
                       ('KES', 'Kenyan Shilling (KES)'),

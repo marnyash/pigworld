@@ -34,6 +34,98 @@ class FarmManagementPage extends ConsumerWidget {
         child: ListView(
           padding: const EdgeInsets.all(20),
           children: [
+            if (isOwner) ...[
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [AppColors.primaryGreen, AppColors.deepGreen],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(22),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.deepGreen.withValues(alpha: 0.16),
+                      blurRadius: 18,
+                      offset: const Offset(0, 8),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 54,
+                      height: 54,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.16),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: const Icon(
+                        Icons.groups_2_outlined,
+                        color: Colors.white,
+                        size: 30,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            session?.selectedFarm?.name ?? 'Your farm team',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'People, access, and join requests in one place',
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: Colors.white70),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.16),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                      child: Column(
+                        children: [
+                          Text(
+                            '${access.valueOrNull?.members.length ?? 0}',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                          ),
+                          const Text(
+                            'members',
+                            style: TextStyle(
+                              color: Colors.white70,
+                              fontSize: 10,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 18),
+            ],
             Text(
               isOwner
                   ? (session?.selectedFarm?.name ?? 'Your farms')
@@ -165,21 +257,45 @@ class FarmManagementPage extends ConsumerWidget {
                   children: [
                     for (final member in state.members) ...[
                       Card(
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            child: Icon(
-                              member.role == UserRole.farmOwner
-                                  ? Icons.business
-                                  : member.role == UserRole.farmManager
-                                  ? Icons.manage_accounts
-                                  : Icons.agriculture,
+                        clipBehavior: Clip.antiAlias,
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 6,
+                          ),
+                          child: ListTile(
+                            leading: CircleAvatar(
+                              backgroundColor: AppColors.primaryGreen
+                                  .withValues(alpha: 0.12),
+                              foregroundColor: AppColors.deepGreen,
+                              child: Text(
+                                member.name.trim().isEmpty
+                                    ? '?'
+                                    : member.name.trim()[0].toUpperCase(),
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                            ),
+                            title: Text(
+                              member.name,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            subtitle: Padding(
+                              padding: const EdgeInsets.only(top: 5),
+                              child: Text(member.email),
+                            ),
+                            trailing: Chip(
+                              visualDensity: VisualDensity.compact,
+                              side: BorderSide.none,
+                              backgroundColor: Theme.of(
+                                context,
+                              ).colorScheme.secondaryContainer,
+                              label: Text(_roleName(member.role)),
                             ),
                           ),
-                          title: Text(member.name),
-                          subtitle: Text(
-                            '${_roleName(member.role)}\n${member.email}',
-                          ),
-                          isThreeLine: true,
                         ),
                       ),
                       if (isOwner && member.role != UserRole.farmOwner)

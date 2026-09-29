@@ -88,6 +88,14 @@ class _HerdSetupPageState extends ConsumerState<HerdSetupPage> {
 
   @override
   Widget build(BuildContext context) => OnboardingScaffold(
+    topAction: TextButton(
+      onPressed: () async {
+        await ref.read(onboardingStorageProvider).markCompleted();
+        if (!context.mounted) return;
+        context.go(AppRoutes.createAccount);
+      },
+      child: const Text('Skip'),
+    ),
     progress: (_step + 1) / 3,
     body: OnboardingEntry(
       child: ListView(
@@ -225,14 +233,6 @@ class _HerdSetupPageState extends ConsumerState<HerdSetupPage> {
               ? () => context.go(AppRoutes.accountType)
               : () => setState(() => _step--),
           child: const Text('Back'),
-        ),
-        TextButton(
-          onPressed: () async {
-            await ref.read(onboardingStorageProvider).markCompleted();
-            if (!context.mounted) return;
-            context.go(AppRoutes.createAccount);
-          },
-          child: const Text('Skip'),
         ),
         const Spacer(),
         FilledButton(

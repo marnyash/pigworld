@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../l10n/generated/app_localizations.dart';
 
 final navigationScaffoldKey = GlobalKey<ScaffoldState>();
 
@@ -12,11 +13,11 @@ class AppBottomNavigation extends StatelessWidget {
 	Widget build(BuildContext context) => NavigationBar(
 			selectedIndex: selectedIndex,
 			onDestinationSelected: onSelected,
-			destinations: const [
-				NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard), label: 'Home'),
-				NavigationDestination(icon: Icon(Icons.pets_outlined), label: 'Herd'),
-				NavigationDestination(icon: Icon(Icons.grass_outlined), label: 'Feed'),
-				NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Profile'),
+			destinations: [
+				NavigationDestination(icon: const Icon(Icons.dashboard_outlined), selectedIcon: const Icon(Icons.dashboard), label: AppLocalizations.of(context)!.home),
+				NavigationDestination(icon: const Icon(Icons.pets_outlined), label: AppLocalizations.of(context)!.herd),
+				NavigationDestination(icon: const Icon(Icons.grass_outlined), label: AppLocalizations.of(context)!.feed),
+				NavigationDestination(icon: const Icon(Icons.person_outline), selectedIcon: const Icon(Icons.person), label: AppLocalizations.of(context)!.profile),
 			],
 		);
 }

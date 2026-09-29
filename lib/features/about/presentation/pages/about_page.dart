@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:proj/app/theme/app_colors.dart';
 import 'package:proj/app/theme/app_dimensions.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../../../app/routes/app_routes.dart';
 
 class AboutPage extends StatefulWidget {
   const AboutPage({super.key});
@@ -18,7 +21,7 @@ class _AboutPageState extends State<AboutPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('About PigWorld'), elevation: 0),
+      appBar: AppBar(title: const Text('About Pig World Smart'), elevation: 0),
       body: ListView(
         padding: const EdgeInsets.all(AppDimensions.pagePadding),
         children: [
@@ -33,7 +36,7 @@ class _AboutPageState extends State<AboutPage> {
             isExpanded: _expandedMission,
             onTap: () => setState(() => _expandedMission = !_expandedMission),
             child: Text(
-              'At PigWorld, we\'re committed to helping farmers digitize their farm management operations, improve productivity, and increase profitability through innovative technology solutions.',
+              'Pig World Smart helps farmers manage their farms, improve productivity, and make confident decisions with practical digital tools.',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
           ),
@@ -76,28 +79,23 @@ class _AboutPageState extends State<AboutPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _ContactItem(
-                  icon: Icons.email_outlined,
-                  label: 'Email',
-                  value: 'support@pigworld.app',
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.support_agent_outlined),
+                  title: const Text('In-app customer support'),
+                  subtitle: const Text(
+                    'Chat with our support team in the app.',
+                  ),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                  onTap: () => context.go(AppRoutes.support),
                 ),
-                const SizedBox(height: 16),
-                _ContactItem(
-                  icon: Icons.phone_outlined,
-                  label: 'Phone',
-                  value: '+254 (0) 123 456 789',
-                ),
-                const SizedBox(height: 16),
-                _ContactItem(
-                  icon: Icons.language_outlined,
-                  label: 'Website',
-                  value: 'www.pigworld.app',
-                ),
-                const SizedBox(height: 16),
-                _ContactItem(
-                  icon: Icons.forum_outlined,
-                  label: 'WhatsApp',
-                  value: '+254 (0) 123 456 789',
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  leading: const Icon(Icons.language_outlined),
+                  title: const Text('Website'),
+                  subtitle: const Text('pigworldsmart.com'),
+                  trailing: const Icon(Icons.open_in_new, size: 18),
+                  onTap: () => _openWebsite(context),
                 ),
               ],
             ),
@@ -179,31 +177,50 @@ class _AboutPageState extends State<AboutPage> {
   String _getLegalContent(String title) {
     switch (title) {
       case 'Privacy Policy':
-        return 'PigWorld Privacy Policy\n\n'
+        return 'Pig World Smart Privacy Policy\n\n'
             'Last Updated: 2026\n\n'
             'Your privacy is important to us. We are committed to being transparent about the data we collect and how we use it.\n\n'
             'Data Collection: We collect information about your farm operations to provide better service.\n\n'
             'Data Usage: Your data is used to provide analytics, reports, and insights.\n\n'
             'Security: We implement industry-standard security measures to protect your data.\n\n'
-            'For more information, visit www.pigworld.app/privacy';
+            'For more information, visit https://pigworldsmart.com/privacy';
       case 'Terms & Conditions':
-        return 'PigWorld Terms & Conditions\n\n'
+        return 'Pig World Smart User Agreement\n\n'
             'Last Updated: 2026\n\n'
             'By using PigWorld, you agree to these terms and conditions.\n\n'
             'License: We grant you a limited license to use PigWorld for personal use.\n\n'
             'Restrictions: You may not modify, copy, or distribute the app.\n\n'
             'Liability: We are not liable for any indirect damages.\n\n'
-            'For more information, visit www.pigworld.app/terms';
+            'For more information, visit https://pigworldsmart.com/terms';
       case 'Open Source Licenses':
-        return 'PigWorld Open Source Licenses\n\n'
+        return 'Pig World Smart Open Source Licenses\n\n'
             'PigWorld uses the following open source packages:\n\n'
             '• Riverpod 2.6.1 - Apache License 2.0\n'
             '• Dio 5.7.0 - MIT License\n'
             '• Flutter - BSD License\n'
             '• Material Design - Apache License 2.0\n\n'
-            'For complete license information, visit www.pigworld.app/licenses';
+            'For complete license information, visit https://pigworldsmart.com/licenses';
       default:
         return '';
+    }
+  }
+
+  Future<void> _openWebsite(BuildContext context) async {
+    final uri = Uri.parse('https://pigworldsmart.com');
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open the website.')),
+        );
+      }
+    } on Exception {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open the website.')),
+        );
+      }
     }
   }
 }
@@ -218,10 +235,19 @@ class _HeaderSection extends StatelessWidget {
       padding: const EdgeInsets.all(AppDimensions.spacingLarge),
       child: Column(
         children: [
-          Icon(Icons.pets, size: 64, color: AppColors.inverseText),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(18),
+            child: Image.asset(
+              'assets/images/logo.jpeg',
+              width: 112,
+              height: 112,
+              fit: BoxFit.contain,
+              semanticLabel: 'Pig World Smart logo',
+            ),
+          ),
           const SizedBox(height: AppDimensions.spacingMedium),
           Text(
-            'PigWorld',
+            'Pig World Smart',
             style: Theme.of(context).textTheme.headlineMedium?.copyWith(
               color: AppColors.inverseText,
               fontWeight: FontWeight.bold,
@@ -290,37 +316,6 @@ class _ExpandableSection extends StatelessWidget {
         ],
       ],
     ),
-  );
-}
-
-class _ContactItem extends StatelessWidget {
-  const _ContactItem({
-    required this.icon,
-    required this.label,
-    required this.value,
-  });
-
-  final IconData icon;
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) => Row(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Icon(icon, color: AppColors.primaryGreen, size: 20),
-      const SizedBox(width: 12),
-      Expanded(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(label, style: Theme.of(context).textTheme.labelSmall),
-            const SizedBox(height: 4),
-            Text(value, style: Theme.of(context).textTheme.bodySmall),
-          ],
-        ),
-      ),
-    ],
   );
 }
 
