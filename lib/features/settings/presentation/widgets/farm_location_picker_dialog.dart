@@ -34,6 +34,7 @@ class FarmLocationPickerDialog extends StatefulWidget {
 
 class _FarmLocationPickerDialogState extends State<FarmLocationPickerDialog> {
   static const _defaultPosition = LatLng(-1.286389, 36.817223);
+  final _geocoding = Geocoding();
 
   late LatLng _selected;
   late final GoogleMapController _controller;
@@ -158,7 +159,7 @@ class _FarmLocationPickerDialogState extends State<FarmLocationPickerDialog> {
     if (query.isEmpty) return;
     setState(() => _searching = true);
     try {
-      final matches = await locationFromAddress(query);
+      final matches = await _geocoding.locationFromAddress(query);
       if (matches.isEmpty) throw const FormatException('No location found.');
       final match = matches.first;
       await _select(LatLng(match.latitude, match.longitude));
@@ -198,7 +199,7 @@ class _FarmLocationPickerDialogState extends State<FarmLocationPickerDialog> {
     });
     await _controller.animateCamera(CameraUpdate.newLatLngZoom(point, 15));
     try {
-      final placemarks = await placemarkFromCoordinates(
+      final placemarks = await _geocoding.placemarkFromCoordinates(
         point.latitude,
         point.longitude,
       );
