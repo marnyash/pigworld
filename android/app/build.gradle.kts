@@ -13,6 +13,9 @@ val keystoreProperties = Properties()
 if (keystorePropertiesFile.exists()) {
     FileInputStream(keystorePropertiesFile).use { keystoreProperties.load(it) }
 }
+val isReleaseBuildRequested = gradle.startParameter.taskNames.any {
+    it.contains("release", ignoreCase = true)
+}
 
 android {
     namespace = "com.pigworld"
@@ -50,15 +53,14 @@ android {
                     keyAlias = keystoreProperties["keyAlias"] as String
                     keyPassword = keystoreProperties["keyPassword"] as String
                 }
+            } else if (isReleaseBuildRequested) {
+                throw GradleException(
+                    "Release signing is not configured. Add android/key.properties and the original upload keystore; " +
+                        "the expected upload certificate SHA1 is 89:89:CE:DD:B0:FC:72:CE:71:E9:9C:FF:97:B3:90:7A:38:3F:3A:26."
+                )
             } else {
                 signingConfigs.getByName("debug")
             }
-        }
-    }
-
-    packaging {
-        jniLibs {
-            keepDebugSymbols += "**/*.so"
         }
     }
 }

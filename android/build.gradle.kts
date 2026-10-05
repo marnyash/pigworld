@@ -1,6 +1,10 @@
 import com.android.build.api.dsl.LibraryExtension
 import org.gradle.kotlin.dsl.configure
 
+plugins {
+    id("org.jetbrains.kotlin.android") version "2.2.20" apply false
+}
+
 allprojects {
     repositories {
         google()
