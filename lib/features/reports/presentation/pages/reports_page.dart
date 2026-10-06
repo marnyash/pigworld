@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:proj/app/theme/app_colors.dart';
 import 'package:proj/app/theme/app_dimensions.dart';
 import 'package:proj/features/reports/data/report_export_service.dart';
+import 'package:proj/features/reports/presentation/pages/animal_report_page.dart';
 import 'package:proj/features/reports/presentation/providers/reports_providers.dart';
 
 class ReportsPage extends ConsumerStatefulWidget {
@@ -351,18 +352,12 @@ class _ReportCategories extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final reports = [
-      ('Financial Report', Icons.attach_money, AppColors.primaryGreen),
-      ('Herd Report', Icons.pets, AppColors.info),
-      ('Health Report', Icons.health_and_safety, AppColors.danger),
-      ('Feed Report', Icons.fastfood, AppColors.warmGold),
-      ('Pregnancy Report', Icons.pregnant_woman, AppColors.pigPink),
-      ('Breeding Report', Icons.favorite, AppColors.pigPink),
-      ('Scheduled for Breeding', Icons.schedule, AppColors.warmGold),
-      ('Inventory Report', Icons.inventory_2, AppColors.violet),
+      ('Individual Pig Report', Icons.pets, AppColors.primaryGreen),
     ];
 
     return GridView.count(
-      crossAxisCount: 2,
+      crossAxisCount: reports.length == 1 ? 1 : 2,
+      childAspectRatio: reports.length == 1 ? 2.8 : 1,
       crossAxisSpacing: AppDimensions.spacingMedium,
       mainAxisSpacing: AppDimensions.spacingMedium,
       shrinkWrap: true,
@@ -402,11 +397,11 @@ class _ReportCategories extends ConsumerWidget {
     IconData icon,
     Color color,
   ) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      builder: (sheetContext) =>
-          _ReportDetailSheet(reportType: reportType, icon: icon, color: color),
+    Navigator.push(
+      context,
+      MaterialPageRoute<void>(
+        builder: (_) => AnimalReportPage(reportType: reportType),
+      ),
     );
   }
 }

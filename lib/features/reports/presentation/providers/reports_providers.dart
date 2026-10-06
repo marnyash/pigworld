@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:proj/features/auth/presentation/providers/auth_providers.dart';
 import 'package:proj/features/reports/data/reports_api.dart';
 import 'package:proj/features/reports/data/reports_local_data_source.dart';
+import 'package:proj/features/reports/domain/entities/animal_report.dart';
 import 'package:proj/features/reports/domain/entities/report_metrics.dart';
 import 'package:proj/features/auth/presentation/providers/auth_provider.dart';
 
@@ -47,6 +48,19 @@ final reportMetricsProvider =
     AsyncNotifierProvider<ReportMetricsNotifier, ReportMetrics>(
       ReportMetricsNotifier.new,
     );
+
+final animalReportProvider =
+    FutureProvider.family<
+      AnimalReport,
+      ({String farmId, String animalId, String dateRange})
+    >((ref, request) async {
+      final api = ref.watch(reportsApiProvider);
+      return api.getAnimalReport(
+        request.farmId,
+        request.animalId,
+        dateRange: request.dateRange,
+      );
+    });
 
 // Revenue vs Expenses chart data provider
 final revenueVsExpensesProvider =

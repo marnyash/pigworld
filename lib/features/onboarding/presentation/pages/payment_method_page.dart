@@ -44,17 +44,6 @@ class _PaymentMethodPageState extends ConsumerState<PaymentMethodPage> {
     final session = ref.read(authProvider).valueOrNull;
     final farms = session?.farms ?? const <Farm>[];
     _selectedFarm = session?.selectedFarm ?? (farms.isNotEmpty ? farms.first : null);
-    if (_selectedFarm != null && session != null) {
-      ref.read(authProvider.notifier).setSession(
-        Session(
-          accessToken: session.accessToken,
-          refreshToken: session.refreshToken,
-          user: session.user,
-          farms: session.farms,
-          selectedFarm: _selectedFarm,
-        ),
-      );
-    }
     _phoneController = TextEditingController(
       text: ref.read(authProvider).valueOrNull?.user.phone ?? '',
     );
