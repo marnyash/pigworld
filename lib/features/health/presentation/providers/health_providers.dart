@@ -19,25 +19,25 @@ class HealthRecordsNotifier extends AsyncNotifier<List<HealthRecord>> {
   }
 
   Future<void> addRecord(Map<String, dynamic> data) async {
-    final farmId = ref.watch(authProvider).valueOrNull?.selectedFarm?.id;
-    if (farmId == null) return;
-    await ref.watch(healthApiProvider).addHealthRecord(farmId, data);
+    final farmId = ref.read(authProvider).valueOrNull?.selectedFarm?.id;
+    if (farmId == null) throw StateError('No farm selected.');
+    await ref.read(healthApiProvider).addHealthRecord(farmId, data);
     ref.invalidateSelf();
   }
 
   Future<void> updateRecord(String recordId, Map<String, dynamic> data) async {
-    final farmId = ref.watch(authProvider).valueOrNull?.selectedFarm?.id;
-    if (farmId == null) return;
+    final farmId = ref.read(authProvider).valueOrNull?.selectedFarm?.id;
+    if (farmId == null) throw StateError('No farm selected.');
     await ref
-        .watch(healthApiProvider)
+        .read(healthApiProvider)
         .updateHealthRecord(farmId, recordId, data);
     ref.invalidateSelf();
   }
 
   Future<void> deleteRecord(String recordId) async {
-    final farmId = ref.watch(authProvider).valueOrNull?.selectedFarm?.id;
-    if (farmId == null) return;
-    await ref.watch(healthApiProvider).deleteHealthRecord(farmId, recordId);
+    final farmId = ref.read(authProvider).valueOrNull?.selectedFarm?.id;
+    if (farmId == null) throw StateError('No farm selected.');
+    await ref.read(healthApiProvider).deleteHealthRecord(farmId, recordId);
     ref.invalidateSelf();
   }
 }
@@ -123,7 +123,11 @@ final filteredHealthRecordsProvider = FutureProvider<List<HealthRecord>>((ref) {
       var filtered = records;
 
       if (typeFilter != 'all') {
-        filtered = filtered.where((r) => r.type == typeFilter).toList();
+        filtered = typeFilter == 'medication'
+            ? filtered
+                  .where((r) => (r.medication?.trim().isNotEmpty ?? false))
+                  .toList()
+            : filtered.where((r) => r.type == typeFilter).toList();
       }
 
       if (statusFilter != 'all') {

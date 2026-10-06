@@ -107,9 +107,13 @@ class FeedStockSection extends ConsumerWidget {
                   ),
                   title: Text(stock.name),
                   subtitle: Text(
-                    stock.location?.trim().isNotEmpty == true
-                        ? stock.location!
-                        : 'Feed available for daily use',
+                    [
+                      stock.location?.trim().isNotEmpty == true
+                          ? stock.location!
+                          : 'Feed available for daily use',
+                      if (stock.unitCost != null)
+                        'Unit cost: ${stock.unitCost!.toStringAsFixed(2)} / ${stock.unit}',
+                    ].join(' · '),
                   ),
                   trailing: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -139,6 +143,7 @@ class FeedStockSection extends ConsumerWidget {
   Future<void> _showAddStockDialog(BuildContext context, WidgetRef ref) async {
     final name = TextEditingController();
     final quantity = TextEditingController();
+    final cost = TextEditingController();
     final location = TextEditingController();
     var unit = 'kg';
     try {
@@ -162,6 +167,15 @@ class FeedStockSection extends ConsumerWidget {
                       decimal: true,
                     ),
                     decoration: const InputDecoration(labelText: 'Quantity'),
+                  ),
+                  TextField(
+                    controller: cost,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: const InputDecoration(
+                      labelText: 'Unit cost (optional)',
+                    ),
                   ),
                   DropdownButtonFormField<String>(
                     initialValue: unit,
@@ -193,11 +207,18 @@ class FeedStockSection extends ConsumerWidget {
               FilledButton(
                 onPressed: () async {
                   final amount = double.tryParse(quantity.text.trim()) ?? 0;
-                  if (name.text.trim().isEmpty || amount <= 0) {
+                  final costText = cost.text.trim();
+                  final unitCost = costText.isEmpty
+                      ? null
+                      : double.tryParse(costText);
+                  if (name.text.trim().isEmpty ||
+                      amount <= 0 ||
+                      (costText.isNotEmpty &&
+                          (unitCost == null || unitCost < 0))) {
                     ScaffoldMessenger.of(dialogContext).showSnackBar(
                       const SnackBar(
                         content: Text(
-                          'Enter a feed name and a quantity greater than zero.',
+                          'Enter a feed name, a quantity greater than zero, and a valid non-negative unit cost.',
                         ),
                       ),
                     );
@@ -210,6 +231,7 @@ class FeedStockSection extends ConsumerWidget {
                           name: name.text.trim(),
                           quantity: amount,
                           unit: unit,
+                          unitCost: unitCost,
                           location: location.text.trim(),
                         );
                     if (dialogContext.mounted) Navigator.pop(dialogContext);
@@ -230,6 +252,7 @@ class FeedStockSection extends ConsumerWidget {
     } finally {
       name.dispose();
       quantity.dispose();
+      cost.dispose();
       location.dispose();
     }
   }

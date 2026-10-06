@@ -117,5 +117,17 @@ class AuthLocalDataSourceImpl implements AuthLocalDataSource {
   );
 
   @override
-  Future<void> clear() => _storage.deleteAll();
+  Future<void> clear() async {
+    for (final key in const [
+      AuthService.accessTokenKey,
+      AuthService.refreshTokenKey,
+      AuthService.userProfileKey,
+      AuthService.farmsKey,
+      AuthService.selectedFarmKey,
+      AuthService.rememberMeKey,
+      AuthService.sessionTimestampKey,
+    ]) {
+      await _storage.delete(key: key);
+    }
+  }
 }

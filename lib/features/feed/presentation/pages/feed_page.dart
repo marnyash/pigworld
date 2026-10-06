@@ -6,7 +6,9 @@ import '../../../../app/routes/app_routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../shared/components/bottom_navigation.dart';
 import '../../data/feed_api.dart';
+import '../../data/feed_schedule_local_data_source.dart';
 import '../providers/feed_provider.dart';
+import '../../../settings/presentation/providers/settings_providers.dart';
 
 class FeedPage extends ConsumerStatefulWidget {
   const FeedPage({super.key});
@@ -16,15 +18,12 @@ class FeedPage extends ConsumerStatefulWidget {
 }
 
 class _FeedPageState extends ConsumerState<FeedPage> {
-  final Map<String, bool> _schedule = {
-    'Morning': true,
-    'Afternoon': false,
-    'Evening': false,
-  };
-
   @override
   Widget build(BuildContext context) {
     final feed = ref.watch(feedProvider);
+    final schedule = ref.watch(feedScheduleProvider);
+    final currency =
+        ref.watch(userPreferencesProvider).valueOrNull?.currency ?? 'KES';
     return Scaffold(
       appBar: AppBar(
         title: const Text('Feed Management'),
@@ -42,13 +41,27 @@ class _FeedPageState extends ConsumerState<FeedPage> {
         ),
         data: (snapshot) => _Dashboard(
           snapshot: snapshot,
-          schedule: _schedule,
-          onScheduleChanged: (name, value) {
-            setState(() => _schedule[name] = value);
-            if (value) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('$name feeding marked complete')),
-              );
+          schedule:
+              schedule.valueOrNull ?? FeedScheduleLocalDataSource.defaults,
+          currency: currency,
+          onScheduleChanged: (name, value) async {
+            try {
+              await ref
+                  .read(feedScheduleProvider.notifier)
+                  .setCompleted(name, value);
+              if (value && context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('$name feeding marked complete')),
+                );
+              }
+            } catch (_) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Could not save the feeding checklist.'),
+                  ),
+                );
+              }
             }
           },
           onRecord: () => _showUsageDialog(snapshot),
@@ -147,12 +160,14 @@ class _Dashboard extends StatelessWidget {
   const _Dashboard({
     required this.snapshot,
     required this.schedule,
+    required this.currency,
     required this.onScheduleChanged,
     required this.onRecord,
     required this.onOpenInventory,
   });
   final FeedSnapshot snapshot;
   final Map<String, bool> schedule;
+  final String currency;
   final void Function(String, bool) onScheduleChanged;
   final VoidCallback onRecord, onOpenInventory;
 
@@ -185,10 +200,14 @@ class _Dashboard extends StatelessWidget {
               Icons.restaurant_rounded,
               AppColors.aqua,
             ),
-            const _Metric(
+            _Metric(
               'Monthly feed cost',
-              '—',
-              'record costs to track',
+              snapshot.hasMonthlyFeedCost
+                  ? '$currency ${snapshot.monthlyFeedCost.toStringAsFixed(2)}'
+                  : '—',
+              snapshot.hasMonthlyFeedCost
+                  ? 'since the start of this month'
+                  : 'add unit costs to feed stock',
               Icons.payments_rounded,
               AppColors.violet,
             ),
@@ -517,31 +536,6 @@ class _AnalyticsCard extends StatelessWidget {
                     ),
                 ],
               ),
-            ),
-            const SizedBox(height: 14),
-            const Divider(height: 1),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                const Icon(
-                  Icons.trending_up_rounded,
-                  size: 18,
-                  color: AppColors.violet,
-                ),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(
-                    'Feed cost trend',
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                ),
-                Text(
-                  'Awaiting cost data',
-                  style: Theme.of(
-                    context,
-                  ).textTheme.labelSmall?.copyWith(color: AppColors.mutedText),
-                ),
-              ],
             ),
           ],
         ),

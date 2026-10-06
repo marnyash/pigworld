@@ -44,18 +44,21 @@ class NotificationSection extends ConsumerWidget {
                   const SizedBox(height: AppDimensions.spacingMedium),
                   SwitchListTile(
                     title: const Text('Push Notifications'),
-                    value: true,
-                    onChanged: (_) {},
+                    value: prefs.notificationChannels['push'] ?? true,
+                    onChanged: (enabled) =>
+                        _updateChannel(context, ref, 'push', enabled),
                   ),
                   SwitchListTile(
                     title: const Text('SMS Notifications'),
-                    value: false,
-                    onChanged: (_) {},
+                    value: prefs.notificationChannels['sms'] ?? false,
+                    onChanged: (enabled) =>
+                        _updateChannel(context, ref, 'sms', enabled),
                   ),
                   SwitchListTile(
                     title: const Text('Email Notifications'),
-                    value: true,
-                    onChanged: (_) {},
+                    value: prefs.notificationChannels['email'] ?? true,
+                    onChanged: (enabled) =>
+                        _updateChannel(context, ref, 'email', enabled),
                   ),
                 ],
               ),
@@ -67,6 +70,24 @@ class NotificationSection extends ConsumerWidget {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (err, stack) => Center(child: Text('Error: $err')),
     );
+  }
+
+  Future<void> _updateChannel(
+    BuildContext context,
+    WidgetRef ref,
+    String channel,
+    bool enabled,
+  ) async {
+    try {
+      await ref
+          .read(userPreferencesProvider.notifier)
+          .updateNotificationChannel(channel, enabled);
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not save notification setting.')),
+      );
+    }
   }
 
   List<Widget> _buildNotificationTiles(

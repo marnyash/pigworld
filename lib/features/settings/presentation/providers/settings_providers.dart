@@ -73,6 +73,18 @@ class UserPreferencesNotifier extends AsyncNotifier<UserPreferences> {
     ref.invalidateSelf();
   }
 
+  Future<void> updateNotificationChannel(String channel, bool enabled) async {
+    const supportedChannels = {'push', 'sms', 'email'};
+    if (!supportedChannels.contains(channel)) {
+      throw ArgumentError.value(channel, 'channel', 'Unsupported channel');
+    }
+    final current = await future;
+    final channels = {...current.notificationChannels, channel: enabled};
+    final updated = current.copyWith(notificationChannels: channels);
+    await ref.watch(settingsLocalDataSourceProvider).savePreferences(updated);
+    state = AsyncData(updated);
+  }
+
   Future<void> updateNotificationSound(String sound) async {
     final current = await future;
     final updated = current.copyWith(notificationSound: sound);

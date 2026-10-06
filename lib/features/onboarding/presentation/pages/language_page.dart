@@ -5,20 +5,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:proj/features/settings/presentation/providers/settings_providers.dart';
+import 'package:proj/l10n/generated/app_localizations.dart';
+
 import '../../../../app/routes/app_routes.dart';
+import '../../data/language_catalog.dart';
 import '../providers/onboarding_provider.dart';
 import '../widgets/language_card.dart';
 import '../widgets/onboarding_header.dart';
-import '../../data/language_catalog.dart';
 import '../widgets/onboarding_scaffold.dart';
 
 class LanguagePage extends ConsumerStatefulWidget {
   const LanguagePage({super.key});
-
-  static const languages = [
-    ('🇬🇧', 'English', 'English', 'en'),
-    ('🇰🇪', 'Kiswahili', 'Kiswahili', 'sw'),
-  ];
 
   @override
   ConsumerState<LanguagePage> createState() => _LanguagePageState();
@@ -27,10 +25,34 @@ class LanguagePage extends ConsumerStatefulWidget {
 class _LanguagePageState extends ConsumerState<LanguagePage> {
   String query = '';
 
+  Future<void> _selectLanguage(AppLanguage language) async {
+    ref
+        .read(onboardingProvider.notifier)
+        .setLanguage(name: language.name, code: language.code);
+
+    // Only English and Kiswahili have bundled translations. Persist the
+    // supported choice so the preferences load cannot reset it to English.
+    if (language.code != 'en' && language.code != 'sw') return;
+    try {
+      await ref
+          .read(userPreferencesProvider.notifier)
+          .updateLanguage(language.code);
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(AppLocalizations.of(context)!.languageChangeFailed),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     final selected = ref.watch(onboardingProvider).language;
     final languages = languageCatalog
+        .where((item) => item.code == 'en' || item.code == 'sw')
         .where(
           (item) => '${item.name} ${item.nativeName}'.toLowerCase().contains(
             query.toLowerCase(),
@@ -43,24 +65,23 @@ class _LanguagePageState extends ConsumerState<LanguagePage> {
           await ref.read(onboardingStorageProvider).markCompleted();
           if (context.mounted) context.go(AppRoutes.createAccount);
         },
-        child: const Text('Skip'),
+        child: Text(l10n.skip),
       ),
       body: OnboardingEntry(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(24, 30, 24, 24),
           children: [
-            const OnboardingHeader(
-              eyebrow: 'Step 1 of 4 · Language',
-              title: 'Choose your language',
-              subtitle:
-                  'Pick the language that feels most natural. You can change it later.',
+            OnboardingHeader(
+              eyebrow: l10n.stepLanguage,
+              title: l10n.chooseLanguage,
+              subtitle: l10n.languageIntro,
             ),
             const SizedBox(height: 24),
             TextField(
               onChanged: (value) => setState(() => query = value),
-              decoration: const InputDecoration(
+              decoration: InputDecoration(
                 prefixIcon: Icon(Icons.search),
-                hintText: 'Search languages',
+                hintText: l10n.searchLanguages,
               ),
             ),
             const SizedBox(height: 16),
@@ -72,9 +93,7 @@ class _LanguagePageState extends ConsumerState<LanguagePage> {
                   nativeName: item.nativeName,
                   translation: item.name,
                   selected: selected == item.name,
-                  onTap: () => ref
-                      .read(onboardingProvider.notifier)
-                      .setLanguage(name: item.name, code: item.code),
+                  onTap: () => _selectLanguage(item),
                 ),
               ),
             ),
@@ -85,7 +104,7 @@ class _LanguagePageState extends ConsumerState<LanguagePage> {
         children: [
           TextButton(
             onPressed: () => context.go(AppRoutes.permissions),
-            child: const Text('Back'),
+            child: Text(l10n.back),
           ),
           const Spacer(),
           Flexible(
@@ -98,7 +117,7 @@ class _LanguagePageState extends ConsumerState<LanguagePage> {
                 if (isMobile) unawaited(_requestRuntimePermissions());
                 context.go(AppRoutes.country);
               },
-              child: const Text('Continue'),
+              child: Text(l10n.continueButton),
             ),
           ),
         ],

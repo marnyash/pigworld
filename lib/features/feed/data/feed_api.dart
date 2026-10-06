@@ -8,6 +8,7 @@ class FeedStock {
     required this.name,
     required this.quantity,
     required this.unit,
+    this.unitCost,
     this.location,
   });
 
@@ -15,6 +16,7 @@ class FeedStock {
   final String name;
   final double quantity;
   final String unit;
+  final double? unitCost;
   final String? location;
 
   factory FeedStock.fromJson(Map<String, dynamic> json) => FeedStock(
@@ -22,6 +24,7 @@ class FeedStock {
     name: '${json['name'] ?? ''}',
     quantity: (json['quantity'] as num?)?.toDouble() ?? 0,
     unit: '${json['unit'] ?? 'bags'}',
+    unitCost: (json['unit_cost'] as num?)?.toDouble(),
     location: json['location'] as String?,
   );
 }
@@ -54,9 +57,16 @@ class FeedUsage {
 }
 
 class FeedSnapshot {
-  const FeedSnapshot({required this.stock, required this.usage});
+  const FeedSnapshot({
+    required this.stock,
+    required this.usage,
+    this.monthlyFeedCost = 0,
+    this.hasMonthlyFeedCost = false,
+  });
   final List<FeedStock> stock;
   final List<FeedUsage> usage;
+  final double monthlyFeedCost;
+  final bool hasMonthlyFeedCost;
   double get totalQuantity =>
       stock.fold(0, (total, item) => total + item.quantity);
 }
@@ -74,6 +84,8 @@ class FeedApi {
       return FeedSnapshot(
         stock: _list(body['stock']).map(FeedStock.fromJson).toList(),
         usage: _list(body['usage']).map(FeedUsage.fromJson).toList(),
+        monthlyFeedCost: (body['monthly_feed_cost'] as num?)?.toDouble() ?? 0,
+        hasMonthlyFeedCost: body['has_monthly_feed_cost'] == true,
       );
     } on DioException catch (error) {
       throw ErrorHandler.from(error);
@@ -85,6 +97,7 @@ class FeedApi {
     required String name,
     required double quantity,
     required String unit,
+    double? unitCost,
     String? location,
   }) async {
     try {
@@ -94,6 +107,7 @@ class FeedApi {
           'name': name,
           'quantity': quantity,
           'unit': unit,
+          if (unitCost != null) 'unit_cost': unitCost,
           if (location != null && location.trim().isNotEmpty)
             'location': location.trim(),
         },

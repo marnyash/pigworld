@@ -4,6 +4,9 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
+import '../../../../security/authorization/roles.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../domain/entities/health_record.dart';
 import '../providers/health_providers.dart';
 import '../widgets/health_overview_card.dart';
 import '../widgets/health_alerts_section.dart';
@@ -14,7 +17,9 @@ import '../widgets/health_analytics_section.dart';
 import '../widgets/add_health_record_dialog.dart';
 
 class HealthPage extends ConsumerStatefulWidget {
-  const HealthPage({super.key});
+  const HealthPage({this.initialTypeFilter = 'all', super.key});
+
+  final String initialTypeFilter;
 
   @override
   ConsumerState<HealthPage> createState() => _HealthPageState();
@@ -23,12 +28,23 @@ class HealthPage extends ConsumerStatefulWidget {
 class _HealthPageState extends ConsumerState<HealthPage>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  String _typeFilter = 'all';
+  late String _typeFilter;
 
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _typeFilter = widget.initialTypeFilter;
+    _tabController = TabController(
+      length: 3,
+      vsync: this,
+      initialIndex: widget.initialTypeFilter == 'all' ? 0 : 1,
+    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref.read(healthTypeFilterProvider.notifier).state =
+            widget.initialTypeFilter;
+      }
+    });
   }
 
   @override
@@ -38,44 +54,59 @@ class _HealthPageState extends ConsumerState<HealthPage>
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(
-      title: const Text('Health Management'),
-      leading: IconButton(
-        tooltip: 'Back to home',
-        icon: const Icon(Icons.arrow_back),
-        onPressed: () => context.go(AppRoutes.home),
-      ),
-      centerTitle: true,
-      bottom: PreferredSize(
-        preferredSize: const Size.fromHeight(48),
-        child: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(text: 'Overview'),
-            Tab(text: 'Records'),
-            Tab(text: 'Analytics'),
-          ],
+  Widget build(BuildContext context) {
+    final role = ref.watch(authProvider).valueOrNull?.user.role;
+    final canManageRecords = const {
+      UserRole.farmOwner,
+      UserRole.farmManager,
+    }.contains(role);
+
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(switch (widget.initialTypeFilter) {
+          'medication' => 'Medication Records',
+          'deworming' => 'Deworming Records',
+          'mortality' => 'Mortality Records',
+          _ => 'Health Management',
+        }),
+        leading: IconButton(
+          tooltip: 'Back to home',
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () => context.go(AppRoutes.home),
+        ),
+        centerTitle: true,
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(48),
+          child: TabBar(
+            controller: _tabController,
+            tabs: const [
+              Tab(text: 'Overview'),
+              Tab(text: 'Records'),
+              Tab(text: 'Analytics'),
+            ],
+          ),
         ),
       ),
-    ),
-    body: TabBarView(
-      controller: _tabController,
-      children: [
-        // Overview Tab
-        _buildOverviewTab(context, ref),
-        // Records Tab
-        _buildRecordsTab(context, ref),
-        // Analytics Tab
-        _buildAnalyticsTab(context, ref),
-      ],
-    ),
-    floatingActionButton: FloatingActionButton.extended(
-      onPressed: () => _showAddHealthRecordDialog(context),
-      icon: const Icon(Icons.add),
-      label: const Text('Add Record'),
-    ),
-  );
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          // Overview Tab
+          _buildOverviewTab(context, ref),
+          // Records Tab
+          _buildRecordsTab(context, ref, canManageRecords),
+          // Analytics Tab
+          _buildAnalyticsTab(context, ref),
+        ],
+      ),
+      floatingActionButton: canManageRecords
+          ? FloatingActionButton.extended(
+              onPressed: () => _showAddHealthRecordDialog(context),
+              icon: const Icon(Icons.add),
+              label: const Text('Add Record'),
+            )
+          : null,
+    );
+  }
 
   Widget _buildOverviewTab(
     BuildContext context,
@@ -132,6 +163,7 @@ class _HealthPageState extends ConsumerState<HealthPage>
   Widget _buildRecordsTab(
     BuildContext context,
     WidgetRef ref,
+    bool canManageRecords,
   ) => RefreshIndicator(
     onRefresh: () => ref.refresh(healthRecordsProvider.future),
     child: Column(
@@ -200,6 +232,26 @@ class _HealthPageState extends ConsumerState<HealthPage>
                             'deworming';
                       },
                     ),
+                    const SizedBox(width: 8),
+                    _FilterChip(
+                      label: 'Medication',
+                      isSelected: _typeFilter == 'medication',
+                      onSelected: () {
+                        setState(() => _typeFilter = 'medication');
+                        ref.read(healthTypeFilterProvider.notifier).state =
+                            'medication';
+                      },
+                    ),
+                    const SizedBox(width: 8),
+                    _FilterChip(
+                      label: 'Mortality',
+                      isSelected: _typeFilter == 'mortality',
+                      onSelected: () {
+                        setState(() => _typeFilter = 'mortality');
+                        ref.read(healthTypeFilterProvider.notifier).state =
+                            'mortality';
+                      },
+                    ),
                   ],
                 ),
               ),
@@ -241,11 +293,15 @@ class _HealthPageState extends ConsumerState<HealthPage>
                     itemCount: records.length,
                     itemBuilder: (context, index) => _HealthRecordCard(
                       record: records[index],
-                      onDelete: () {
-                        ref
-                            .read(healthRecordsProvider.notifier)
-                            .deleteRecord(records[index].id);
-                      },
+                      onEdit: canManageRecords
+                          ? () => _showEditHealthRecordDialog(
+                              context,
+                              records[index],
+                            )
+                          : null,
+                      onDelete: canManageRecords
+                          ? () => _deleteHealthRecord(context, records[index])
+                          : null,
                     ),
                   );
                 },
@@ -359,12 +415,62 @@ class _HealthPageState extends ConsumerState<HealthPage>
     showDialog(
       context: context,
       builder: (context) => AddHealthRecordDialog(
-        onSubmit: (data) {
-          ref.read(healthRecordsProvider.notifier).addRecord(data);
-          Navigator.pop(context);
-        },
+        initialType: widget.initialTypeFilter == 'medication'
+            ? 'treatment'
+            : widget.initialTypeFilter == 'all'
+            ? 'treatment'
+            : widget.initialTypeFilter,
+        onSubmit: (data) =>
+            ref.read(healthRecordsProvider.notifier).addRecord(data),
       ),
     );
+  }
+
+  Future<void> _showEditHealthRecordDialog(
+    BuildContext context,
+    HealthRecord record,
+  ) => showDialog<void>(
+    context: context,
+    builder: (context) => AddHealthRecordDialog(
+      initialType: record.type,
+      initialRecord: record,
+      onSubmit: (data) => ref
+          .read(healthRecordsProvider.notifier)
+          .updateRecord(record.id, data),
+    ),
+  );
+
+  Future<void> _deleteHealthRecord(
+    BuildContext context,
+    HealthRecord record,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Delete health record?'),
+        content: Text('Remove the record for pig ${record.pigId}?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await ref.read(healthRecordsProvider.notifier).deleteRecord(record.id);
+    } catch (_) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not delete the health record.')),
+        );
+      }
+    }
   }
 }
 
@@ -394,10 +500,15 @@ class _FilterChip extends StatelessWidget {
 
 // Health Record Card Widget
 class _HealthRecordCard extends StatelessWidget {
-  final dynamic record;
-  final VoidCallback onDelete;
+  final HealthRecord record;
+  final VoidCallback? onEdit;
+  final Future<void> Function()? onDelete;
 
-  const _HealthRecordCard({required this.record, required this.onDelete});
+  const _HealthRecordCard({
+    required this.record,
+    required this.onEdit,
+    required this.onDelete,
+  });
 
   @override
   Widget build(BuildContext context) => Card(
@@ -425,18 +536,24 @@ class _HealthRecordCard extends StatelessWidget {
         ],
       ),
       isThreeLine: true,
-      trailing: PopupMenuButton(
-        itemBuilder: (context) => [
-          PopupMenuItem(child: const Text('Edit'), onTap: () {}),
-          PopupMenuItem(
-            onTap: onDelete,
-            child: const Text(
-              'Delete',
-              style: TextStyle(color: AppColors.danger),
+      trailing: onEdit == null && onDelete == null
+          ? null
+          : PopupMenuButton(
+              itemBuilder: (context) => [
+                if (onEdit != null)
+                  PopupMenuItem(child: const Text('Edit'), onTap: onEdit),
+                if (onDelete != null)
+                  PopupMenuItem(
+                    onTap: () {
+                      onDelete?.call();
+                    },
+                    child: const Text(
+                      'Delete',
+                      style: TextStyle(color: AppColors.danger),
+                    ),
+                  ),
+              ],
             ),
-          ),
-        ],
-      ),
     ),
   );
 

@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:go_router/go_router.dart';
-import 'package:image_picker/image_picker.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:record/record.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../../../../app/theme/app_colors.dart';
@@ -25,6 +21,7 @@ class _SupportPageState extends State<SupportPage> {
   final subjectController = TextEditingController();
   final descriptionController = TextEditingController();
   String selectedCategory = 'General';
+  bool _submittingTicket = false;
 
   @override
   void dispose() {
@@ -33,7 +30,8 @@ class _SupportPageState extends State<SupportPage> {
     super.dispose();
   }
 
-  void submitTicket() {
+  Future<void> submitTicket(WidgetRef ref) async {
+    if (_submittingTicket) return;
     if (subjectController.text.trim().isEmpty ||
         descriptionController.text.trim().isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -44,18 +42,46 @@ class _SupportPageState extends State<SupportPage> {
       );
       return;
     }
-    FocusScope.of(context).unfocus();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Your ticket has been submitted. We will respond shortly.',
+    if (ref.read(authProvider).valueOrNull?.selectedFarm == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Select a farm before sending a request.'),
         ),
-        backgroundColor: AppColors.success,
-      ),
-    );
-    subjectController.clear();
-    descriptionController.clear();
-    setState(() => selectedCategory = 'General');
+      );
+      return;
+    }
+    FocusScope.of(context).unfocus();
+    setState(() => _submittingTicket = true);
+    try {
+      final message = [
+        'Support request: ${subjectController.text.trim()}',
+        'Category: $selectedCategory',
+        '',
+        descriptionController.text.trim(),
+      ].join('\n');
+      await ref.read(notificationsProvider.notifier).sendMessage(message);
+      if (!mounted) return;
+      subjectController.clear();
+      descriptionController.clear();
+      setState(() => selectedCategory = 'General');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Request sent. Replies will appear in Customer Care chat.',
+          ),
+          backgroundColor: AppColors.success,
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Could not send your support request. Please retry.'),
+        ),
+      );
+    } finally {
+      if (mounted) setState(() => _submittingTicket = false);
+    }
   }
 
   Future<void> _openContact(Uri uri, String service) async {
@@ -105,6 +131,7 @@ class _SupportPageState extends State<SupportPage> {
 
         return Scaffold(
           endDrawer: _SupportDrawer(
+            onOpenLiveChat: () => _openLiveChat(ref),
             onOpenContact: _openContact,
             onCall: callVeterinary,
           ),
@@ -172,10 +199,11 @@ class _SupportPageState extends State<SupportPage> {
                 subjectController: subjectController,
                 descriptionController: descriptionController,
                 selectedCategory: selectedCategory,
+                submitting: _submittingTicket,
                 onCategoryChanged: (value) {
                   setState(() => selectedCategory = value ?? 'General');
                 },
-                onSubmit: submitTicket,
+                onSubmit: () => submitTicket(ref),
               ),
               const SizedBox(height: AppDimensions.spacingLarge),
               Text(
@@ -192,384 +220,14 @@ class _SupportPageState extends State<SupportPage> {
   }
 }
 
-class _LiveChatPage extends ConsumerStatefulWidget {
-  const _LiveChatPage();
-
-  @override
-  ConsumerState<_LiveChatPage> createState() => _LiveChatPageState();
-}
-
-class _LiveChatPageState extends ConsumerState<_LiveChatPage> {
-  final _messageController = TextEditingController();
-  final _imagePicker = ImagePicker();
-  final _recorder = AudioRecorder();
-  XFile? _photo;
-  PlatformFile? _document;
-  String? _voicePath;
-  bool _isRecording = false;
-  bool _isSending = false;
-
-  bool get _hasAttachment =>
-      _photo != null || _document != null || _voicePath != null;
-
-  @override
-  void dispose() {
-    _messageController.dispose();
-    _recorder.dispose();
-    super.dispose();
-  }
-
-  Future<void> _pickPhoto(ImageSource source) async {
-    final photo = await _imagePicker.pickImage(
-      source: source,
-      imageQuality: 85,
-    );
-    if (!mounted || photo == null) return;
-    setState(() => _photo = photo);
-  }
-
-  Future<void> _pickDocument() async {
-    final result = await FilePicker.pickFiles();
-    if (!mounted || result.isEmpty) return;
-    setState(() => _document = result.single);
-  }
-
-  Future<void> _startRecording() async {
-    if (!await _recorder.hasPermission()) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Microphone permission is required.')),
-      );
-      return;
-    }
-
-    final directory = await getTemporaryDirectory();
-    final path =
-        '${directory.path}/pigworld_chat_${DateTime.now().millisecondsSinceEpoch}.m4a';
-    await _recorder.start(const RecordConfig(), path: path);
-    if (mounted) setState(() => _isRecording = true);
-  }
-
-  Future<void> _stopRecording() async {
-    final path = await _recorder.stop();
-    if (!mounted) return;
-    setState(() {
-      _isRecording = false;
-      _voicePath = path;
-    });
-  }
-
-  void _clearAttachment() {
-    setState(() {
-      _photo = null;
-      _document = null;
-      _voicePath = null;
-    });
-  }
-
-  Future<void> _sendMessage() async {
-    final text = _messageController.text.trim();
-    if (text.isEmpty && !_hasAttachment) return;
-    if (text.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Add a message before sending an attachment.'),
-        ),
-      );
-      return;
-    }
-
-    setState(() => _isSending = true);
-    try {
-      await ref.read(notificationsProvider.notifier).sendMessage(text);
-      if (!mounted) return;
-      _messageController.clear();
-      _clearAttachment();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Message sent to Customer Care.')),
-      );
-    } catch (error) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Could not send message: $error')));
-    } finally {
-      if (mounted) setState(() => _isSending = false);
-    }
-  }
-
-  void _showAttachmentOptions() {
-    showModalBottomSheet<void>(
-      context: context,
-      builder: (sheetContext) => SafeArea(
-        child: Wrap(
-          children: [
-            ListTile(
-              leading: const Icon(Icons.photo_library_outlined),
-              title: const Text('Photo from gallery'),
-              onTap: () {
-                Navigator.pop(sheetContext);
-                _pickPhoto(ImageSource.gallery);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.camera_alt_outlined),
-              title: const Text('Take a photo'),
-              onTap: () {
-                Navigator.pop(sheetContext);
-                _pickPhoto(ImageSource.camera);
-              },
-            ),
-            ListTile(
-              leading: const Icon(Icons.insert_drive_file_outlined),
-              title: const Text('Document'),
-              onTap: () {
-                Navigator.pop(sheetContext);
-                _pickDocument();
-              },
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final notifications =
-        ref.watch(notificationsProvider).valueOrNull ??
-        const <FarmNotification>[];
-    final messages =
-        notifications
-            .where(
-              (notification) =>
-                  notification.type == 'crm_message' ||
-                  notification.type == 'crm_message_sent',
-            )
-            .toList()
-          ..sort((left, right) => left.createdAt.compareTo(right.createdAt));
-
-    return Scaffold(
-      appBar: AppBar(
-        title: const Row(
-          children: [
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: AppColors.primaryGreen,
-              child: Icon(Icons.support_agent, color: Colors.white, size: 19),
-            ),
-            SizedBox(width: 10),
-            Text('Customer Care'),
-          ],
-        ),
-        actions: [
-          IconButton(
-            tooltip: 'Close chat',
-            onPressed: () => Navigator.of(context).pop(),
-            icon: const Icon(Icons.close),
-          ),
-        ],
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            Expanded(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFE7F6EC),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const Row(
-                      children: [
-                        CircleAvatar(
-                          backgroundColor: AppColors.primaryGreen,
-                          child: Icon(Icons.support_agent, color: Colors.white),
-                        ),
-                        SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            'Customer Care is online. Please leave a message and our team will reply as soon as possible.',
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  if (messages.isEmpty)
-                    const _ChatBubble(
-                      text: 'How can we help with your farm today?',
-                      fromCustomerCare: true,
-                    )
-                  else
-                    ...messages.map(
-                      (message) => _ChatBubble(
-                        text: message.body,
-                        fromCustomerCare: message.type == 'crm_message',
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            if (_hasAttachment)
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-                child: _AttachmentPreview(
-                  photo: _photo,
-                  document: _document,
-                  voicePath: _voicePath,
-                  onRemove: _clearAttachment,
-                ),
-              ),
-            Material(
-              color: Theme.of(context).colorScheme.surface,
-              elevation: 8,
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    IconButton(
-                      tooltip: 'Attach photo or document',
-                      onPressed: _showAttachmentOptions,
-                      icon: const Icon(Icons.attach_file),
-                    ),
-                    Expanded(
-                      child: TextField(
-                        controller: _messageController,
-                        minLines: 1,
-                        maxLines: 5,
-                        textCapitalization: TextCapitalization.sentences,
-                        decoration: InputDecoration(
-                          hintText: _isRecording
-                              ? 'Recording voice note...'
-                              : 'Type a message',
-                          filled: true,
-                          fillColor: Theme.of(
-                            context,
-                          ).colorScheme.surfaceContainerHighest,
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(24),
-                            borderSide: BorderSide.none,
-                          ),
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 10,
-                          ),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    IconButton(
-                      tooltip: _isRecording
-                          ? 'Stop voice recording'
-                          : 'Record voice message',
-                      onPressed: _isSending
-                          ? null
-                          : _isRecording
-                          ? _stopRecording
-                          : _startRecording,
-                      color: _isRecording ? AppColors.danger : null,
-                      icon: Icon(
-                        _isRecording ? Icons.stop_circle : Icons.mic_none,
-                      ),
-                    ),
-                    IconButton(
-                      tooltip: 'Send message',
-                      onPressed: _isSending ? null : _sendMessage,
-                      icon: const Icon(Icons.send),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ChatBubble extends StatelessWidget {
-  const _ChatBubble({required this.text, required this.fromCustomerCare});
-
-  final String text;
-  final bool fromCustomerCare;
-
-  @override
-  Widget build(BuildContext context) => Align(
-    alignment: fromCustomerCare ? Alignment.centerLeft : Alignment.centerRight,
-    child: Container(
-      margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: fromCustomerCare ? const Color(0xFFF0F0F0) : AppColors.deepGreen,
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: Text(
-        text,
-        style: TextStyle(color: fromCustomerCare ? null : Colors.white),
-      ),
-    ),
-  );
-}
-
-class _AttachmentPreview extends StatelessWidget {
-  const _AttachmentPreview({
-    required this.photo,
-    required this.document,
-    required this.voicePath,
-    required this.onRemove,
+class _SupportDrawer extends StatelessWidget {
+  const _SupportDrawer({
+    required this.onOpenLiveChat,
+    required this.onOpenContact,
+    required this.onCall,
   });
 
-  final XFile? photo;
-  final PlatformFile? document;
-  final String? voicePath;
-  final VoidCallback onRemove;
-
-  @override
-  Widget build(BuildContext context) {
-    final name = photo != null
-        ? photo!.name
-        : document != null
-        ? document!.name
-        : 'Voice note';
-    final icon = photo != null
-        ? Icons.image_outlined
-        : document != null
-        ? Icons.insert_drive_file_outlined
-        : Icons.mic_none;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: AppColors.primaryGreen),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(name, maxLines: 1, overflow: TextOverflow.ellipsis),
-          ),
-          IconButton(
-            tooltip: 'Remove attachment',
-            onPressed: onRemove,
-            icon: const Icon(Icons.close),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SupportDrawer extends StatelessWidget {
-  const _SupportDrawer({required this.onOpenContact, required this.onCall});
-
+  final VoidCallback onOpenLiveChat;
   final Future<void> Function(Uri uri, String service) onOpenContact;
   final Future<void> Function() onCall;
 
@@ -601,9 +259,7 @@ class _SupportDrawer extends StatelessWidget {
             title: const Text('Open live chat'),
             onTap: () {
               Navigator.of(context).pop();
-              Navigator.of(context).push(
-                MaterialPageRoute<void>(builder: (_) => const _LiveChatPage()),
-              );
+              onOpenLiveChat();
             },
           ),
           ListTile(
@@ -1116,6 +772,7 @@ class _TicketSubmissionForm extends StatelessWidget {
   final TextEditingController subjectController;
   final TextEditingController descriptionController;
   final String selectedCategory;
+  final bool submitting;
   final Function(String?) onCategoryChanged;
   final VoidCallback onSubmit;
 
@@ -1123,6 +780,7 @@ class _TicketSubmissionForm extends StatelessWidget {
     required this.subjectController,
     required this.descriptionController,
     required this.selectedCategory,
+    required this.submitting,
     required this.onCategoryChanged,
     required this.onSubmit,
   });
@@ -1183,22 +841,18 @@ class _TicketSubmissionForm extends StatelessWidget {
               border: OutlineInputBorder(),
             ),
           ),
-          const SizedBox(height: AppDimensions.spacingMedium),
-          Text('Attachment', style: Theme.of(context).textTheme.labelLarge),
-          const SizedBox(height: 8),
-          OutlinedButton.icon(
-            onPressed: () =>
-                _showMessage(context, 'Photo attachment feature coming soon'),
-            icon: const Icon(Icons.attach_file),
-            label: const Text('Attach Photo'),
-          ),
           const SizedBox(height: AppDimensions.spacingLarge),
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
-              onPressed: onSubmit,
-              icon: const Icon(Icons.send_outlined),
-              label: const Text('Submit Ticket'),
+              onPressed: submitting ? null : onSubmit,
+              icon: submitting
+                  ? const SizedBox.square(
+                      dimension: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.send_outlined),
+              label: Text(submitting ? 'Sending…' : 'Send Support Request'),
             ),
           ),
         ],

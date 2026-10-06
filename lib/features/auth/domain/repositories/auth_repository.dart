@@ -9,6 +9,7 @@ abstract interface class AuthRepository {
     String password, {
     bool rememberMe = false,
   });
+  Future<LoginChallenge> resendLoginOtp(String challengeId);
   Future<Session> verifyLoginOtp(String challengeId, String code);
   Future<Session> loginWithGoogle(String idToken);
   Future<Session> register({

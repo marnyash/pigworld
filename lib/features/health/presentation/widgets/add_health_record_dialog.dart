@@ -1,11 +1,19 @@
 import 'package:flutter/material.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
+import '../../domain/entities/health_record.dart';
 
 class AddHealthRecordDialog extends StatefulWidget {
-  final Function(Map<String, dynamic>) onSubmit;
+  final Future<void> Function(Map<String, dynamic>) onSubmit;
+  final String initialType;
+  final HealthRecord? initialRecord;
 
-  const AddHealthRecordDialog({required this.onSubmit, super.key});
+  const AddHealthRecordDialog({
+    required this.onSubmit,
+    this.initialType = 'treatment',
+    this.initialRecord,
+    super.key,
+  });
 
   @override
   State<AddHealthRecordDialog> createState() => _AddHealthRecordDialogState();
@@ -25,6 +33,7 @@ class _AddHealthRecordDialogState extends State<AddHealthRecordDialog> {
   DateTime visitDate = DateTime.now();
   DateTime? nextCheckupDate;
   List<String> symptoms = [];
+  bool _saving = false;
 
   final List<String> types = [
     'vaccination',
@@ -52,6 +61,9 @@ class _AddHealthRecordDialogState extends State<AddHealthRecordDialog> {
   @override
   void initState() {
     super.initState();
+    final record = widget.initialRecord;
+    selectedType = record?.type ?? widget.initialType;
+    selectedStatus = record?.status ?? selectedStatus;
     pigIdController = TextEditingController();
     rfidController = TextEditingController();
     diagnosisController = TextEditingController();
@@ -59,6 +71,16 @@ class _AddHealthRecordDialogState extends State<AddHealthRecordDialog> {
     dosageController = TextEditingController();
     veterinarianController = TextEditingController();
     notesController = TextEditingController();
+    pigIdController.text = record?.pigId ?? '';
+    rfidController.text = record?.rfid ?? '';
+    diagnosisController.text = record?.diagnosis ?? '';
+    medicationController.text = record?.medication ?? '';
+    dosageController.text = record?.dosage ?? '';
+    veterinarianController.text = record?.veterinarian ?? '';
+    notesController.text = record?.notes ?? '';
+    visitDate = record?.visitDate ?? visitDate;
+    nextCheckupDate = record?.nextCheckupDate;
+    symptoms = [...?record?.symptoms];
   }
 
   @override
@@ -73,11 +95,13 @@ class _AddHealthRecordDialogState extends State<AddHealthRecordDialog> {
     super.dispose();
   }
 
-  void _submitRecord() {
+  Future<void> _submitRecord() async {
+    if (_saving) return;
     if (pigIdController.text.trim().isEmpty) {
       _showError('Please enter a pig ID');
       return;
     }
+    setState(() => _saving = true);
 
     final data = {
       'pig_id': pigIdController.text,
@@ -100,7 +124,14 @@ class _AddHealthRecordDialogState extends State<AddHealthRecordDialog> {
       'notes': notesController.text.isNotEmpty ? notesController.text : null,
     };
 
-    widget.onSubmit(data);
+    try {
+      await widget.onSubmit(data);
+      if (mounted) Navigator.of(context).pop();
+    } catch (_) {
+      _showError('Could not save the health record. Please try again.');
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   void _showError(String message) {
@@ -119,7 +150,9 @@ class _AddHealthRecordDialogState extends State<AddHealthRecordDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Add Health Record',
+              widget.initialRecord == null
+                  ? 'Add Health Record'
+                  : 'Edit Health Record',
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: AppDimensions.spacingMedium),
@@ -321,8 +354,17 @@ class _AddHealthRecordDialogState extends State<AddHealthRecordDialog> {
                 ),
                 const SizedBox(width: AppDimensions.spacingMedium),
                 FilledButton(
-                  onPressed: _submitRecord,
-                  child: const Text('Save Record'),
+                  onPressed: _saving ? null : _submitRecord,
+                  child: _saving
+                      ? const SizedBox.square(
+                          dimension: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : Text(
+                          widget.initialRecord == null
+                              ? 'Save Record'
+                              : 'Save Changes',
+                        ),
                 ),
               ],
             ),

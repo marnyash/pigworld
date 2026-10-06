@@ -27,19 +27,35 @@ class AuthRepositoryImpl implements AuthRepository {
         rememberMe: rememberMe,
       ),
     );
-    return LoginChallenge(id: challenge.challengeId, destination: challenge.destination);
+    return LoginChallenge(
+      id: challenge.challengeId,
+      destination: challenge.destination,
+    );
+  }
+
+  @override
+  Future<LoginChallenge> resendLoginOtp(String challengeId) async {
+    final response = await remote.resendLoginOtp(challengeId);
+    return LoginChallenge(
+      id: response.challengeId,
+      destination: response.destination,
+    );
   }
 
   @override
   Future<Session> verifyLoginOtp(String challengeId, String code) async {
-    final session = (await remote.verifyLoginOtp(challengeId, code)).toEntity();
+    final session = await _withPreferredFarm(
+      (await remote.verifyLoginOtp(challengeId, code)).toEntity(),
+    );
     await local.saveSession(session);
     return session;
   }
 
   @override
   Future<Session> loginWithGoogle(String idToken) async {
-    final session = (await remote.loginWithGoogle(idToken)).toEntity();
+    final session = await _withPreferredFarm(
+      (await remote.loginWithGoogle(idToken)).toEntity(),
+    );
     await local.saveSession(session);
     return session;
   }
@@ -71,7 +87,10 @@ class AuthRepositoryImpl implements AuthRepository {
         pregnantPigCount: pregnantPigCount,
       ),
     );
-    final session = response.toEntity();
+    final session = await _withPreferredFarm(
+      response.toEntity(),
+      preferredFarmName: farmName,
+    );
     await local.saveSession(session);
     return session;
   }
@@ -91,7 +110,10 @@ class AuthRepositoryImpl implements AuthRepository {
     final session = await local.readSession();
     if (session == null) return null;
     final response = await remote.refresh(session.refreshToken);
-    final refreshed = response.toEntity();
+    final refreshed = await _withPreferredFarm(
+      response.toEntity(),
+      preferredFarmId: session.selectedFarm?.id,
+    );
     await local.saveSession(refreshed);
     return refreshed;
   }
@@ -114,4 +136,41 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<void> forgotPassword(String email) => remote.forgotPassword(email);
+
+  Future<Session> _withPreferredFarm(
+    Session session, {
+    String? preferredFarmId,
+    String? preferredFarmName,
+  }) async {
+    final previous = await local.readSession();
+    final preferredId =
+        preferredFarmId ??
+        (preferredFarmName == null ? previous?.selectedFarm?.id : null);
+    Farm? selectedFarm;
+
+    for (final farm in session.farms) {
+      if (preferredId != null && farm.id == preferredId) {
+        selectedFarm = farm;
+        break;
+      }
+    }
+    if (selectedFarm == null && preferredFarmName != null) {
+      for (final farm in session.farms) {
+        if (farm.name.trim().toLowerCase() ==
+            preferredFarmName.trim().toLowerCase()) {
+          selectedFarm = farm;
+          break;
+        }
+      }
+    }
+    selectedFarm ??= session.farms.length == 1 ? session.farms.single : null;
+
+    return Session(
+      accessToken: session.accessToken,
+      refreshToken: session.refreshToken,
+      user: session.user,
+      farms: session.farms,
+      selectedFarm: selectedFarm,
+    );
+  }
 }

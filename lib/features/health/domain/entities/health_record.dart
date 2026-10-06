@@ -39,10 +39,10 @@ class HealthRecord {
 
   factory HealthRecord.fromJson(Map<String, dynamic> json) {
     return HealthRecord(
-      id: json['id'] as String? ?? '',
-      farmId: json['farm_id'] as String? ?? '',
-      pigId: json['pig_id'] as String? ?? '',
-      rfid: json['rfid'] as String? ?? '',
+      id: json['id']?.toString() ?? '',
+      farmId: json['farm_id']?.toString() ?? '',
+      pigId: json['pig_id']?.toString() ?? '',
+      rfid: json['rfid']?.toString() ?? '',
       type: json['type'] as String? ?? 'treatment',
       status: json['status'] as String? ?? 'healthy',
       symptoms: List<String>.from((json['symptoms'] as List<dynamic>?) ?? []),
@@ -51,20 +51,20 @@ class HealthRecord {
       dosage: json['dosage'] as String?,
       veterinarian: json['veterinarian'] as String?,
       visitDate:
-          DateTime.tryParse(json['visit_date'] as String? ?? '') ??
+          DateTime.tryParse(json['visit_date']?.toString() ?? '') ??
           DateTime.now(),
       nextCheckupDate: DateTime.tryParse(
-        json['next_checkup_date'] as String? ?? '',
+        json['next_checkup_date']?.toString() ?? '',
       ),
       notes: json['notes'] as String?,
       attachmentUrls: List<String>.from(
         (json['attachment_urls'] as List<dynamic>?) ?? [],
       ),
       createdAt:
-          DateTime.tryParse(json['created_at'] as String? ?? '') ??
+          DateTime.tryParse(json['created_at']?.toString() ?? '') ??
           DateTime.now(),
       updatedAt:
-          DateTime.tryParse(json['updated_at'] as String? ?? '') ??
+          DateTime.tryParse(json['updated_at']?.toString() ?? '') ??
           DateTime.now(),
     );
   }

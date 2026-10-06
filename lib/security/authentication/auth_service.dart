@@ -26,7 +26,19 @@ class AuthService {
   Future<String?> readAccessToken() => _storage.read(key: accessTokenKey);
   Future<String?> readRefreshToken() => _storage.read(key: refreshTokenKey);
 
-  Future<void> clearSession() => _storage.deleteAll();
+  Future<void> clearSession() async {
+    for (final key in const [
+      accessTokenKey,
+      refreshTokenKey,
+      userProfileKey,
+      farmsKey,
+      selectedFarmKey,
+      rememberMeKey,
+      sessionTimestampKey,
+    ]) {
+      await _storage.delete(key: key);
+    }
+  }
 
   Future<void> setRememberMe(bool value) =>
       _storage.write(key: rememberMeKey, value: '$value');

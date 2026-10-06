@@ -1,4 +1,12 @@
 import 'package:flutter/material.dart';
-import '../../../../shared/widgets/module_page.dart';
+import 'health_page.dart';
 
-class MedicationPage extends StatelessWidget { const MedicationPage({super.key}); @override Widget build(BuildContext context) => const ModulePage(title: 'Medication', description: 'Track medication schedules and treatments.', icon: Icons.medication_outlined); }
+class MedicationPage extends StatelessWidget {
+  const MedicationPage({super.key});
+
+  @override
+  Widget build(BuildContext context) => const HealthPage(
+    key: ValueKey('medication-records'),
+    initialTypeFilter: 'medication',
+  );
+}

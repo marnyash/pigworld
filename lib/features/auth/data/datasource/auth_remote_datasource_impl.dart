@@ -26,6 +26,19 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   }
 
   @override
+  Future<LoginChallengeResponse> resendLoginOtp(String challengeId) async {
+    try {
+      final response = await _dio.post<Map<String, dynamic>>(
+        '/auth/resend-otp',
+        data: {'challenge_id': challengeId},
+      );
+      return LoginChallengeResponse.fromJson(response.data!);
+    } on DioException catch (error) {
+      throw ErrorHandler.from(error);
+    }
+  }
+
+  @override
   Future<LoginResponse> verifyLoginOtp(String challengeId, String code) =>
       _postForSession('/auth/verify-otp', {
         'challenge_id': challengeId,

@@ -4,8 +4,12 @@ import 'package:go_router/go_router.dart';
 import '../../l10n/generated/app_localizations.dart';
 import '../../features/herd/presentation/pages/herd_page.dart';
 import '../../features/health/presentation/pages/health_page.dart';
+import '../../features/health/presentation/pages/medication_page.dart';
+import '../../features/health/presentation/pages/deworming_page.dart';
+import '../../features/health/presentation/pages/mortality_page.dart';
 import '../../features/breeding/presentation/pages/breeding_page.dart';
 import '../../features/feed/presentation/pages/feed_page.dart';
+import '../../features/feed/presentation/providers/feed_provider.dart';
 import '../../features/inventory/presentation/pages/inventory_page.dart';
 import '../../features/growth/presentation/pages/growth_page.dart';
 import '../../features/finance/presentation/pages/finance_page.dart';
@@ -17,6 +21,7 @@ import '../../features/settings/presentation/pages/profile_page.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
 import '../../features/notifications/presentation/pages/notifications_page.dart';
 import '../../features/support/presentation/pages/support_page.dart';
+import '../../features/crm/presentation/pages/crm_page.dart';
 import '../../features/auth/presentation/pages/forgot_password_page.dart';
 import '../../features/auth/presentation/pages/farm_selection_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
@@ -134,6 +139,18 @@ abstract final class AppRouter {
             builder: (context, state) => const HealthPage(),
           ),
           GoRoute(
+            path: AppRoutes.medication,
+            builder: (context, state) => const MedicationPage(),
+          ),
+          GoRoute(
+            path: AppRoutes.deworming,
+            builder: (context, state) => const DewormingPage(),
+          ),
+          GoRoute(
+            path: AppRoutes.mortality,
+            builder: (context, state) => const MortalityPage(),
+          ),
+          GoRoute(
             path: AppRoutes.breeding,
             builder: (context, state) => const BreedingPage(),
           ),
@@ -171,12 +188,7 @@ abstract final class AppRouter {
           ),
           GoRoute(
             path: AppRoutes.crm,
-            builder: (context, state) => const ModulePage(
-              title: 'Customers',
-              description:
-                  'Manage customer relationships from the Pig World Smart web dashboard.',
-              icon: Icons.groups_outlined,
-            ),
+            builder: (context, state) => const CrmPage(),
           ),
           GoRoute(
             path: AppRoutes.notifications,
@@ -321,6 +333,21 @@ class _AppDrawer extends ConsumerWidget {
                     route: AppRoutes.health,
                   ),
                   _ListTile(
+                    icon: Icons.medication_outlined,
+                    title: 'Medication',
+                    route: AppRoutes.medication,
+                  ),
+                  _ListTile(
+                    icon: Icons.health_and_safety,
+                    title: 'Deworming',
+                    route: AppRoutes.deworming,
+                  ),
+                  _ListTile(
+                    icon: Icons.warning_amber_outlined,
+                    title: 'Mortality',
+                    route: AppRoutes.mortality,
+                  ),
+                  _ListTile(
                     icon: Icons.monitor_weight_outlined,
                     title: l10n.growth,
                     route: AppRoutes.growth,
@@ -378,9 +405,37 @@ class _AppDrawer extends ConsumerWidget {
                   _LogoutTile(
                     title: l10n.logout,
                     onLogout: () async {
-                      await ref.read(logoutUseCaseProvider)();
-                      ref.read(authProvider.notifier).clearSession();
-                      if (context.mounted) context.go(AppRoutes.login);
+                      Object? logoutError;
+                      final session = ref.read(authProvider).valueOrNull;
+                      if (session != null) {
+                        try {
+                          await ref
+                              .read(feedScheduleStorageProvider)
+                              .clearUser(session.user.id);
+                        } on Object {
+                          // Signing out must continue even if local cleanup fails.
+                        }
+                      }
+                      try {
+                        await ref.read(logoutUseCaseProvider)();
+                      } catch (error) {
+                        logoutError = error;
+                      } finally {
+                        ref.read(authProvider.notifier).clearSession();
+                        ref.invalidate(feedScheduleProvider);
+                        ref.invalidate(sessionRestoreProvider);
+                      }
+                      if (!context.mounted) return;
+                      if (logoutError != null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'You are signed out. The server could not confirm it.',
+                            ),
+                          ),
+                        );
+                      }
+                      context.go(AppRoutes.login);
                     },
                   ),
                 ],

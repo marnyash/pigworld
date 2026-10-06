@@ -6,6 +6,7 @@ class UserPreferences {
     required this.dateFormat,
     required this.currency,
     required this.notifications,
+    required this.notificationChannels,
     required this.notificationSound,
   });
 
@@ -15,6 +16,7 @@ class UserPreferences {
   final String dateFormat; // 'dd/MM/yyyy', 'MM/dd/yyyy'
   final String currency; // 'KES', 'USD'
   final Map<String, bool> notifications;
+  final Map<String, bool> notificationChannels;
   final String notificationSound;
 
   UserPreferences copyWith({
@@ -24,6 +26,7 @@ class UserPreferences {
     String? dateFormat,
     String? currency,
     Map<String, bool>? notifications,
+    Map<String, bool>? notificationChannels,
     String? notificationSound,
   }) => UserPreferences(
     language: language ?? this.language,
@@ -32,6 +35,7 @@ class UserPreferences {
     dateFormat: dateFormat ?? this.dateFormat,
     currency: currency ?? this.currency,
     notifications: notifications ?? this.notifications,
+    notificationChannels: notificationChannels ?? this.notificationChannels,
     notificationSound: notificationSound ?? this.notificationSound,
   );
 
@@ -42,6 +46,7 @@ class UserPreferences {
     'dateFormat': dateFormat,
     'currency': currency,
     'notifications': notifications,
+    'notificationChannels': notificationChannels,
     'notificationSound': notificationSound,
   };
 
@@ -54,6 +59,10 @@ class UserPreferences {
         currency: json['currency'] as String? ?? 'KES',
         notifications: Map<String, bool>.from(
           json['notifications'] as Map<dynamic, dynamic>? ?? {},
+        ),
+        notificationChannels: Map<String, bool>.from(
+          json['notificationChannels'] as Map<dynamic, dynamic>? ??
+              const {'push': true, 'sms': false, 'email': true},
         ),
         notificationSound: json['notificationSound'] as String? ?? 'default',
       );
@@ -72,6 +81,7 @@ class UserPreferences {
       'sales': true,
       'payments': true,
     },
+    notificationChannels: {'push': true, 'sms': false, 'email': true},
     notificationSound: 'default',
   );
 }

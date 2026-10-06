@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../../core/errors/error_handler.dart';
 import '../../../../core/network/api_config.dart';
 import '../../../../core/network/dio_client.dart';
 import '../../../../core/storage/secure_storage.dart';
@@ -17,6 +18,7 @@ import '../../domain/usecases/login_with_google.dart';
 import '../../domain/usecases/logout.dart';
 import '../../domain/usecases/refresh_session.dart';
 import '../../domain/usecases/register.dart';
+import '../../domain/usecases/resend_login_otp.dart';
 import '../../domain/usecases/select_farm.dart';
 import '../../domain/usecases/verify_login_otp.dart';
 import 'auth_provider.dart';
@@ -65,6 +67,9 @@ final authRepositoryProvider = Provider<AuthRepository>(
 final loginUseCaseProvider = Provider(
   (ref) => Login(ref.watch(authRepositoryProvider)),
 );
+final resendLoginOtpUseCaseProvider = Provider(
+  (ref) => ResendLoginOtp(ref.watch(authRepositoryProvider)),
+);
 final verifyLoginOtpUseCaseProvider = Provider(
   (ref) => VerifyLoginOtp(ref.watch(authRepositoryProvider)),
 );
@@ -87,9 +92,8 @@ final forgotPasswordUseCaseProvider = Provider(
   (ref) => ForgotPassword(ref.watch(authRepositoryProvider)),
 );
 
-/// Restores a persisted session on cold start, refreshing it if the 12h session window has lapsed.
-/// Returns null (and wipes storage) whenever the user isn't recoverable, so the splash can fall
-/// back to onboarding/login instead of leaving the app stuck on a partially-restored session.
+/// Restores a persisted session only after the server accepts and rotates its refresh token.
+/// This also reloads the user's current farm memberships before the splash opens authenticated UI.
 final sessionRestoreProvider = FutureProvider<Session?>((ref) async {
   final authService = ref.watch(authServiceProvider);
   final local = AuthLocalDataSourceImpl();
@@ -98,25 +102,31 @@ final sessionRestoreProvider = FutureProvider<Session?>((ref) async {
     return null;
   }
   final stored = await local.readSession();
-  if (stored == null) return null;
+  if (stored == null) {
+    await local.clear();
+    return null;
+  }
 
-  final sessionManager = ref.watch(sessionManagerProvider);
-  var session = stored;
-  if (!await sessionManager.isValid()) {
-    try {
-      final refreshed = await ref.read(refreshSessionUseCaseProvider)();
-      if (refreshed == null) {
-        await local.clear();
-        return null;
-      }
-      session = refreshed;
-    } on DioException {
+  try {
+    final refreshed = await ref.read(refreshSessionUseCaseProvider)();
+    if (refreshed == null) {
       await local.clear();
       return null;
     }
+    await ref.read(sessionManagerProvider).markActive();
+    ref.read(authProvider.notifier).setSession(refreshed);
+    return refreshed;
+  } on ApiException catch (error) {
+    if ([401, 403, 422].contains(error.statusCode)) {
+      await local.clear();
+    }
+    return null;
+  } on DioException catch (error) {
+    // Preserve credentials on network/server failures so a later launch can retry.
+    // These statuses mean the server rejected the refresh token itself.
+    if ([401, 403, 422].contains(error.response?.statusCode)) {
+      await local.clear();
+    }
+    return null;
   }
-
-  await sessionManager.markActive();
-  ref.read(authProvider.notifier).setSession(session);
-  return session;
 });

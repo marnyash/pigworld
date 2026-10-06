@@ -4,6 +4,9 @@ abstract final class AppRoutes {
   static const home = '/';
   static const herd = '/herd';
   static const health = '/health';
+  static const medication = '/health/medication';
+  static const deworming = '/health/deworming';
+  static const mortality = '/health/mortality';
   static const breeding = '/breeding';
   static const settings = '/settings';
   static const feed = '/feed';
