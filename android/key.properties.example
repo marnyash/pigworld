@@ -1,4 +1,10 @@
-storeFile=upload-keystore.jks
+# Copy this file to key.properties and replace the placeholders with your real values.
+# Keep key.properties and the keystore private; never commit or share them.
+# The keystore certificate must have this SHA1:
+# 89:89:CE:DD:B0:FC:72:CE:71:E9:9C:FF:97:B3:90:7A:38:3F:3A:26
+# A relative storeFile path is resolved from the android/ directory.
+# The project keystore is kept at the repository root.
+storeFile=../upload-keystore.jks
 storePassword=REPLACE_WITH_KEYSTORE_PASSWORD
 keyAlias=upload
 keyPassword=REPLACE_WITH_KEY_PASSWORD

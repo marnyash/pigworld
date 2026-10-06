@@ -1,4 +1,6 @@
 import java.io.FileInputStream
+import java.security.KeyStore
+import java.security.MessageDigest
 import java.util.Properties
 
 plugins {
@@ -15,6 +17,43 @@ if (keystorePropertiesFile.exists()) {
 }
 val isReleaseBuildRequested = gradle.startParameter.taskNames.any {
     it.contains("release", ignoreCase = true)
+}
+if (isReleaseBuildRequested && keystorePropertiesFile.exists()) {
+    val requiredProperties = listOf("storeFile", "storePassword", "keyAlias", "keyPassword")
+    val missingProperties = requiredProperties.filter {
+        keystoreProperties.getProperty(it).isNullOrBlank()
+    }
+    if (missingProperties.isNotEmpty()) {
+        throw GradleException(
+            "Release signing configuration is incomplete. Missing: ${missingProperties.joinToString()}."
+        )
+    }
+
+    val keystoreFile = rootProject.file(keystoreProperties.getProperty("storeFile"))
+    if (!keystoreFile.isFile) {
+        throw GradleException("Release keystore file does not exist: ${keystoreFile.path}")
+    }
+
+    val keystoreType = if (keystoreFile.extension.lowercase() in setOf("p12", "pfx")) {
+        "PKCS12"
+    } else {
+        "JKS"
+    }
+    val keystore = KeyStore.getInstance(keystoreType)
+    FileInputStream(keystoreFile).use {
+        keystore.load(it, keystoreProperties.getProperty("storePassword").toCharArray())
+    }
+    val certificate = keystore.getCertificate(keystoreProperties.getProperty("keyAlias"))
+        ?: throw GradleException("The configured signing key alias was not found in the keystore.")
+    val actualSha1 = MessageDigest.getInstance("SHA-1")
+        .digest(certificate.encoded)
+        .joinToString(":") { "%02X".format(it.toInt() and 0xFF) }
+    val expectedSha1 = "89:89:CE:DD:B0:FC:72:CE:71:E9:9C:FF:97:B3:90:7A:38:3F:3A:26"
+    if (!actualSha1.equals(expectedSha1, ignoreCase = true)) {
+        throw GradleException(
+            "Wrong release signing certificate. Expected SHA1 $expectedSha1 but found $actualSha1."
+        )
+    }
 }
 
 android {

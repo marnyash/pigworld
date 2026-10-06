@@ -17,11 +17,7 @@ class LanguagePage extends ConsumerStatefulWidget {
 
   static const languages = [
     ('🇬🇧', 'English', 'English', 'en'),
-    ('🇰🇪', 'Kiswahili', 'Swahili', 'sw'),
-    ('🇫🇷', 'Français', 'French', 'fr'),
-    ('🇩🇪', 'Deutsch', 'German', 'de'),
-    ('🇨🇳', '中文', 'Chinese', 'zh'),
-    ('🇪🇸', 'Español', 'Spanish', 'es'),
+    ('🇰🇪', 'Kiswahili', 'Kiswahili', 'sw'),
   ];
 
   @override

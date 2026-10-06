@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/routes/app_routes.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../auth/domain/entities/farm.dart';
+import '../../../auth/domain/entities/session.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 
@@ -33,11 +35,26 @@ class PaymentMethodPage extends ConsumerStatefulWidget {
 class _PaymentMethodPageState extends ConsumerState<PaymentMethodPage> {
   String _selectedMethod = 'M-Pesa';
   bool _isSubmitting = false;
+  Farm? _selectedFarm;
   late final TextEditingController _phoneController;
 
   @override
   void initState() {
     super.initState();
+    final session = ref.read(authProvider).valueOrNull;
+    final farms = session?.farms ?? const <Farm>[];
+    _selectedFarm = session?.selectedFarm ?? (farms.isNotEmpty ? farms.first : null);
+    if (_selectedFarm != null && session != null) {
+      ref.read(authProvider.notifier).setSession(
+        Session(
+          accessToken: session.accessToken,
+          refreshToken: session.refreshToken,
+          user: session.user,
+          farms: session.farms,
+          selectedFarm: _selectedFarm,
+        ),
+      );
+    }
     _phoneController = TextEditingController(
       text: ref.read(authProvider).valueOrNull?.user.phone ?? '',
     );
@@ -70,8 +87,9 @@ class _PaymentMethodPageState extends ConsumerState<PaymentMethodPage> {
     final planCode = widget.selectedPlan['code'] ?? widget.selectedPlan['name'];
     final session = ref.read(authProvider).valueOrNull;
     final selectedFarm =
-      session?.selectedFarm ??
-      (session?.farms.length == 1 ? session!.farms.first : null);
+        _selectedFarm ??
+        session?.selectedFarm ??
+        (session?.farms.isNotEmpty ?? false ? session!.farms.first : null);
     final phone = _normalizeKenyanPhone(_phoneController.text);
 
     if (_selectedMethod != 'M-Pesa') {
@@ -218,6 +236,39 @@ class _PaymentMethodPageState extends ConsumerState<PaymentMethodPage> {
                 ),
               ),
               const SizedBox(height: 20),
+              if ((ref.watch(authProvider).valueOrNull?.farms ?? const <Farm>[]).isNotEmpty) ...[
+                DropdownButtonFormField<Farm>(
+                  value: _selectedFarm,
+                  decoration: const InputDecoration(
+                    labelText: 'Farm',
+                    prefixIcon: Icon(Icons.agriculture_outlined),
+                  ),
+                  items: (ref.watch(authProvider).valueOrNull?.farms ?? const <Farm>[])
+                      .map(
+                        (farm) => DropdownMenuItem<Farm>(
+                          value: farm,
+                          child: Text(farm.name),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (farm) {
+                    if (farm == null) return;
+                    final session = ref.read(authProvider).valueOrNull;
+                    if (session == null) return;
+                    ref.read(authProvider.notifier).setSession(
+                      Session(
+                        accessToken: session.accessToken,
+                        refreshToken: session.refreshToken,
+                        user: session.user,
+                        farms: session.farms,
+                        selectedFarm: farm,
+                      ),
+                    );
+                    setState(() => _selectedFarm = farm);
+                  },
+                ),
+                const SizedBox(height: 16),
+              ],
               _PaymentOption(
                 title: 'M-Pesa',
                 subtitle: 'Pay directly from your phone wallet',
