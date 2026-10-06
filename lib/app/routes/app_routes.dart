@@ -14,6 +14,7 @@ abstract final class AppRoutes {
   static const growth = '/growth';
   static const finance = '/finance';
   static const salesAndExpenses = '/sales-and-expenses';
+  static const buyers = '/buyers';
   static const inventory = '/inventory';
   static const reports = '/reports';
   static const workers = '/workers';

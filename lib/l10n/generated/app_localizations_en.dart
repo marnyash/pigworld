@@ -505,4 +505,144 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tomorrow => 'Tomorrow';
+
+  @override
+  String get taskNotes => 'Notes';
+
+  @override
+  String get taskLoadFailed => 'Farm tasks could not be loaded.';
+
+  @override
+  String get deleteTaskTitle => 'Delete task?';
+
+  @override
+  String get delete => 'Delete';
+
+  @override
+  String get normal => 'Normal';
+
+  @override
+  String get urgent => 'Urgent';
+
+  @override
+  String get otherCategory => 'Other';
+
+  @override
+  String get farmSales => 'Farm sales';
+
+  @override
+  String get salesIntro =>
+      'Record farm orders, buyers, prices, and delivery status.';
+
+  @override
+  String get salesPeriod => 'Period';
+
+  @override
+  String get noSalesYet => 'No sales have been recorded for this farm.';
+
+  @override
+  String get addFarmSale => 'Record sale';
+
+  @override
+  String get saleBuyer => 'Buyer';
+
+  @override
+  String get saleItem => 'Pig or product';
+
+  @override
+  String get saleQuantity => 'Quantity';
+
+  @override
+  String get saleUnitPrice => 'Unit price';
+
+  @override
+  String get saleCurrency => 'Currency';
+
+  @override
+  String get saleOrderDate => 'Order date';
+
+  @override
+  String get saleExpectedDate => 'Expected delivery';
+
+  @override
+  String get saleReference => 'Reference';
+
+  @override
+  String get saleNotes => 'Notes';
+
+  @override
+  String get buyerName => 'Buyer name';
+
+  @override
+  String get buyerEmail => 'Email';
+
+  @override
+  String get buyerPhone => 'Phone';
+
+  @override
+  String get buyerCompany => 'Company or shop';
+
+  @override
+  String get buyerAddress => 'Address';
+
+  @override
+  String get buyerSearch => 'Search buyers';
+
+  @override
+  String get noBuyers => 'No buyers have been added yet.';
+
+  @override
+  String get addBuyer => 'Add buyer';
+
+  @override
+  String get editBuyer => 'Edit buyer';
+
+  @override
+  String get salesPermissionDenied =>
+      'You do not have permission to manage sales for this farm.';
+
+  @override
+  String get salesLoadError => 'Farm sales could not be loaded.';
+
+  @override
+  String get orderStatusPending => 'Pending';
+
+  @override
+  String get orderStatusOngoing => 'Ongoing';
+
+  @override
+  String get orderStatusCompleted => 'Completed';
+
+  @override
+  String get orderStatusCancelled => 'Cancelled';
+
+  @override
+  String get buyers => 'Buyers';
+
+  @override
+  String get selectFarm => 'Select a farm';
+
+  @override
+  String get status => 'Status';
+
+  @override
+  String get salesAnimalsMarkedSold => 'Animals marked sold';
+
+  @override
+  String get buyerNameRequired => 'Buyer name is required.';
+
+  @override
+  String get saleItemRequired => 'Enter the pig or product being sold.';
+
+  @override
+  String get saleReferenceRequired => 'Sale reference is required.';
+
+  @override
+  String get invalidEmail => 'Enter a valid email address.';
+
+  @override
+  String get positiveAmountRequired => 'Enter a number greater than zero.';
+
+  @override
+  String get noBuyersMatchSearch => 'No buyers match this search.';
 }

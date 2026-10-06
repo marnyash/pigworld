@@ -1069,6 +1069,282 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tomorrow'**
   String get tomorrow;
+
+  /// No description provided for @taskNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get taskNotes;
+
+  /// No description provided for @taskLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Farm tasks could not be loaded.'**
+  String get taskLoadFailed;
+
+  /// No description provided for @deleteTaskTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete task?'**
+  String get deleteTaskTitle;
+
+  /// No description provided for @delete.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete'**
+  String get delete;
+
+  /// No description provided for @normal.
+  ///
+  /// In en, this message translates to:
+  /// **'Normal'**
+  String get normal;
+
+  /// No description provided for @urgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Urgent'**
+  String get urgent;
+
+  /// No description provided for @otherCategory.
+  ///
+  /// In en, this message translates to:
+  /// **'Other'**
+  String get otherCategory;
+
+  /// No description provided for @farmSales.
+  ///
+  /// In en, this message translates to:
+  /// **'Farm sales'**
+  String get farmSales;
+
+  /// No description provided for @salesIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'Record farm orders, buyers, prices, and delivery status.'**
+  String get salesIntro;
+
+  /// No description provided for @salesPeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'Period'**
+  String get salesPeriod;
+
+  /// No description provided for @noSalesYet.
+  ///
+  /// In en, this message translates to:
+  /// **'No sales have been recorded for this farm.'**
+  String get noSalesYet;
+
+  /// No description provided for @addFarmSale.
+  ///
+  /// In en, this message translates to:
+  /// **'Record sale'**
+  String get addFarmSale;
+
+  /// No description provided for @saleBuyer.
+  ///
+  /// In en, this message translates to:
+  /// **'Buyer'**
+  String get saleBuyer;
+
+  /// No description provided for @saleItem.
+  ///
+  /// In en, this message translates to:
+  /// **'Pig or product'**
+  String get saleItem;
+
+  /// No description provided for @saleQuantity.
+  ///
+  /// In en, this message translates to:
+  /// **'Quantity'**
+  String get saleQuantity;
+
+  /// No description provided for @saleUnitPrice.
+  ///
+  /// In en, this message translates to:
+  /// **'Unit price'**
+  String get saleUnitPrice;
+
+  /// No description provided for @saleCurrency.
+  ///
+  /// In en, this message translates to:
+  /// **'Currency'**
+  String get saleCurrency;
+
+  /// No description provided for @saleOrderDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Order date'**
+  String get saleOrderDate;
+
+  /// No description provided for @saleExpectedDate.
+  ///
+  /// In en, this message translates to:
+  /// **'Expected delivery'**
+  String get saleExpectedDate;
+
+  /// No description provided for @saleReference.
+  ///
+  /// In en, this message translates to:
+  /// **'Reference'**
+  String get saleReference;
+
+  /// No description provided for @saleNotes.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes'**
+  String get saleNotes;
+
+  /// No description provided for @buyerName.
+  ///
+  /// In en, this message translates to:
+  /// **'Buyer name'**
+  String get buyerName;
+
+  /// No description provided for @buyerEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get buyerEmail;
+
+  /// No description provided for @buyerPhone.
+  ///
+  /// In en, this message translates to:
+  /// **'Phone'**
+  String get buyerPhone;
+
+  /// No description provided for @buyerCompany.
+  ///
+  /// In en, this message translates to:
+  /// **'Company or shop'**
+  String get buyerCompany;
+
+  /// No description provided for @buyerAddress.
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get buyerAddress;
+
+  /// No description provided for @buyerSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'Search buyers'**
+  String get buyerSearch;
+
+  /// No description provided for @noBuyers.
+  ///
+  /// In en, this message translates to:
+  /// **'No buyers have been added yet.'**
+  String get noBuyers;
+
+  /// No description provided for @addBuyer.
+  ///
+  /// In en, this message translates to:
+  /// **'Add buyer'**
+  String get addBuyer;
+
+  /// No description provided for @editBuyer.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit buyer'**
+  String get editBuyer;
+
+  /// No description provided for @salesPermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'You do not have permission to manage sales for this farm.'**
+  String get salesPermissionDenied;
+
+  /// No description provided for @salesLoadError.
+  ///
+  /// In en, this message translates to:
+  /// **'Farm sales could not be loaded.'**
+  String get salesLoadError;
+
+  /// No description provided for @orderStatusPending.
+  ///
+  /// In en, this message translates to:
+  /// **'Pending'**
+  String get orderStatusPending;
+
+  /// No description provided for @orderStatusOngoing.
+  ///
+  /// In en, this message translates to:
+  /// **'Ongoing'**
+  String get orderStatusOngoing;
+
+  /// No description provided for @orderStatusCompleted.
+  ///
+  /// In en, this message translates to:
+  /// **'Completed'**
+  String get orderStatusCompleted;
+
+  /// No description provided for @orderStatusCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancelled'**
+  String get orderStatusCancelled;
+
+  /// No description provided for @buyers.
+  ///
+  /// In en, this message translates to:
+  /// **'Buyers'**
+  String get buyers;
+
+  /// No description provided for @selectFarm.
+  ///
+  /// In en, this message translates to:
+  /// **'Select a farm'**
+  String get selectFarm;
+
+  /// No description provided for @status.
+  ///
+  /// In en, this message translates to:
+  /// **'Status'**
+  String get status;
+
+  /// No description provided for @salesAnimalsMarkedSold.
+  ///
+  /// In en, this message translates to:
+  /// **'Animals marked sold'**
+  String get salesAnimalsMarkedSold;
+
+  /// No description provided for @buyerNameRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Buyer name is required.'**
+  String get buyerNameRequired;
+
+  /// No description provided for @saleItemRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the pig or product being sold.'**
+  String get saleItemRequired;
+
+  /// No description provided for @saleReferenceRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Sale reference is required.'**
+  String get saleReferenceRequired;
+
+  /// No description provided for @invalidEmail.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid email address.'**
+  String get invalidEmail;
+
+  /// No description provided for @positiveAmountRequired.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a number greater than zero.'**
+  String get positiveAmountRequired;
+
+  /// No description provided for @noBuyersMatchSearch.
+  ///
+  /// In en, this message translates to:
+  /// **'No buyers match this search.'**
+  String get noBuyersMatchSearch;
 }
 
 class _AppLocalizationsDelegate

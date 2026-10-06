@@ -25,13 +25,19 @@ void main() {
     );
 
     final signIn = find.widgetWithText(FilledButton, 'Sign in');
+    final agreement = find.byKey(
+      const ValueKey('login-agreement-checkbox'),
+    );
     expect(tester.widget<FilledButton>(signIn).onPressed, isNull);
     expect(find.text('User Agreement'), findsOneWidget);
     expect(find.text('Privacy Policy'), findsOneWidget);
 
-    await tester.tap(find.byKey(const ValueKey('login-agreement-checkbox')));
-    await tester.pump();
+    await tester.ensureVisible(agreement);
+    await tester.pumpAndSettle();
+    await tester.tap(find.descendant(of: agreement, matching: find.byType(Checkbox)));
+    await tester.pumpAndSettle();
 
+    expect(tester.widget<CheckboxListTile>(agreement).value, isTrue);
     expect(tester.widget<FilledButton>(signIn).onPressed, isNotNull);
   });
 

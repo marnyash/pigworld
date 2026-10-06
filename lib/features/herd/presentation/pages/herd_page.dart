@@ -15,7 +15,7 @@ class HerdPage extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final herd = ref.watch(herdProvider);
     final registeredFarm = ref.watch(authProvider).valueOrNull?.selectedFarm;
     final healthOverview = ref.watch(healthOverviewProvider);
@@ -211,93 +211,25 @@ class HerdPage extends ConsumerWidget {
   }
 
   Future<void> _showAddSowDialog(BuildContext context, WidgetRef ref) async {
-    final tagController = TextEditingController();
-    final notesController = TextEditingController();
-    DateTime? birthDate;
-    final formKey = GlobalKey<FormState>();
-    try {
-      await showDialog<void>(
-        context: context,
-        builder: (dialogContext) => StatefulBuilder(
-          builder: (context, setState) => AlertDialog(
-            title: const Text('Add sow'),
-            content: Form(
-              key: formKey,
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  TextFormField(
-                    controller: tagController,
-                    decoration: const InputDecoration(labelText: 'Tag'),
-                    validator: (value) => value == null || value.trim().isEmpty
-                        ? 'Enter an animal tag.'
-                        : null,
-                  ),
-                  TextField(
-                    controller: notesController,
-                    decoration: const InputDecoration(
-                      labelText: 'Notes (optional)',
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Align(
-                    alignment: Alignment.centerLeft,
-                    child: TextButton.icon(
-                      onPressed: () async {
-                        final picked = await showDatePicker(
-                          context: context,
-                          firstDate: DateTime(1990),
-                          lastDate: DateTime.now(),
-                          initialDate: DateTime.now(),
-                        );
-                        if (picked != null) setState(() => birthDate = picked);
-                      },
-                      icon: const Icon(Icons.calendar_today_outlined),
-                      label: Text(
-                        birthDate == null
-                            ? 'Add birth date'
-                            : 'Born ${birthDate!.day}/${birthDate!.month}/${birthDate!.year}',
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(dialogContext),
-                child: const Text('Cancel'),
-              ),
-              FilledButton(
-                onPressed: () async {
-                  if (!(formKey.currentState?.validate() ?? false)) return;
-                  try {
-                    await ref
-                        .read(herdProvider.notifier)
-                        .createSow(
-                          tag: tagController.text.trim(),
-                          birthDate: birthDate,
-                          notes: notesController.text,
-                        );
-                    if (dialogContext.mounted) Navigator.pop(dialogContext);
-                  } catch (error) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Could not add sow: $error')),
-                      );
-                    }
-                  }
-                },
-                child: const Text('Add sow'),
-              ),
-            ],
-          ),
-        ),
-      );
-    } finally {
-      tagController.dispose();
-      notesController.dispose();
-    }
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => _AddSowDialog(
+        onSave: (tag, birthDate, notes) async {
+          try {
+            await ref
+                .read(herdProvider.notifier)
+                .createSow(tag: tag, birthDate: birthDate, notes: notes);
+            if (dialogContext.mounted) Navigator.pop(dialogContext);
+          } catch (error) {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Could not add sow: $error')),
+              );
+            }
+          }
+        },
+      ),
+    );
   }
 
   Future<void> _archiveAnimal(
@@ -575,6 +507,105 @@ class _HerdSummary extends StatelessWidget {
       ),
     ),
   );
+}
+
+class _AddSowDialog extends StatefulWidget {
+  const _AddSowDialog({required this.onSave});
+
+  final Future<void> Function(String tag, DateTime? birthDate, String notes)
+  onSave;
+
+  @override
+  State<_AddSowDialog> createState() => _AddSowDialogState();
+}
+
+class _AddSowDialogState extends State<_AddSowDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _tagController = TextEditingController();
+  final _notesController = TextEditingController();
+  DateTime? _birthDate;
+  bool _saving = false;
+
+  @override
+  void dispose() {
+    _tagController.dispose();
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+    setState(() => _saving = true);
+    await widget.onSave(
+      _tagController.text.trim(),
+      _birthDate,
+      _notesController.text,
+    );
+    if (mounted) setState(() => _saving = false);
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('Add sow'),
+    content: Form(
+      key: _formKey,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          TextFormField(
+            controller: _tagController,
+            decoration: const InputDecoration(labelText: 'Tag'),
+            validator: (value) => value == null || value.trim().isEmpty
+                ? 'Enter an animal tag.'
+                : null,
+          ),
+          TextField(
+            controller: _notesController,
+            decoration: const InputDecoration(labelText: 'Notes (optional)'),
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: _saving ? null : _pickBirthDate,
+              icon: const Icon(Icons.calendar_today_outlined),
+              label: Text(
+                _birthDate == null
+                    ? 'Add birth date'
+                    : 'Born ${_birthDate!.day}/${_birthDate!.month}/${_birthDate!.year}',
+              ),
+            ),
+          ),
+        ],
+      ),
+    ),
+    actions: [
+      TextButton(
+        onPressed: _saving ? null : () => Navigator.pop(context),
+        child: const Text('Cancel'),
+      ),
+      FilledButton(
+        onPressed: _saving ? null : _save,
+        child: _saving
+            ? const SizedBox.square(
+                dimension: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Text('Add sow'),
+      ),
+    ],
+  );
+
+  Future<void> _pickBirthDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      firstDate: DateTime(1990),
+      lastDate: now,
+      initialDate: _birthDate ?? now,
+    );
+    if (picked != null && mounted) setState(() => _birthDate = picked);
+  }
 }
 
 class _AnimalCard extends StatelessWidget {

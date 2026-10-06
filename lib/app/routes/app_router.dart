@@ -14,6 +14,7 @@ import '../../features/inventory/presentation/pages/inventory_page.dart';
 import '../../features/growth/presentation/pages/growth_page.dart';
 import '../../features/finance/presentation/pages/finance_page.dart';
 import '../../features/sales/presentation/pages/sales_page.dart';
+import '../../features/sales/presentation/pages/buyers_page.dart';
 import '../../features/tasks/presentation/pages/tasks_page.dart';
 import '../../features/reports/presentation/pages/reports_page.dart';
 import '../../features/about/presentation/pages/about_page.dart';
@@ -42,7 +43,6 @@ import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../features/auth/presentation/providers/auth_providers.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../shared/components/bottom_navigation.dart';
-import '../../shared/widgets/module_page.dart';
 import '../../shared/widgets/profile_avatar.dart';
 import '../../app/theme/app_colors.dart';
 import 'app_routes.dart';
@@ -175,6 +175,10 @@ abstract final class AppRouter {
             builder: (context, state) => const SalesPage(),
           ),
           GoRoute(
+            path: AppRoutes.buyers,
+            builder: (context, state) => const BuyersPage(),
+          ),
+          GoRoute(
             path: AppRoutes.inventory,
             builder: (context, state) => const InventoryPage(),
           ),
@@ -259,7 +263,7 @@ class _AppDrawer extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final session = ref.watch(authProvider).valueOrNull;
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final user = session?.user;
     final farmName = session?.selectedFarm?.name ?? 'Pig World Smart';
     final initials = (user?.name.isNotEmpty ?? false)

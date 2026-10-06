@@ -22,7 +22,7 @@ void main() {
 
     expect(find.byType(Image), findsOneWidget);
 
-    await tester.pumpAndSettle();
+    await tester.pump(const Duration(seconds: 2));
     expect(find.byType(Scaffold), findsOneWidget);
   });
 }

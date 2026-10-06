@@ -516,4 +516,145 @@ class AppLocalizationsSw extends AppLocalizations {
 
   @override
   String get tomorrow => 'Kesho';
+
+  @override
+  String get taskNotes => 'Maelezo';
+
+  @override
+  String get taskLoadFailed => 'Kazi za shamba hazikuweza kupakiwa.';
+
+  @override
+  String get deleteTaskTitle => 'Ungependa kufuta kazi?';
+
+  @override
+  String get delete => 'Futa';
+
+  @override
+  String get normal => 'Wastani';
+
+  @override
+  String get urgent => 'Dharura';
+
+  @override
+  String get otherCategory => 'Nyingine';
+
+  @override
+  String get farmSales => 'Mauzo ya shamba';
+
+  @override
+  String get salesIntro =>
+      'Rekodi oda, wanunuzi, bei na hali ya uwasilishaji wa shamba.';
+
+  @override
+  String get salesPeriod => 'Kipindi';
+
+  @override
+  String get noSalesYet => 'Hakuna mauzo yaliyorekodiwa kwa shamba hili.';
+
+  @override
+  String get addFarmSale => 'Rekodi mauzo';
+
+  @override
+  String get saleBuyer => 'Mnunuzi';
+
+  @override
+  String get saleItem => 'Nguruwe au bidhaa';
+
+  @override
+  String get saleQuantity => 'Kiasi';
+
+  @override
+  String get saleUnitPrice => 'Bei ya kipande';
+
+  @override
+  String get saleCurrency => 'Sarafu';
+
+  @override
+  String get saleOrderDate => 'Tarehe ya oda';
+
+  @override
+  String get saleExpectedDate => 'Uwasilishaji unaotarajiwa';
+
+  @override
+  String get saleReference => 'Rejea';
+
+  @override
+  String get saleNotes => 'Maelezo';
+
+  @override
+  String get buyerName => 'Jina la mnunuzi';
+
+  @override
+  String get buyerEmail => 'Barua pepe';
+
+  @override
+  String get buyerPhone => 'Simu';
+
+  @override
+  String get buyerCompany => 'Kampuni au duka';
+
+  @override
+  String get buyerAddress => 'Anwani';
+
+  @override
+  String get buyerSearch => 'Tafuta wanunuzi';
+
+  @override
+  String get noBuyers => 'Bado hakuna wanunuzi walioongezwa.';
+
+  @override
+  String get addBuyer => 'Ongeza mnunuzi';
+
+  @override
+  String get editBuyer => 'Hariri mnunuzi';
+
+  @override
+  String get salesPermissionDenied =>
+      'Huna ruhusa ya kusimamia mauzo ya shamba hili.';
+
+  @override
+  String get salesLoadError => 'Mauzo ya shamba hayakuweza kupakiwa.';
+
+  @override
+  String get orderStatusPending => 'Inasubiri';
+
+  @override
+  String get orderStatusOngoing => 'Inaendelea';
+
+  @override
+  String get orderStatusCompleted => 'Imekamilika';
+
+  @override
+  String get orderStatusCancelled => 'Imeghairiwa';
+
+  @override
+  String get buyers => 'Wanunuzi';
+
+  @override
+  String get selectFarm => 'Chagua shamba';
+
+  @override
+  String get status => 'Hali';
+
+  @override
+  String get salesAnimalsMarkedSold => 'Nguruwe waliowekwa kuwa wameuzwa';
+
+  @override
+  String get buyerNameRequired => 'Jina la mnunuzi linahitajika.';
+
+  @override
+  String get saleItemRequired => 'Weka jina la nguruwe au bidhaa inayouzwa.';
+
+  @override
+  String get saleReferenceRequired => 'Rejea ya mauzo inahitajika.';
+
+  @override
+  String get invalidEmail => 'Weka anwani sahihi ya barua pepe.';
+
+  @override
+  String get positiveAmountRequired => 'Weka nambari iliyo zaidi ya sifuri.';
+
+  @override
+  String get noBuyersMatchSearch =>
+      'Hakuna wanunuzi wanaolingana na utafutaji huu.';
 }
