@@ -47,3 +47,9 @@ app.*.map.json
 /android/key.properties
 /android/*.jks
 /android/*.keystore
+
+# Local release signing material and Android diagnostic output
+/upload-keystore.jks
+/upload_certificate.pem
+/android/java_pid*.hprof
+/android/build/reports/problems/problems-report.html
