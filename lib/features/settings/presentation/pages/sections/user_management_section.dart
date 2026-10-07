@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:proj/app/theme/app_colors.dart';
 import 'package:proj/app/theme/app_dimensions.dart';
+import 'package:proj/app/routes/app_routes.dart';
 import 'package:proj/features/settings/presentation/providers/farm_access_provider.dart';
 
 class UserManagementSection extends ConsumerWidget {
@@ -29,12 +31,9 @@ class UserManagementSection extends ConsumerWidget {
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                       FilledButton.icon(
-                        onPressed: () {
-                          // TODO: Show add member dialog
-                          _showAddMemberDialog(context, ref);
-                        },
-                        icon: const Icon(Icons.add),
-                        label: const Text('Add'),
+                        onPressed: () => context.go(AppRoutes.farmManagement),
+                        icon: const Icon(Icons.groups_outlined),
+                        label: const Text('Manage team'),
                       ),
                     ],
                   ),
@@ -132,65 +131,6 @@ class UserManagementSection extends ConsumerWidget {
             Text('Error: $err'),
           ],
         ),
-      ),
-    );
-  }
-
-  void _showAddMemberDialog(BuildContext context, WidgetRef ref) {
-    final emailController = TextEditingController();
-    final roleController = TextEditingController()..text = 'worker';
-
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add Farm Member'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextField(
-              controller: emailController,
-              keyboardType: TextInputType.emailAddress,
-              decoration: const InputDecoration(
-                labelText: 'Email Address',
-                prefixIcon: Icon(Icons.email),
-              ),
-            ),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              initialValue: 'worker',
-              decoration: const InputDecoration(
-                labelText: 'Role',
-                prefixIcon: Icon(Icons.security),
-              ),
-              items: const [
-                DropdownMenuItem(value: 'manager', child: Text('Manager')),
-                DropdownMenuItem(value: 'worker', child: Text('Worker')),
-                DropdownMenuItem(value: 'vet', child: Text('Veterinarian')),
-              ],
-              onChanged: (value) {
-                if (value != null) roleController.text = value;
-              },
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Cancel'),
-          ),
-          FilledButton(
-            onPressed: () {
-              // TODO: Send invitation
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Invitation sent to ${emailController.text}'),
-                ),
-              );
-            },
-            child: const Text('Send Invitation'),
-          ),
-        ],
       ),
     );
   }
