@@ -117,7 +117,18 @@ class _NotificationBannerState extends ConsumerState<_NotificationBanner> {
             padding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
             child: Row(
               children: [
-                const Icon(Icons.notifications_active_outlined, color: Colors.white),
+                ClipOval(
+                  child: Image.asset(
+                    'assets/images/logo.jpeg',
+                    width: 32,
+                    height: 32,
+                    fit: BoxFit.cover,
+                    errorBuilder: (context, error, stackTrace) => const Icon(
+                      Icons.notifications_active_outlined,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -142,7 +153,9 @@ class _NotificationBannerState extends ConsumerState<_NotificationBanner> {
                   ),
                 ),
                 IconButton(
-                  tooltip: AppLocalizations.of(context)!.dismissNotificationBanner,
+                  tooltip: AppLocalizations.of(
+                    context,
+                  )!.dismissNotificationBanner,
                   icon: const Icon(Icons.close, color: Colors.white),
                   onPressed: () => setState(
                     () => _dismissedNotificationId = notification.id,

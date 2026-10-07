@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -18,6 +20,11 @@ class NotificationsNotifier extends AsyncNotifier<List<FarmNotification>> {
   Future<List<FarmNotification>> build() async {
     final farmId = ref.watch(authProvider).valueOrNull?.selectedFarm?.id;
     if (farmId == null) return const [];
+    final refreshTimer = Timer.periodic(
+      const Duration(seconds: 30),
+      (_) => ref.invalidateSelf(),
+    );
+    ref.onDispose(refreshTimer.cancel);
     return ref.watch(notificationsApiProvider).fetch(farmId);
   }
 
@@ -46,9 +53,6 @@ class NotificationsNotifier extends AsyncNotifier<List<FarmNotification>> {
 
     final current = state.valueOrNull ?? const <FarmNotification>[];
     /* Keep the active list stable while appending the new sent message. */
-    state = AsyncData([
-      sent,
-      ...current,
-    ]);
+    state = AsyncData([sent, ...current]);
   }
 }
