@@ -83,7 +83,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           icon: const Icon(Icons.menu),
           onPressed: () => navigationScaffoldKey.currentState?.openDrawer(),
         ),
-        title: Text(farmName),
+        title: Text(farmName, maxLines: 1, overflow: TextOverflow.ellipsis),
         actions: [
           IconButton(
             tooltip: l10n.openNotifications,
@@ -92,239 +92,271 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           ),
         ],
       ),
-      body: RefreshIndicator(
-        onRefresh: () async {
-          if (farmId == null) return;
-          ref.invalidate(farmOverviewProvider(farmId));
-          ref.invalidate(notificationsProvider);
-          await ref.read(farmOverviewProvider(farmId).future);
-        },
-        child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(AppDimensions.pagePadding),
-          children: [
-            if (overview.isLoading) const LinearProgressIndicator(minHeight: 2),
-            if (overview.hasError)
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(AppDimensions.spacingMedium),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.cloud_off_outlined,
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-                      const SizedBox(width: AppDimensions.spacingMedium),
-                      Expanded(
-                        child: Text(
-                          l10n.overviewLoadFailed,
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: farmId == null
-                            ? null
-                            : () =>
-                                  ref.invalidate(farmOverviewProvider(farmId)),
-                        child: Text(l10n.retry),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            Card(
-              color: AppColors.deepGreen,
-              child: Padding(
-                padding: const EdgeInsets.all(AppDimensions.spacingLarge),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.inverseText.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(999),
-                      ),
-                      child: Text(
-                        l10n.farmOverview,
-                        style: TextStyle(
-                          color: AppColors.inverseText,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Text(
-                      '${l10n.goodDay}, $firstName',
-                      style: Theme.of(context).textTheme.headlineSmall
-                          ?.copyWith(color: AppColors.inverseText),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      crmMessage?.body ??
-                          l10n.farmRunningSmoothly,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.inverseMutedText,
-                      ),
-                    ),
-                  ],
-                ),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          const DecoratedBox(
+            decoration: BoxDecoration(
+              image: DecorationImage(
+                image: AssetImage('assets/images/logo.jpeg'),
+                fit: BoxFit.cover,
+                opacity: 0.07,
               ),
             ),
-            if (notifications.any((item) => !item.isRead)) ...[
-              const SizedBox(height: AppDimensions.spacingMedium),
-              _NotificationBanner(
-                notification: notifications.firstWhere((item) => !item.isRead),
-                onOpen: () => context.go(AppRoutes.notifications),
-              ),
-            ],
-            const SizedBox(height: AppDimensions.spacingLarge),
-            _HerdStatusCard(
-              pregnant: pregnantCount,
-              vaccinated: vaccinatedCount,
-              active: herdCount,
-            ),
-            const SizedBox(height: AppDimensions.spacingLarge),
-            GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              mainAxisSpacing: AppDimensions.spacingMedium,
-              crossAxisSpacing: AppDimensions.spacingMedium,
-              childAspectRatio: 1.0,
+          ),
+          RefreshIndicator(
+            onRefresh: () async {
+              if (farmId == null) return;
+              ref.invalidate(farmOverviewProvider(farmId));
+              ref.invalidate(notificationsProvider);
+              await ref.read(farmOverviewProvider(farmId).future);
+            },
+            child: ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.all(AppDimensions.pagePadding),
               children: [
-                _StatCard(
-                  icon: Icons.pets_outlined,
-                  label: l10n.herdSize,
-                  value: '$herdCount',
-                  color: AppColors.primaryGreen,
-                ),
-                _StatCard(
-                  icon: Icons.grass_outlined,
-                  label: l10n.feedStock,
-                  value: overview.valueOrNull?['feed_stock']?.toString() ?? '—',
-                  color: AppColors.warning,
-                ),
-                _StatCard(
-                  icon: Icons.checklist_outlined,
-                  label: l10n.tasksDue,
-                  value: overview.valueOrNull?['tasks_due']?.toString() ?? '—',
-                  color: AppColors.danger,
-                ),
-                _StatCard(
-                  icon: Icons.point_of_sale_outlined,
-                  label: l10n.salesThisWeek,
-                  value:
-                      overview.valueOrNull?['sales_this_week']?.toString() ??
-                      '—',
+                if (overview.isLoading)
+                  const LinearProgressIndicator(minHeight: 2),
+                if (overview.hasError)
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(
+                        AppDimensions.spacingMedium,
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.cloud_off_outlined,
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                          const SizedBox(width: AppDimensions.spacingMedium),
+                          Expanded(child: Text(l10n.overviewLoadFailed)),
+                          TextButton(
+                            onPressed: farmId == null
+                                ? null
+                                : () => ref.invalidate(
+                                    farmOverviewProvider(farmId),
+                                  ),
+                            child: Text(l10n.retry),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                Card(
                   color: AppColors.deepGreen,
-                ),
-              ],
-            ),
-            if (registeredHerdCount > 0) ...[
-              const SizedBox(height: AppDimensions.spacingMedium),
-              _RegisteredHerdBanner(
-                motherPigs: session?.selectedFarm?.motherPigCount ?? 0,
-                piglets: session?.selectedFarm?.registeredPigletCount ?? 0,
-                pregnantPigs: session?.selectedFarm?.pregnantPigCount ?? 0,
-              ),
-            ],
-            const SizedBox(height: AppDimensions.spacingLarge),
-            _SectionHeader(title: l10n.quickActions),
-            const SizedBox(height: AppDimensions.spacingMedium),
-            Wrap(
-              spacing: AppDimensions.spacingMedium,
-              runSpacing: AppDimensions.spacingMedium,
-              children: [
-                _QuickAction(
-                  icon: Icons.pets_outlined,
-                  label: l10n.herd,
-                  color: AppColors.pigPink,
-                  onTap: () => context.go(AppRoutes.herd),
-                ),
-                _QuickAction(
-                  icon: Icons.grass_outlined,
-                  label: l10n.feed,
-                  color: AppColors.leaf,
-                  onTap: () => context.go(AppRoutes.feed),
-                ),
-                _QuickAction(
-                  icon: Icons.check_circle_outline,
-                  label: l10n.tasks,
-                  color: AppColors.warmGold,
-                  onTap: () => context.go(AppRoutes.tasks),
-                ),
-                if (isAdmin ||
-                    (role != null &&
-                        RolePermissions.can(role, AppPermission.manageFinance)))
-                  _QuickAction(
-                    icon: Icons.account_balance_wallet_outlined,
-                    label: l10n.finance,
-                    color: AppColors.warmGold,
-                    onTap: () => context.go(AppRoutes.finance),
-                  ),
-                if (isAdmin ||
-                    (role != null &&
-                        RolePermissions.can(role, AppPermission.manageSales)))
-                  _QuickAction(
-                    icon: Icons.groups_outlined,
-                    label: l10n.customers,
-                    color: AppColors.info,
-                    onTap: () => context.go(AppRoutes.crm),
-                  ),
-                _QuickAction(
-                  icon: Icons.support_agent_outlined,
-                  label: l10n.customerSupport,
-                  color: AppColors.violet,
-                  onTap: () => context.go(AppRoutes.support),
-                ),
-                if (isAdmin)
-                  _QuickAction(
-                    icon: Icons.group_outlined,
-                    label: l10n.teamAndPolicies,
-                    color: AppColors.aqua,
-                    onTap: () => context.go(AppRoutes.farmManagement),
-                  ),
-              ],
-            ),
-            const SizedBox(height: AppDimensions.spacingLarge),
-            _SectionHeader(title: l10n.recentActivity),
-            const SizedBox(height: AppDimensions.spacingMedium),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(AppDimensions.spacingLarge),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(10),
-                      decoration: BoxDecoration(
-                        color: AppColors.primaryGreen.withValues(alpha: 0.12),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.inbox_outlined,
-                        color: AppColors.primaryGreen,
-                      ),
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppDimensions.spacingLarge),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.inverseText.withValues(
+                              alpha: 0.15,
+                            ),
+                            borderRadius: BorderRadius.circular(999),
+                          ),
+                          child: Text(
+                            l10n.farmOverview,
+                            style: TextStyle(
+                              color: AppColors.inverseText,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          '${l10n.goodDay}, $firstName',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.headlineSmall
+                              ?.copyWith(color: AppColors.inverseText),
+                        ),
+                        const SizedBox(height: 6),
+                        Text(
+                          crmMessage?.body ?? l10n.farmRunningSmoothly,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(color: AppColors.inverseMutedText),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: AppDimensions.spacingMedium),
-                    Expanded(
-                      child: Text(
-                        overview.valueOrNull?['recent_activity'] is List &&
-                                (overview.valueOrNull!['recent_activity']
-                                        as List)
-                                    .isNotEmpty
-                            ? 'Recent farm activity is available in the activity view.'
-                            : 'No recent activity recorded yet.',
-                      ),
+                  ),
+                ),
+                if (notifications.any((item) => !item.isRead)) ...[
+                  const SizedBox(height: AppDimensions.spacingMedium),
+                  _NotificationBanner(
+                    notification: notifications.firstWhere(
+                      (item) => !item.isRead,
+                    ),
+                    onOpen: () => context.go(AppRoutes.notifications),
+                  ),
+                ],
+                const SizedBox(height: AppDimensions.spacingLarge),
+                _HerdStatusCard(
+                  pregnant: pregnantCount,
+                  vaccinated: vaccinatedCount,
+                  active: herdCount,
+                ),
+                const SizedBox(height: AppDimensions.spacingLarge),
+                GridView.count(
+                  crossAxisCount: 2,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  mainAxisSpacing: AppDimensions.spacingMedium,
+                  crossAxisSpacing: AppDimensions.spacingMedium,
+                  childAspectRatio: 1.0,
+                  children: [
+                    _StatCard(
+                      icon: Icons.pets_outlined,
+                      label: l10n.herdSize,
+                      value: '$herdCount',
+                      color: AppColors.primaryGreen,
+                    ),
+                    _StatCard(
+                      icon: Icons.grass_outlined,
+                      label: l10n.feedStock,
+                      value:
+                          overview.valueOrNull?['feed_stock']?.toString() ??
+                          '—',
+                      color: AppColors.warning,
+                    ),
+                    _StatCard(
+                      icon: Icons.checklist_outlined,
+                      label: l10n.tasksDue,
+                      value:
+                          overview.valueOrNull?['tasks_due']?.toString() ?? '—',
+                      color: AppColors.danger,
+                    ),
+                    _StatCard(
+                      icon: Icons.point_of_sale_outlined,
+                      label: l10n.salesThisWeek,
+                      value:
+                          overview.valueOrNull?['sales_this_week']
+                              ?.toString() ??
+                          '—',
+                      color: AppColors.deepGreen,
                     ),
                   ],
                 ),
-              ),
+                if (registeredHerdCount > 0) ...[
+                  const SizedBox(height: AppDimensions.spacingMedium),
+                  _RegisteredHerdBanner(
+                    motherPigs: session?.selectedFarm?.motherPigCount ?? 0,
+                    piglets: session?.selectedFarm?.registeredPigletCount ?? 0,
+                    pregnantPigs: session?.selectedFarm?.pregnantPigCount ?? 0,
+                  ),
+                ],
+                const SizedBox(height: AppDimensions.spacingLarge),
+                _SectionHeader(title: l10n.quickActions),
+                const SizedBox(height: AppDimensions.spacingMedium),
+                Wrap(
+                  spacing: AppDimensions.spacingMedium,
+                  runSpacing: AppDimensions.spacingMedium,
+                  children: [
+                    _QuickAction(
+                      icon: Icons.pets_outlined,
+                      label: l10n.herd,
+                      color: AppColors.pigPink,
+                      onTap: () => context.go(AppRoutes.herd),
+                    ),
+                    _QuickAction(
+                      icon: Icons.grass_outlined,
+                      label: l10n.feed,
+                      color: AppColors.leaf,
+                      onTap: () => context.go(AppRoutes.feed),
+                    ),
+                    _QuickAction(
+                      icon: Icons.check_circle_outline,
+                      label: l10n.tasks,
+                      color: AppColors.warmGold,
+                      onTap: () => context.go(AppRoutes.tasks),
+                    ),
+                    if (isAdmin ||
+                        (role != null &&
+                            RolePermissions.can(
+                              role,
+                              AppPermission.manageFinance,
+                            )))
+                      _QuickAction(
+                        icon: Icons.account_balance_wallet_outlined,
+                        label: l10n.finance,
+                        color: AppColors.warmGold,
+                        onTap: () => context.go(AppRoutes.finance),
+                      ),
+                    if (isAdmin ||
+                        (role != null &&
+                            RolePermissions.can(
+                              role,
+                              AppPermission.manageSales,
+                            )))
+                      _QuickAction(
+                        icon: Icons.groups_outlined,
+                        label: l10n.customers,
+                        color: AppColors.info,
+                        onTap: () => context.go(AppRoutes.crm),
+                      ),
+                    _QuickAction(
+                      icon: Icons.support_agent_outlined,
+                      label: l10n.customerSupport,
+                      color: AppColors.violet,
+                      onTap: () => context.go(AppRoutes.support),
+                    ),
+                    if (isAdmin)
+                      _QuickAction(
+                        icon: Icons.group_outlined,
+                        label: l10n.teamAndPolicies,
+                        color: AppColors.aqua,
+                        onTap: () => context.go(AppRoutes.farmManagement),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: AppDimensions.spacingLarge),
+                _SectionHeader(title: l10n.recentActivity),
+                const SizedBox(height: AppDimensions.spacingMedium),
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(AppDimensions.spacingLarge),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
+                            color: AppColors.primaryGreen.withValues(
+                              alpha: 0.12,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.inbox_outlined,
+                            color: AppColors.primaryGreen,
+                          ),
+                        ),
+                        const SizedBox(width: AppDimensions.spacingMedium),
+                        Expanded(
+                          child: Text(
+                            overview.valueOrNull?['recent_activity'] is List &&
+                                    (overview.valueOrNull!['recent_activity']
+                                            as List)
+                                        .isNotEmpty
+                                ? 'Recent farm activity is available in the activity view.'
+                                : 'No recent activity recorded yet.',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
@@ -374,7 +406,11 @@ class _RegisteredHerdBanner extends StatelessWidget {
                   style: Theme.of(context).textTheme.titleSmall,
                 ),
                 const SizedBox(height: 2),
-                Text(details.join(' • ')),
+                Text(
+                  details.join(' • '),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
               ],
             ),
           ),
@@ -414,8 +450,18 @@ class _StatCard extends StatelessWidget {
               child: Icon(icon, color: color),
             ),
             const Spacer(),
-            Text(value, style: Theme.of(context).textTheme.headlineMedium),
-            Text(label, style: Theme.of(context).textTheme.bodyMedium),
+            Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.headlineMedium,
+            ),
+            Text(
+              label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
           ],
         ),
       ),
@@ -437,9 +483,21 @@ class _HerdStatusCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final metrics = [
-      _HerdStatusMetric(label: AppLocalizations.of(context)!.pregnant, value: '$pregnant', color: AppColors.pigPink),
-      _HerdStatusMetric(label: AppLocalizations.of(context)!.vaccinated, value: '$vaccinated', color: AppColors.info),
-      _HerdStatusMetric(label: AppLocalizations.of(context)!.active, value: '$active', color: AppColors.success),
+      _HerdStatusMetric(
+        label: AppLocalizations.of(context)!.pregnant,
+        value: '$pregnant',
+        color: AppColors.pigPink,
+      ),
+      _HerdStatusMetric(
+        label: AppLocalizations.of(context)!.vaccinated,
+        value: '$vaccinated',
+        color: AppColors.info,
+      ),
+      _HerdStatusMetric(
+        label: AppLocalizations.of(context)!.active,
+        value: '$active',
+        color: AppColors.success,
+      ),
     ];
 
     return Card(
@@ -467,9 +525,19 @@ class _HerdStatusCard extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(metric.label, style: Theme.of(context).textTheme.bodySmall),
+                            Text(
+                              metric.label,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
                             const SizedBox(height: 6),
-                            Text(metric.value, style: Theme.of(context).textTheme.headlineSmall),
+                            Text(
+                              metric.value,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.headlineSmall,
+                            ),
                           ],
                         ),
                       ),
@@ -534,6 +602,8 @@ class _QuickAction extends StatelessWidget {
             const SizedBox(height: 8),
             Text(
               label,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: Theme.of(context).textTheme.bodyMedium,
               textAlign: TextAlign.center,
             ),

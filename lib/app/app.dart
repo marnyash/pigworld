@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -9,6 +11,9 @@ import '../shared/providers/connectivity_provider.dart';
 import '../features/settings/presentation/providers/settings_providers.dart';
 import '../features/notifications/data/notifications_api.dart';
 import '../features/notifications/presentation/providers/notifications_provider.dart';
+import '../features/notifications/data/push_notification_service.dart';
+import '../features/auth/presentation/providers/auth_provider.dart';
+import '../features/auth/presentation/providers/auth_providers.dart';
 import 'theme/app_theme.dart';
 
 class MyApp extends StatelessWidget {
@@ -20,11 +25,46 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class _AppRoot extends ConsumerWidget {
+class _AppRoot extends ConsumerStatefulWidget {
   const _AppRoot();
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_AppRoot> createState() => _AppRootState();
+}
+
+class _AppRootState extends ConsumerState<_AppRoot> {
+  late final PushNotificationService _pushNotifications;
+  late final ProviderSubscription _authSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _pushNotifications = PushNotificationService(ref.read(dioProvider));
+    _authSubscription = ref.listenManual(authProvider, (previous, next) {
+      if (next.valueOrNull != null) {
+        unawaited(
+          _pushNotifications.registerDevice().catchError((error) {
+            debugPrint('Push notification setup failed: $error');
+          }),
+        );
+      } else if (previous?.valueOrNull != null) {
+        unawaited(
+          _pushNotifications.unregisterDevice().catchError((error) {
+            debugPrint('Push-token removal failed: $error');
+          }),
+        );
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _authSubscription.close();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     return MaterialApp.router(
       onGenerateTitle: (context) => AppLocalizations.of(context)!.appTitle,
       theme: AppTheme.light,
@@ -35,7 +75,13 @@ class _AppRoot extends ConsumerWidget {
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       routerConfig: AppRouter.router,
-      builder: (context, child) => _OfflineBannerOverlay(child: child),
+      builder: (context, child) => Overlay(
+        initialEntries: [
+          OverlayEntry(
+            builder: (context) => _OfflineBannerOverlay(child: child),
+          ),
+        ],
+      ),
     );
   }
 }

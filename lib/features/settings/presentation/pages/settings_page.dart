@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import 'package:proj/app/routes/app_routes.dart';
 import 'package:proj/app/theme/app_colors.dart';
 import 'package:proj/app/theme/app_dimensions.dart';
 import 'package:proj/features/auth/domain/entities/farm.dart';
@@ -87,13 +89,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     );
     if (name == null || !mounted) return;
     try {
-      await SettingsApi(ref.read(dioProvider)).requestFarmNameChange(
-        farmId: farm.id,
-        requestedName: name.trim(),
-      );
+      await SettingsApi(
+        ref.read(dioProvider),
+      ).requestFarmNameChange(farmId: farm.id, requestedName: name.trim());
       ref.invalidate(farmNameChangeRequestsProvider(farm.id));
       if (!mounted) return;
-      _showMessage('Farm name change sent to Pig World Smart support for approval.');
+      _showMessage(
+        'Farm name change sent to Pig World Smart support for approval.',
+      );
     } catch (_) {
       _showMessage(l10n.farmNameUpdateFailed, isError: true);
     }
@@ -130,18 +133,20 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
         pregnantPigCount: farm.pregnantPigCount,
         subscriptionPlan: farm.subscriptionPlan,
       );
-      ref.read(authProvider.notifier).setSession(
-        Session(
-          accessToken: session.accessToken,
-          refreshToken: session.refreshToken,
-          user: session.user,
-          farms: [
-            for (final item in session.farms)
-              item.id == farm.id ? updatedFarm : item,
-          ],
-          selectedFarm: updatedFarm,
-        ),
-      );
+      ref
+          .read(authProvider.notifier)
+          .setSession(
+            Session(
+              accessToken: session.accessToken,
+              refreshToken: session.refreshToken,
+              user: session.user,
+              farms: [
+                for (final item in session.farms)
+                  item.id == farm.id ? updatedFarm : item,
+              ],
+              selectedFarm: updatedFarm,
+            ),
+          );
       _showMessage('Farm location saved.');
     } catch (_) {
       _showMessage('Could not save the farm location.', isError: true);
@@ -165,10 +170,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       }
     } catch (_) {
       if (mounted) {
-        _showMessage(
-          l10n.passwordUpdateFailed,
-          isError: true,
-        );
+        _showMessage(l10n.passwordUpdateFailed, isError: true);
       }
     }
   }
@@ -199,10 +201,9 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
     final preferences = ref.watch(userPreferencesProvider).valueOrNull;
     final session = ref.watch(authProvider).valueOrNull;
     final farm = session?.selectedFarm ?? session?.farms.firstOrNull;
-    final notificationSound = preferences?.notificationSound ?? 'default';
     final nameRequests = farm == null
-      ? null
-      : ref.watch(farmNameChangeRequestsProvider(farm.id));
+        ? null
+        : ref.watch(farmNameChangeRequestsProvider(farm.id));
     return Scaffold(
       appBar: AppBar(title: Text(l10n.settings)),
       body: ListView(
@@ -274,25 +275,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               children: [
                 _SettingsAction(
                   icon: Icons.location_on_outlined,
-                    title: l10n.farmLocation,
-                    subtitle: farm?.location ?? l10n.addFarmLocation,
-                    onTap: farm == null
-                        ? null
-                        : () => _changeFarmLocation(session, farm),
-                ),
-                const Divider(height: 1),
-                _SettingsAction(
-                  icon: Icons.straighten_outlined,
-                    title: l10n.herdUnits,
-                    subtitle: l10n.herdUnitsDescription,
-                    onTap: () => _showMessage(l10n.herdUnitsComingSoon),
-                ),
-                const Divider(height: 1),
-                _SettingsAction(
-                  icon: Icons.access_time_outlined,
-                    title: l10n.timezoneAndDateFormat,
-                    subtitle: l10n.localTimeAndReportingFormat,
-                    onTap: () => _showMessage(l10n.timezoneComingSoon),
+                  title: l10n.farmLocation,
+                  subtitle: farm?.location ?? l10n.addFarmLocation,
+                  onTap: farm == null
+                      ? null
+                      : () => _changeFarmLocation(session, farm),
                 ),
               ],
             ),
@@ -310,67 +297,11 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   icon: Icons.credit_card_outlined,
                   title: l10n.currentPlan,
                   subtitle: farm?.subscriptionPlan ?? l10n.starterPlan,
-                  onTap: () => _showMessage(l10n.subscriptionReadyNextMilestone),
-                ),
-                const Divider(height: 1),
-                _SettingsAction(
-                  icon: Icons.autorenew_outlined,
-                    title: l10n.autoRenewal,
-                    subtitle: l10n.enabled,
-                    onTap: () => _showMessage(l10n.autoRenewalComingSoon),
-                ),
-                const Divider(height: 1),
-                _SettingsAction(
-                  icon: Icons.receipt_long_outlined,
-                  title: l10n.billingHistory,
-                  subtitle: l10n.viewInvoicesAndPayments,
-                  onTap: () => _showMessage(l10n.billingHistoryComingSoon),
+                  onTap: session?.user.role.name == 'farmOwner'
+                      ? () => context.go(AppRoutes.billing)
+                      : null,
                 ),
               ],
-            ),
-          ),
-          const SizedBox(height: AppDimensions.spacingLarge),
-          Text(
-            l10n.securityAndSessions,
-            style: Theme.of(context).textTheme.titleLarge,
-          ),
-          const SizedBox(height: AppDimensions.spacingMedium),
-          Card(
-            child: Column(
-              children: [
-                _SettingsAction(
-                  icon: Icons.devices_outlined,
-                    title: l10n.activeDevices,
-                    subtitle: l10n.manageSignIns,
-                    onTap: () => _showMessage(l10n.deviceManagementComingSoon),
-                ),
-                const Divider(height: 1),
-                _SettingsAction(
-                  icon: Icons.logout_outlined,
-                  title: l10n.signOutAllDevices,
-                  subtitle: l10n.requireRelogin,
-                  onTap: () => _showMessage(l10n.sessionResetComingSoon),
-                ),
-                const Divider(height: 1),
-                _SettingsAction(
-                  icon: Icons.security_outlined,
-                    title: l10n.privacyAndAccess,
-                    subtitle: l10n.roleControlsAndSessionPolicy,
-                    onTap: () => _showMessage(l10n.accessPolicyComingSoon),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: AppDimensions.spacingLarge),
-          Text(l10n.notifications, style: Theme.of(context).textTheme.titleLarge),
-          const SizedBox(height: AppDimensions.spacingMedium),
-          Card(
-            child: ListTile(
-              leading: const Icon(Icons.volume_up_outlined),
-              title: Text(l10n.notificationSound),
-              subtitle: Text(_notificationSoundLabel(notificationSound)),
-              trailing: const Icon(Icons.chevron_right),
-              onTap: _showNotificationSoundPicker,
             ),
           ),
         ],
@@ -400,37 +331,6 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
       ],
     ),
   );
-
-  String _notificationSoundLabel(String sound) => switch (sound) {
-    'chime' => AppLocalizations.of(context)!.chime,
-    'alert' => AppLocalizations.of(context)!.alert,
-    'silent' => AppLocalizations.of(context)!.silent,
-    _ => AppLocalizations.of(context)!.phoneDefault,
-  };
-
-  Future<void> _showNotificationSoundPicker() => showDialog<void>(
-    context: context,
-    builder: (dialogContext) => SimpleDialog(
-      title: Text(AppLocalizations.of(context)!.notificationSound),
-      children: [
-        for (final option in const [
-          ('default', 'default'),
-          ('chime', 'chime'),
-          ('alert', 'alert'),
-          ('silent', 'silent'),
-        ])
-          SimpleDialogOption(
-            onPressed: () {
-              Navigator.pop(dialogContext);
-              ref
-                  .read(userPreferencesProvider.notifier)
-                  .updateNotificationSound(option.$1);
-            },
-            child: Text(_notificationSoundLabel(option.$1)),
-          ),
-      ],
-    ),
-  );
 }
 
 class _SettingsAction extends StatelessWidget {
@@ -449,7 +349,7 @@ class _SettingsAction extends StatelessWidget {
     leading: Icon(icon, color: AppColors.primaryGreen),
     title: Text(title),
     subtitle: subtitle == null ? null : Text(subtitle!),
-    trailing: const Icon(Icons.chevron_right),
+    trailing: onTap == null ? null : const Icon(Icons.chevron_right),
     onTap: onTap,
   );
 }
@@ -500,7 +400,10 @@ class _TextEditDialogState extends State<_TextEditDialog> {
         onPressed: () => Navigator.pop(context),
         child: Text(AppLocalizations.of(context)!.cancel),
       ),
-      FilledButton(onPressed: _save, child: Text(AppLocalizations.of(context)!.save)),
+      FilledButton(
+        onPressed: _save,
+        child: Text(AppLocalizations.of(context)!.save),
+      ),
     ],
   );
 }
@@ -539,17 +442,23 @@ class _PasswordDialogState extends State<_PasswordDialog> {
         TextField(
           controller: _currentController,
           obscureText: true,
-          decoration: InputDecoration(labelText: AppLocalizations.of(context)!.currentPassword),
+          decoration: InputDecoration(
+            labelText: AppLocalizations.of(context)!.currentPassword,
+          ),
         ),
         TextField(
           controller: _passwordController,
           obscureText: true,
-          decoration: InputDecoration(labelText: AppLocalizations.of(context)!.newPassword),
+          decoration: InputDecoration(
+            labelText: AppLocalizations.of(context)!.newPassword,
+          ),
         ),
         TextField(
           controller: _confirmationController,
           obscureText: true,
-          decoration: InputDecoration(labelText: AppLocalizations.of(context)!.confirmNewPassword),
+          decoration: InputDecoration(
+            labelText: AppLocalizations.of(context)!.confirmNewPassword,
+          ),
           onSubmitted: (_) => _updatePassword(),
         ),
       ],
@@ -559,7 +468,10 @@ class _PasswordDialogState extends State<_PasswordDialog> {
         onPressed: () => Navigator.pop(context),
         child: Text(AppLocalizations.of(context)!.cancel),
       ),
-      FilledButton(onPressed: _updatePassword, child: Text(AppLocalizations.of(context)!.update)),
+      FilledButton(
+        onPressed: _updatePassword,
+        child: Text(AppLocalizations.of(context)!.update),
+      ),
     ],
   );
 }

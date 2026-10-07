@@ -20,6 +20,7 @@ import '../../features/reports/presentation/pages/reports_page.dart';
 import '../../features/about/presentation/pages/about_page.dart';
 import '../../features/settings/presentation/pages/profile_page.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
+import '../../features/settings/presentation/pages/billing_page.dart';
 import '../../features/notifications/presentation/pages/notifications_page.dart';
 import '../../features/support/presentation/pages/support_page.dart';
 import '../../features/crm/presentation/pages/crm_page.dart';
@@ -88,6 +89,10 @@ abstract final class AppRouter {
       GoRoute(
         path: AppRoutes.subscription,
         builder: (context, state) => const SubscriptionPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.billing,
+        builder: (context, state) => const BillingPage(),
       ),
       GoRoute(
         path: AppRoutes.paymentMethod,

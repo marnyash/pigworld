@@ -154,6 +154,8 @@ class _SubscriptionPlanCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   name,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: Theme.of(context).textTheme.titleLarge?.copyWith(
                     color: accentColor,
                     fontWeight: FontWeight.w700,
@@ -165,17 +167,21 @@ class _SubscriptionPlanCard extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             '$amount $currency',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: Theme.of(
               context,
             ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
           ),
           const SizedBox(height: 8),
-          Text(description),
+          Text(description, maxLines: 3, overflow: TextOverflow.ellipsis),
           const SizedBox(height: 12),
           Text(
             pigLimit == null
                 ? 'Unlimited pig capacity'
                 : 'Up to $pigLimit mother pigs',
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.bodyMedium,
           ),
         ],

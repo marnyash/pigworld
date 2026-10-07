@@ -36,6 +36,7 @@ abstract final class AppRoutes {
   static const accountType = '/account-type';
   static const herdSetup = '/herd-setup';
   static const subscription = '/subscription';
+  static const billing = '/billing';
   static const paymentMethod = '/payment-method';
   static const paymentStatus = '/payment-status';
   static const createAccount = '/create-account';
