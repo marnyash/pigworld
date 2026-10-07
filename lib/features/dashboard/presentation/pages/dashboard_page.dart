@@ -98,7 +98,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           const DecoratedBox(
             decoration: BoxDecoration(
               image: DecorationImage(
-                image: AssetImage('assets/images/logo.jpeg'),
+                image: AssetImage('assets/images/home_farm_background.png'),
                 fit: BoxFit.cover,
                 opacity: 0.07,
               ),
