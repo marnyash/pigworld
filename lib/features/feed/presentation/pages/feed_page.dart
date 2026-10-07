@@ -33,6 +33,27 @@ class _FeedPageState extends ConsumerState<FeedPage> {
           onPressed: () => navigationScaffoldKey.currentState?.openDrawer(),
         ),
       ),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          FloatingActionButton.extended(
+            heroTag: 'feed-stock',
+            onPressed: () => context.go(AppRoutes.inventory),
+            icon: const Icon(Icons.inventory_2_outlined),
+            label: const Text('Feed stock'),
+          ),
+          const SizedBox(height: 12),
+          FloatingActionButton.extended(
+            heroTag: 'record-feeding',
+            onPressed: feed.valueOrNull == null
+                ? null
+                : () => _showUsageDialog(feed.valueOrNull!),
+            icon: const Icon(Icons.edit_note_rounded),
+            label: const Text('Record feeding'),
+          ),
+        ],
+      ),
       body: feed.when(
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (error, _) => _ErrorView(
@@ -64,8 +85,6 @@ class _FeedPageState extends ConsumerState<FeedPage> {
               }
             }
           },
-          onRecord: () => _showUsageDialog(snapshot),
-          onOpenInventory: () => context.go(AppRoutes.inventory),
         ),
       ),
     );
@@ -156,86 +175,224 @@ class _FeedPageState extends ConsumerState<FeedPage> {
   }
 }
 
-class _Dashboard extends StatelessWidget {
+class _Dashboard extends StatefulWidget {
   const _Dashboard({
     required this.snapshot,
     required this.schedule,
     required this.currency,
     required this.onScheduleChanged,
-    required this.onRecord,
-    required this.onOpenInventory,
   });
+
   final FeedSnapshot snapshot;
   final Map<String, bool> schedule;
   final String currency;
   final void Function(String, bool) onScheduleChanged;
-  final VoidCallback onRecord, onOpenInventory;
+
+  @override
+  State<_Dashboard> createState() => _DashboardState();
+}
+
+class _DashboardState extends State<_Dashboard> {
+  late final PageController _pageController;
+  int _selectedSlide = 0;
+
+  static const _slides = [
+    ('Today', Icons.schedule_rounded),
+    ('Consumption', Icons.restaurant_rounded),
+    ('Analytics', Icons.insights_rounded),
+  ];
+
+  @override
+  void initState() {
+    super.initState();
+    _pageController = PageController();
+  }
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
+
+  void _selectSlide(int index) {
+    setState(() => _selectedSlide = index);
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeOut,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final snapshot = widget.snapshot;
+    final schedule = widget.schedule;
     final usedToday = snapshot.usage
         .where((item) => _isToday(item.usedAt))
         .fold<double>(0, (sum, item) => sum + item.quantity);
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 104),
+    final usageUnit = _usageUnit(snapshot.usage, snapshot.stock);
+    final nextSchedule = _nextScheduleName(schedule);
+
+    return Column(
       children: [
-        Text(
-          'Today’s feed plan',
-          style: Theme.of(context).textTheme.headlineSmall,
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+          child: Row(
+            children: [
+              for (var index = 0; index < _slides.length; index++)
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 3),
+                    child: _SlideSelector(
+                      label: _slides[index].$1,
+                      icon: _slides[index].$2,
+                      selected: index == _selectedSlide,
+                      onTap: () => _selectSlide(index),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
-        const SizedBox(height: 4),
-        Text(
-          'Track feeding routines and daily consumption.',
-          style: Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(color: AppColors.mutedText),
+        Expanded(
+          child: PageView(
+            controller: _pageController,
+            onPageChanged: (index) => setState(() => _selectedSlide = index),
+            children: [
+              _FeedSlide(
+                title: 'Feeding schedule',
+                subtitle: 'Today’s feeding times and completion.',
+                child: _ScheduleCard(
+                  values: schedule,
+                  highlightedName: nextSchedule,
+                  onChanged: widget.onScheduleChanged,
+                ),
+              ),
+              _FeedSlide(
+                title: 'Daily consumption',
+                subtitle: 'Feed used and recorded today.',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _SummaryGrid(
+                      metrics: [
+                        _Metric(
+                          'Used today',
+                          _quantity(usedToday),
+                          usageUnit,
+                          Icons.restaurant_rounded,
+                          AppColors.aqua,
+                        ),
+                        _Metric(
+                          'Monthly feed cost',
+                          snapshot.hasMonthlyFeedCost
+                              ? '${widget.currency} ${snapshot.monthlyFeedCost.toStringAsFixed(2)}'
+                              : '—',
+                          snapshot.hasMonthlyFeedCost
+                              ? 'since the start of this month'
+                              : 'add unit costs to feed stock',
+                          Icons.payments_rounded,
+                          AppColors.violet,
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                    _DailyConsumption(usage: snapshot.usage),
+                  ],
+                ),
+              ),
+              _FeedSlide(
+                title: 'Feed analytics',
+                subtitle: 'Consumption trends over the last 7 days.',
+                child: _AnalyticsCard(usage: snapshot.usage),
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: 20),
-        _SummaryGrid(
-          metrics: [
-            _Metric(
-              'Used today',
-              _quantity(usedToday),
-              _usageUnit(snapshot.usage, snapshot.stock),
-              Icons.restaurant_rounded,
-              AppColors.aqua,
-            ),
-            _Metric(
-              'Monthly feed cost',
-              snapshot.hasMonthlyFeedCost
-                  ? '$currency ${snapshot.monthlyFeedCost.toStringAsFixed(2)}'
-                  : '—',
-              snapshot.hasMonthlyFeedCost
-                  ? 'since the start of this month'
-                  : 'add unit costs to feed stock',
-              Icons.payments_rounded,
-              AppColors.violet,
-            ),
-          ],
-        ),
-        const SizedBox(height: 28),
-        const _SectionHeader(title: 'Feeding actions'),
-        const SizedBox(height: 12),
-        _FeedingActions(onRecord: onRecord, onOpenInventory: onOpenInventory),
-        const SizedBox(height: 28),
-        const _SectionHeader(title: 'Feeding schedule', action: 'Today'),
-        const SizedBox(height: 12),
-        _ScheduleCard(values: schedule, onChanged: onScheduleChanged),
-        const SizedBox(height: 28),
-        _SectionHeader(
-          title: 'Daily consumption',
-          action:
-              '${_quantity(usedToday)} ${_usageUnit(snapshot.usage, snapshot.stock)}',
-        ),
-        const SizedBox(height: 12),
-        _DailyConsumption(usage: snapshot.usage),
-        const SizedBox(height: 28),
-        const _SectionHeader(title: 'Feed analytics', action: 'Last 7 days'),
-        const SizedBox(height: 12),
-        _AnalyticsCard(usage: snapshot.usage),
       ],
     );
   }
+}
+
+class _SlideSelector extends StatelessWidget {
+  const _SlideSelector({
+    required this.label,
+    required this.icon,
+    required this.selected,
+    required this.onTap,
+  });
+
+  final String label;
+  final IconData icon;
+  final bool selected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Semantics(
+    button: true,
+    selected: selected,
+    child: InkWell(
+      borderRadius: BorderRadius.circular(14),
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primaryContainer : Colors.transparent,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(
+          children: [
+            Icon(
+              icon,
+              size: 20,
+              color: selected ? AppColors.primaryGreen : AppColors.mutedText,
+            ),
+            const SizedBox(height: 4),
+            Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: selected ? AppColors.deepGreen : AppColors.mutedText,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
+class _FeedSlide extends StatelessWidget {
+  const _FeedSlide({
+    required this.title,
+    required this.subtitle,
+    required this.child,
+  });
+
+  final String title;
+  final String subtitle;
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => ListView(
+    key: PageStorageKey<String>(title),
+    padding: const EdgeInsets.fromLTRB(20, 16, 20, 160),
+    children: [
+      Text(title, style: Theme.of(context).textTheme.headlineSmall),
+      const SizedBox(height: 4),
+      Text(
+        subtitle,
+        style: Theme.of(
+          context,
+        ).textTheme.bodyMedium?.copyWith(color: AppColors.mutedText),
+      ),
+      const SizedBox(height: 20),
+      child,
+    ],
+  );
 }
 
 class _Metric {
@@ -315,62 +472,17 @@ class _SummaryCard extends StatelessWidget {
   );
 }
 
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title, this.action});
-  final String title;
-  final String? action;
-  @override
-  Widget build(BuildContext context) => Row(
-    children: [
-      Expanded(
-        child: Text(title, style: Theme.of(context).textTheme.titleLarge),
-      ),
-      if (action != null)
-        Text(
-          action!,
-          style: Theme.of(
-            context,
-          ).textTheme.labelLarge?.copyWith(color: AppColors.primaryGreen),
-        ),
-    ],
-  );
-}
-
-class _FeedingActions extends StatelessWidget {
-  const _FeedingActions({
-    required this.onRecord,
-    required this.onOpenInventory,
+class _ScheduleCard extends StatelessWidget {
+  const _ScheduleCard({
+    required this.values,
+    required this.highlightedName,
+    required this.onChanged,
   });
 
-  final VoidCallback onRecord;
-  final VoidCallback onOpenInventory;
-
-  @override
-  Widget build(BuildContext context) => Row(
-    children: [
-      Expanded(
-        child: FilledButton.icon(
-          onPressed: onRecord,
-          icon: const Icon(Icons.edit_note_rounded),
-          label: const Text('Record feeding'),
-        ),
-      ),
-      const SizedBox(width: 12),
-      Expanded(
-        child: OutlinedButton.icon(
-          onPressed: onOpenInventory,
-          icon: const Icon(Icons.inventory_2_outlined),
-          label: const Text('Feed stock'),
-        ),
-      ),
-    ],
-  );
-}
-
-class _ScheduleCard extends StatelessWidget {
-  const _ScheduleCard({required this.values, required this.onChanged});
   final Map<String, bool> values;
+  final String? highlightedName;
   final void Function(String, bool) onChanged;
+
   @override
   Widget build(BuildContext context) {
     const items = [
@@ -387,6 +499,7 @@ class _ScheduleCard extends StatelessWidget {
               time: items[index].$2,
               pens: items[index].$3,
               checked: values[items[index].$1] ?? false,
+              highlighted: items[index].$1 == highlightedName,
               onChanged: (value) => onChanged(items[index].$1, value),
             ),
             if (index < items.length - 1) const Divider(height: 1),
@@ -403,34 +516,81 @@ class _ScheduleRow extends StatelessWidget {
     required this.time,
     required this.pens,
     required this.checked,
+    required this.highlighted,
     required this.onChanged,
   });
   final String name, time, pens;
   final bool checked;
+  final bool highlighted;
   final ValueChanged<bool> onChanged;
   @override
-  Widget build(BuildContext context) => ListTile(
-    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-    leading: Container(
-      width: 40,
-      height: 40,
-      decoration: BoxDecoration(
-        color: checked ? AppColors.successContainer : AppColors.surfaceMuted,
-        shape: BoxShape.circle,
-      ),
-      child: Icon(
-        checked ? Icons.check_rounded : Icons.schedule_rounded,
-        color: checked ? AppColors.success : AppColors.primaryGreen,
-      ),
+  Widget build(BuildContext context) => Container(
+    decoration: BoxDecoration(
+      color: checked
+          ? AppColors.successContainer.withValues(alpha: .45)
+          : highlighted
+          ? AppColors.warningContainer.withValues(alpha: .55)
+          : null,
+      border: highlighted
+          ? Border.all(color: AppColors.warmGold.withValues(alpha: .5))
+          : null,
+      borderRadius: BorderRadius.circular(14),
     ),
-    title: Text(
-      '$name  ·  $time',
-      style: Theme.of(context).textTheme.titleSmall,
-    ),
-    subtitle: Text(pens),
-    trailing: Checkbox(
-      value: checked,
-      onChanged: (value) => onChanged(value ?? false),
+    child: ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
+      leading: Container(
+        width: 40,
+        height: 40,
+        decoration: BoxDecoration(
+          color: checked
+              ? AppColors.successContainer
+              : highlighted
+              ? AppColors.warningContainer
+              : AppColors.surfaceMuted,
+          shape: BoxShape.circle,
+        ),
+        child: Icon(
+          checked ? Icons.check_rounded : Icons.schedule_rounded,
+          color: checked
+              ? AppColors.success
+              : highlighted
+              ? AppColors.warning
+              : AppColors.primaryGreen,
+        ),
+      ),
+      title: Text(
+        '$name  ·  $time',
+        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+          color: highlighted ? AppColors.deepGreen : null,
+          fontWeight: highlighted ? FontWeight.w700 : null,
+        ),
+      ),
+      subtitle: Text(pens),
+      trailing: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (highlighted && !checked)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              decoration: BoxDecoration(
+                color: AppColors.warningContainer,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: const Text(
+                'Next',
+                style: TextStyle(
+                  color: AppColors.warning,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          Checkbox(
+            value: checked,
+            onChanged: (value) => onChanged(value ?? false),
+          ),
+        ],
+      ),
     ),
   );
 }
@@ -636,6 +796,25 @@ String _stockUnit(List<FeedStock> stock) => stock.isEmpty
     : 'mixed units';
 String _usageUnit(List<FeedUsage> usage, List<FeedStock> stock) =>
     usage.isNotEmpty ? usage.first.unit : _stockUnit(stock);
+String? _nextScheduleName(Map<String, bool> completed) {
+  const schedule = [
+    ('Morning', 6, 30),
+    ('Afternoon', 13, 0),
+    ('Evening', 17, 30),
+  ];
+  final now = DateTime.now();
+  final currentMinutes = now.hour * 60 + now.minute;
+  for (final (name, hour, minute) in schedule) {
+    if (!(completed[name] ?? false) && hour * 60 + minute <= currentMinutes) {
+      return name;
+    }
+  }
+  for (final (name, _, _) in schedule) {
+    if (!(completed[name] ?? false)) return name;
+  }
+  return null;
+}
+
 bool _isToday(DateTime value) {
   final now = DateTime.now();
   return value.year == now.year &&

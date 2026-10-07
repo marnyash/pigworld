@@ -47,6 +47,7 @@ class _BillingPageState extends ConsumerState<BillingPage> {
     return _BillingData(
       plan: currentPlan,
       planCode: farm.subscriptionPlan,
+      farmName: farm.name,
       payments: payments,
     );
   }
@@ -73,7 +74,7 @@ class _BillingPageState extends ConsumerState<BillingPage> {
                   const Icon(Icons.cloud_off_outlined, size: 40),
                   const SizedBox(height: 12),
                   Text(
-                    'Could not load billing details: ${snapshot.error}',
+                    'Could not load billing details. Check your connection and try again.',
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 12),
@@ -96,9 +97,17 @@ class _BillingPageState extends ConsumerState<BillingPage> {
           child: ListView(
             padding: const EdgeInsets.all(20),
             children: [
+              Text(
+                data.farmName,
+                style: Theme.of(context).textTheme.titleMedium,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+              const SizedBox(height: 12),
               _CurrentPlanCard(
                 plan: data.plan,
                 planCode: data.planCode,
+                latestPayment: data.payments.firstOrNull,
                 onChangePlan: () => context.go(AppRoutes.subscription),
               ),
               const SizedBox(height: 24),
@@ -129,11 +138,13 @@ class _BillingData {
   const _BillingData({
     required this.plan,
     required this.planCode,
+    required this.farmName,
     required this.payments,
   });
 
   final Map<String, dynamic>? plan;
   final String? planCode;
+  final String farmName;
   final List<Map<String, dynamic>> payments;
 }
 
@@ -141,11 +152,13 @@ class _CurrentPlanCard extends StatelessWidget {
   const _CurrentPlanCard({
     required this.plan,
     required this.planCode,
+    required this.latestPayment,
     required this.onChangePlan,
   });
 
   final Map<String, dynamic>? plan;
   final String? planCode;
+  final Map<String, dynamic>? latestPayment;
   final VoidCallback onChangePlan;
 
   @override
@@ -155,6 +168,8 @@ class _CurrentPlanCard extends StatelessWidget {
     final amount = plan?['amount'];
     final currency = plan?['currency']?.toString() ?? 'KES';
     final pigLimit = plan?['pig_limit'];
+    final latestStatus = latestPayment?['status']?.toString();
+    final latestStatusColor = _paymentStatusColor(latestStatus);
 
     return Card(
       color: AppColors.primaryContainer,
@@ -167,14 +182,39 @@ class _CurrentPlanCard extends StatelessWidget {
               children: [
                 Icon(Icons.workspace_premium_outlined),
                 SizedBox(width: 8),
-                Text('Current subscription'),
+                Expanded(child: Text('Current subscription')),
               ],
             ),
+            if (latestStatus != null) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: latestStatusColor.withAlpha(24),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Text(
+                  'Latest payment: ${_paymentStatusLabel(latestStatus)}',
+                  style: TextStyle(
+                    color: latestStatusColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 12),
-            Text(planName, style: Theme.of(context).textTheme.headlineSmall),
+            Text(
+              planName,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
             if (description != null && description.isNotEmpty) ...[
               const SizedBox(height: 6),
-              Text(description),
+              Text(description, maxLines: 3, overflow: TextOverflow.ellipsis),
             ],
             if (amount != null) ...[
               const SizedBox(height: 8),
@@ -195,7 +235,7 @@ class _CurrentPlanCard extends StatelessWidget {
             FilledButton.icon(
               onPressed: onChangePlan,
               icon: const Icon(Icons.swap_horiz),
-              label: const Text('Change plan or make a payment'),
+              label: const Text('View plans & payment options'),
             ),
           ],
         ),
@@ -212,34 +252,50 @@ class _PaymentTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final status = payment['status']?.toString() ?? 'unknown';
-    final color = switch (status) {
-      'paid' => AppColors.success,
-      'failed' => AppColors.danger,
-      _ => AppColors.warning,
-    };
+    final color = _paymentStatusColor(status);
     final date = DateTime.tryParse(
       payment['paid_at']?.toString() ?? payment['created_at']?.toString() ?? '',
     );
-    final amount = payment['amount']?.toString() ?? '—';
+    final amount = _formatAmount(payment['amount']);
     final currency = payment['currency']?.toString() ?? '';
     final receipt = payment['receipt']?.toString();
+    final description = payment['description']?.toString();
 
     return Card(
       child: ListTile(
         leading: Icon(Icons.receipt_long_outlined, color: color),
-        title: Text('$amount $currency'),
+        title: Text(
+          '$amount $currency'.trim(),
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
         subtitle: Text(
           [
             payment['plan_code']?.toString() ?? 'Subscription',
             if (date != null) _formatDate(date),
             if (receipt != null && receipt.isNotEmpty) 'Receipt $receipt',
+            if (description != null && description.isNotEmpty) description,
           ].join(' · '),
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
-        trailing: Text(
-          status.toUpperCase(),
-          style: TextStyle(color: color, fontWeight: FontWeight.w700),
+        trailing: Container(
+          constraints: const BoxConstraints(maxWidth: 92),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+          decoration: BoxDecoration(
+            color: color.withAlpha(24),
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Text(
+            _paymentStatusLabel(status),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              color: color,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
         ),
       ),
     );
@@ -248,4 +304,22 @@ class _PaymentTile extends StatelessWidget {
   String _formatDate(DateTime date) =>
       '${date.day.toString().padLeft(2, '0')}/'
       '${date.month.toString().padLeft(2, '0')}/${date.year}';
+}
+
+Color _paymentStatusColor(String? status) => switch (status?.toLowerCase()) {
+  'paid' => AppColors.success,
+  'failed' => AppColors.danger,
+  _ => AppColors.warning,
+};
+
+String _paymentStatusLabel(String status) {
+  final normalized = status.replaceAll('_', ' ').trim();
+  if (normalized.isEmpty) return 'Unknown';
+  return normalized[0].toUpperCase() + normalized.substring(1);
+}
+
+String _formatAmount(Object? value) {
+  final amount = num.tryParse(value?.toString() ?? '');
+  if (amount == null) return '—';
+  return amount.toStringAsFixed(amount % 1 == 0 ? 0 : 2);
 }

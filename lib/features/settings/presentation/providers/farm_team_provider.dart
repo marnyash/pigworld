@@ -4,6 +4,7 @@ import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../data/farm_team_api.dart';
 import '../../domain/entities/farm_join_request.dart';
+import '../../../../security/authorization/roles.dart';
 import 'farm_access_provider.dart';
 
 final farmTeamApiProvider = Provider<FarmTeamApi>(
@@ -30,7 +31,9 @@ class FarmTeamNotifier extends AsyncNotifier<FarmTeamState> {
     final session = ref.watch(authProvider).valueOrNull;
     final myRequests = await ref.watch(farmTeamApiProvider).fetchMyRequests();
     final farmId = session?.selectedFarm?.id;
-    if (farmId == null) return FarmTeamState(myRequests: myRequests);
+    if (farmId == null || session?.user.role != UserRole.farmOwner) {
+      return FarmTeamState(myRequests: myRequests);
+    }
     final farmRequests = await ref
         .watch(farmTeamApiProvider)
         .fetchFarmRequests(farmId);

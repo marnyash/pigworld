@@ -15,6 +15,7 @@ import '../../../notifications/presentation/providers/notifications_provider.dar
 import '../../../notifications/data/notifications_api.dart';
 import '../../../health/presentation/providers/health_providers.dart';
 import '../../../../shared/components/bottom_navigation.dart';
+import '../../../settings/presentation/providers/farm_access_provider.dart';
 import '../providers/farm_overview_provider.dart';
 
 class DashboardPage extends ConsumerStatefulWidget {
@@ -47,8 +48,22 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
     final session = ref.watch(authProvider).valueOrNull;
+    final role = session?.user.role;
+    final access = ref.watch(farmAccessProvider);
+    final permissions =
+        access.valueOrNull?.permissionsFor(session?.user.id ?? '') ??
+        (access.isLoading ? RolePermissions.all[role] ?? const {} : const {});
+    bool allows(AppPermission permission) =>
+        role == UserRole.farmOwner ||
+        role == UserRole.superAdmin ||
+        permissions.contains(permission);
+    final canViewOverview =
+        allows(AppPermission.manageHerd) ||
+        allows(AppPermission.manageFeed) ||
+        allows(AppPermission.viewTasks) ||
+        allows(AppPermission.viewSales);
     final farmId = session?.selectedFarm?.id;
-    final overview = farmId == null
+    final overview = farmId == null || !canViewOverview
         ? const AsyncValue<Map<String, dynamic>>.data({})
         : ref.watch(farmOverviewProvider(farmId));
     final firstName = session?.user.name.split(' ').first ?? 'there';
@@ -60,9 +75,9 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         : liveHerdCount.toInt() > registeredHerdCount
         ? liveHerdCount.toInt()
         : registeredHerdCount;
-    final role = session?.user.role;
-    final isAdmin = role == UserRole.farmOwner;
-    final healthOverview = ref.watch(healthOverviewProvider);
+    final healthOverview = allows(AppPermission.manageHerd)
+        ? ref.watch(healthOverviewProvider)
+        : const AsyncValue<Map<String, dynamic>>.data({});
     final pregnantCount = session?.selectedFarm?.pregnantPigCount ?? 0;
     final vaccinatedCount = healthOverview.valueOrNull?['vaccinated'] ?? 0;
     final notifications =
@@ -75,6 +90,36 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         break;
       }
     }
+    final statCards = <Widget>[
+      if (allows(AppPermission.manageHerd))
+        _StatCard(
+          icon: Icons.pets_outlined,
+          label: l10n.herdSize,
+          value: '$herdCount',
+          color: AppColors.primaryGreen,
+        ),
+      if (allows(AppPermission.manageFeed))
+        _StatCard(
+          icon: Icons.grass_outlined,
+          label: l10n.feedStock,
+          value: overview.valueOrNull?['feed_stock']?.toString() ?? '—',
+          color: AppColors.warning,
+        ),
+      if (allows(AppPermission.viewTasks))
+        _StatCard(
+          icon: Icons.checklist_outlined,
+          label: l10n.tasksDue,
+          value: overview.valueOrNull?['tasks_due']?.toString() ?? '—',
+          color: AppColors.danger,
+        ),
+      if (allows(AppPermission.viewSales))
+        _StatCard(
+          icon: Icons.point_of_sale_outlined,
+          label: l10n.salesThisWeek,
+          value: overview.valueOrNull?['sales_this_week']?.toString() ?? '—',
+          color: AppColors.deepGreen,
+        ),
+    ];
 
     return Scaffold(
       appBar: AppBar(
@@ -199,53 +244,26 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                   ),
                 ],
                 const SizedBox(height: AppDimensions.spacingLarge),
-                _HerdStatusCard(
-                  pregnant: pregnantCount,
-                  vaccinated: vaccinatedCount,
-                  active: herdCount,
-                ),
-                const SizedBox(height: AppDimensions.spacingLarge),
-                GridView.count(
-                  crossAxisCount: 2,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  mainAxisSpacing: AppDimensions.spacingMedium,
-                  crossAxisSpacing: AppDimensions.spacingMedium,
-                  childAspectRatio: 1.0,
-                  children: [
-                    _StatCard(
-                      icon: Icons.pets_outlined,
-                      label: l10n.herdSize,
-                      value: '$herdCount',
-                      color: AppColors.primaryGreen,
-                    ),
-                    _StatCard(
-                      icon: Icons.grass_outlined,
-                      label: l10n.feedStock,
-                      value:
-                          overview.valueOrNull?['feed_stock']?.toString() ??
-                          '—',
-                      color: AppColors.warning,
-                    ),
-                    _StatCard(
-                      icon: Icons.checklist_outlined,
-                      label: l10n.tasksDue,
-                      value:
-                          overview.valueOrNull?['tasks_due']?.toString() ?? '—',
-                      color: AppColors.danger,
-                    ),
-                    _StatCard(
-                      icon: Icons.point_of_sale_outlined,
-                      label: l10n.salesThisWeek,
-                      value:
-                          overview.valueOrNull?['sales_this_week']
-                              ?.toString() ??
-                          '—',
-                      color: AppColors.deepGreen,
-                    ),
-                  ],
-                ),
-                if (registeredHerdCount > 0) ...[
+                if (allows(AppPermission.manageHerd)) ...[
+                  _HerdStatusCard(
+                    pregnant: pregnantCount,
+                    vaccinated: vaccinatedCount,
+                    active: herdCount,
+                  ),
+                  const SizedBox(height: AppDimensions.spacingLarge),
+                ],
+                if (statCards.isNotEmpty)
+                  GridView.count(
+                    crossAxisCount: 2,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    mainAxisSpacing: AppDimensions.spacingMedium,
+                    crossAxisSpacing: AppDimensions.spacingMedium,
+                    childAspectRatio: 1.0,
+                    children: statCards,
+                  ),
+                if (allows(AppPermission.manageHerd) &&
+                    registeredHerdCount > 0) ...[
                   const SizedBox(height: AppDimensions.spacingMedium),
                   _RegisteredHerdBanner(
                     motherPigs: session?.selectedFarm?.motherPigCount ?? 0,
@@ -260,42 +278,35 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                   spacing: AppDimensions.spacingMedium,
                   runSpacing: AppDimensions.spacingMedium,
                   children: [
-                    _QuickAction(
-                      icon: Icons.pets_outlined,
-                      label: l10n.herd,
-                      color: AppColors.pigPink,
-                      onTap: () => context.go(AppRoutes.herd),
-                    ),
-                    _QuickAction(
-                      icon: Icons.grass_outlined,
-                      label: l10n.feed,
-                      color: AppColors.leaf,
-                      onTap: () => context.go(AppRoutes.feed),
-                    ),
-                    _QuickAction(
-                      icon: Icons.check_circle_outline,
-                      label: l10n.tasks,
-                      color: AppColors.warmGold,
-                      onTap: () => context.go(AppRoutes.tasks),
-                    ),
-                    if (isAdmin ||
-                        (role != null &&
-                            RolePermissions.can(
-                              role,
-                              AppPermission.manageFinance,
-                            )))
+                    if (allows(AppPermission.manageHerd))
+                      _QuickAction(
+                        icon: Icons.pets_outlined,
+                        label: l10n.herd,
+                        color: AppColors.pigPink,
+                        onTap: () => context.go(AppRoutes.herd),
+                      ),
+                    if (allows(AppPermission.manageFeed))
+                      _QuickAction(
+                        icon: Icons.grass_outlined,
+                        label: l10n.feed,
+                        color: AppColors.leaf,
+                        onTap: () => context.go(AppRoutes.feed),
+                      ),
+                    if (allows(AppPermission.viewTasks))
+                      _QuickAction(
+                        icon: Icons.check_circle_outline,
+                        label: l10n.tasks,
+                        color: AppColors.warmGold,
+                        onTap: () => context.go(AppRoutes.tasks),
+                      ),
+                    if (allows(AppPermission.manageFinance))
                       _QuickAction(
                         icon: Icons.account_balance_wallet_outlined,
                         label: l10n.finance,
                         color: AppColors.warmGold,
                         onTap: () => context.go(AppRoutes.finance),
                       ),
-                    if (isAdmin ||
-                        (role != null &&
-                            RolePermissions.can(
-                              role,
-                              AppPermission.manageSales,
-                            )))
+                    if (allows(AppPermission.manageSales))
                       _QuickAction(
                         icon: Icons.groups_outlined,
                         label: l10n.customers,
@@ -308,7 +319,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                       color: AppColors.violet,
                       onTap: () => context.go(AppRoutes.support),
                     ),
-                    if (isAdmin)
+                    if (allows(AppPermission.manageMembers))
                       _QuickAction(
                         icon: Icons.group_outlined,
                         label: l10n.teamAndPolicies,

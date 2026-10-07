@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -48,6 +50,10 @@ import '../../shared/widgets/profile_avatar.dart';
 import '../../app/theme/app_colors.dart';
 import 'app_routes.dart';
 import 'route_guard.dart';
+import 'permission_route.dart';
+import '../../features/settings/presentation/providers/farm_access_provider.dart';
+import '../../security/authorization/permissions.dart';
+import '../../security/authorization/roles.dart';
 
 abstract final class AppRouter {
   static final router = GoRouter(
@@ -137,67 +143,115 @@ abstract final class AppRouter {
           ),
           GoRoute(
             path: AppRoutes.herd,
-            builder: (context, state) => const HerdPage(),
+            builder: (context, state) => const PermissionRoute(
+              permission: AppPermission.manageHerd,
+              child: HerdPage(),
+            ),
           ),
           GoRoute(
             path: AppRoutes.health,
-            builder: (context, state) => const HealthPage(),
+            builder: (context, state) => const PermissionRoute(
+              permission: AppPermission.manageHerd,
+              child: HealthPage(),
+            ),
           ),
           GoRoute(
             path: AppRoutes.medication,
-            builder: (context, state) => const MedicationPage(),
+            builder: (context, state) => const PermissionRoute(
+              permission: AppPermission.manageHerd,
+              child: MedicationPage(),
+            ),
           ),
           GoRoute(
             path: AppRoutes.deworming,
-            builder: (context, state) => const DewormingPage(),
+            builder: (context, state) => const PermissionRoute(
+              permission: AppPermission.manageHerd,
+              child: DewormingPage(),
+            ),
           ),
           GoRoute(
             path: AppRoutes.mortality,
-            builder: (context, state) => const MortalityPage(),
+            builder: (context, state) => const PermissionRoute(
+              permission: AppPermission.manageHerd,
+              child: MortalityPage(),
+            ),
           ),
           GoRoute(
             path: AppRoutes.breeding,
-            builder: (context, state) => const BreedingPage(),
+            builder: (context, state) => const PermissionRoute(
+              permission: AppPermission.manageBreeding,
+              child: BreedingPage(),
+            ),
           ),
           GoRoute(
             path: AppRoutes.feed,
-            builder: (context, state) => const FeedPage(),
+            builder: (context, state) => const PermissionRoute(
+              permission: AppPermission.manageFeed,
+              child: FeedPage(),
+            ),
           ),
           GoRoute(
             path: AppRoutes.tasks,
-            builder: (context, state) => const TasksPage(),
+            builder: (context, state) => const PermissionRoute(
+              permission: AppPermission.viewTasks,
+              child: TasksPage(),
+            ),
           ),
           GoRoute(
             path: AppRoutes.finance,
-            builder: (context, state) => const FinancePage(),
+            builder: (context, state) => const PermissionRoute(
+              permission: AppPermission.manageFinance,
+              child: FinancePage(),
+            ),
           ),
           GoRoute(
             path: AppRoutes.growth,
-            builder: (context, state) => const GrowthPage(),
+            builder: (context, state) => const PermissionRoute(
+              permission: AppPermission.manageHerd,
+              child: GrowthPage(),
+            ),
           ),
           GoRoute(
             path: AppRoutes.salesAndExpenses,
-            builder: (context, state) => const SalesPage(),
+            builder: (context, state) => const PermissionRoute(
+              permission: AppPermission.viewSales,
+              child: SalesPage(),
+            ),
           ),
           GoRoute(
             path: AppRoutes.buyers,
-            builder: (context, state) => const BuyersPage(),
+            builder: (context, state) => const PermissionRoute(
+              permission: AppPermission.viewSales,
+              child: BuyersPage(),
+            ),
           ),
           GoRoute(
             path: AppRoutes.inventory,
-            builder: (context, state) => const InventoryPage(),
+            builder: (context, state) => const PermissionRoute(
+              permission: AppPermission.manageFeed,
+              child: InventoryPage(),
+            ),
           ),
           GoRoute(
             path: AppRoutes.reports,
-            builder: (context, state) => const ReportsPage(),
+            builder: (context, state) => const PermissionRoute(
+              permission: AppPermission.viewReports,
+              child: ReportsPage(),
+            ),
           ),
           GoRoute(
             path: AppRoutes.workers,
-            builder: (context, state) => const FarmManagementPage(),
+            builder: (context, state) => const PermissionRoute(
+              permission: AppPermission.manageMembers,
+              child: FarmManagementPage(),
+            ),
           ),
           GoRoute(
             path: AppRoutes.crm,
-            builder: (context, state) => const CrmPage(),
+            builder: (context, state) => const PermissionRoute(
+              permission: AppPermission.manageSales,
+              child: CrmPage(),
+            ),
           ),
           GoRoute(
             path: AppRoutes.notifications,
@@ -213,7 +267,10 @@ abstract final class AppRouter {
           ),
           GoRoute(
             path: AppRoutes.farmManagement,
-            builder: (context, state) => const FarmManagementPage(),
+            builder: (context, state) => const PermissionRoute(
+              permission: AppPermission.manageMembers,
+              child: FarmManagementPage(),
+            ),
           ),
           GoRoute(
             path: AppRoutes.support,
@@ -229,34 +286,66 @@ abstract final class AppRouter {
   );
 }
 
-class NavigationShell extends StatelessWidget {
+class NavigationShell extends ConsumerStatefulWidget {
   const NavigationShell({required this.child, super.key});
 
   final Widget child;
 
   @override
+  ConsumerState<NavigationShell> createState() => _NavigationShellState();
+}
+
+class _NavigationShellState extends ConsumerState<NavigationShell> {
+  Timer? _permissionRefreshTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _permissionRefreshTimer = Timer.periodic(
+      const Duration(minutes: 1),
+      (_) => ref.invalidate(farmAccessProvider),
+    );
+  }
+
+  @override
+  void dispose() {
+    _permissionRefreshTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final location = GoRouterState.of(context).uri.path;
-    final selectedIndex = switch (location) {
-      AppRoutes.herd => 1,
-      AppRoutes.feed => 2,
-      AppRoutes.profile => 3,
-      _ => 0,
-    };
+    final session = ref.watch(authProvider).valueOrNull;
+    final role = session?.user.role;
+    final access = ref.watch(farmAccessProvider);
+    final permissions =
+        access.valueOrNull?.permissionsFor(session?.user.id ?? '') ??
+        (access.isLoading ? RolePermissions.all[role] ?? const {} : const {});
+    final canViewHerd =
+        role == UserRole.farmOwner ||
+        role == UserRole.superAdmin ||
+        permissions.contains(AppPermission.manageHerd);
+    final canViewFeed =
+        role == UserRole.farmOwner ||
+        role == UserRole.superAdmin ||
+        permissions.contains(AppPermission.manageFeed);
+    final bottomRoutes = [
+      AppRoutes.home,
+      if (canViewHerd) AppRoutes.herd,
+      if (canViewFeed) AppRoutes.feed,
+      AppRoutes.profile,
+    ];
+    final selectedIndex = bottomRoutes.indexOf(location);
     return Scaffold(
       key: navigationScaffoldKey,
       drawer: const _AppDrawer(),
-      body: child,
+      body: widget.child,
       bottomNavigationBar: AppBottomNavigation(
-        selectedIndex: selectedIndex,
-        onSelected: (index) => context.go(
-          [
-            AppRoutes.home,
-            AppRoutes.herd,
-            AppRoutes.feed,
-            AppRoutes.profile,
-          ][index],
-        ),
+        selectedIndex: selectedIndex < 0 ? 0 : selectedIndex,
+        showHerd: canViewHerd,
+        showFeed: canViewFeed,
+        onSelected: (index) => context.go(bottomRoutes[index]),
       ),
     );
   }
@@ -271,6 +360,15 @@ class _AppDrawer extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final user = session?.user;
     final farmName = session?.selectedFarm?.name ?? 'Pig World Smart';
+    final role = user?.role;
+    final access = ref.watch(farmAccessProvider);
+    final permissions =
+        access.valueOrNull?.permissionsFor(user?.id ?? '') ??
+        (access.isLoading ? RolePermissions.all[role] ?? const {} : const {});
+    final isOwnerOrAdmin =
+        role == UserRole.farmOwner || role == UserRole.superAdmin;
+    bool allows(AppPermission permission) =>
+        isOwnerOrAdmin || permissions.contains(permission);
     final initials = (user?.name.isNotEmpty ?? false)
         ? user!.name.trim()[0].toUpperCase()
         : '?';
@@ -326,62 +424,69 @@ class _AppDrawer extends ConsumerWidget {
                     title: l10n.dashboard,
                     route: AppRoutes.home,
                   ),
-                  _ListTile(
-                    icon: Icons.pets_outlined,
-                    title: l10n.herd,
-                    route: AppRoutes.herd,
-                  ),
-                  _ListTile(
-                    icon: Icons.restaurant_outlined,
-                    title: l10n.feed,
-                    route: AppRoutes.feed,
-                  ),
-                  _ListTile(
-                    icon: Icons.health_and_safety_outlined,
-                    title: l10n.health,
-                    route: AppRoutes.health,
-                  ),
-                  _ListTile(
-                    icon: Icons.medication_outlined,
-                    title: 'Medication',
-                    route: AppRoutes.medication,
-                  ),
-                  _ListTile(
-                    icon: Icons.health_and_safety,
-                    title: 'Deworming',
-                    route: AppRoutes.deworming,
-                  ),
-                  _ListTile(
-                    icon: Icons.warning_amber_outlined,
-                    title: 'Mortality',
-                    route: AppRoutes.mortality,
-                  ),
-                  _ListTile(
-                    icon: Icons.monitor_weight_outlined,
-                    title: l10n.growth,
-                    route: AppRoutes.growth,
-                  ),
-                  _ListTile(
-                    icon: Icons.inventory_2_outlined,
-                    title: l10n.inventory,
-                    route: AppRoutes.inventory,
-                  ),
-                  _ListTile(
-                    icon: Icons.favorite_outline,
-                    title: l10n.breeding,
-                    route: AppRoutes.breeding,
-                  ),
-                  _ListTile(
-                    icon: Icons.point_of_sale_outlined,
-                    title: l10n.sales,
-                    route: AppRoutes.salesAndExpenses,
-                  ),
+                  if (allows(AppPermission.manageHerd)) ...[
+                    _ListTile(
+                      icon: Icons.pets_outlined,
+                      title: l10n.herd,
+                      route: AppRoutes.herd,
+                    ),
+                    _ListTile(
+                      icon: Icons.health_and_safety_outlined,
+                      title: l10n.health,
+                      route: AppRoutes.health,
+                    ),
+                    _ListTile(
+                      icon: Icons.medication_outlined,
+                      title: 'Medication',
+                      route: AppRoutes.medication,
+                    ),
+                    _ListTile(
+                      icon: Icons.health_and_safety,
+                      title: 'Deworming',
+                      route: AppRoutes.deworming,
+                    ),
+                    _ListTile(
+                      icon: Icons.warning_amber_outlined,
+                      title: 'Mortality',
+                      route: AppRoutes.mortality,
+                    ),
+                    _ListTile(
+                      icon: Icons.monitor_weight_outlined,
+                      title: l10n.growth,
+                      route: AppRoutes.growth,
+                    ),
+                  ],
+                  if (allows(AppPermission.manageFeed)) ...[
+                    _ListTile(
+                      icon: Icons.restaurant_outlined,
+                      title: l10n.feed,
+                      route: AppRoutes.feed,
+                    ),
+                    _ListTile(
+                      icon: Icons.inventory_2_outlined,
+                      title: l10n.inventory,
+                      route: AppRoutes.inventory,
+                    ),
+                  ],
+                  if (allows(AppPermission.manageBreeding))
+                    _ListTile(
+                      icon: Icons.favorite_outline,
+                      title: l10n.breeding,
+                      route: AppRoutes.breeding,
+                    ),
+                  if (allows(AppPermission.viewSales))
+                    _ListTile(
+                      icon: Icons.point_of_sale_outlined,
+                      title: l10n.sales,
+                      route: AppRoutes.salesAndExpenses,
+                    ),
                   _DrawerSectionLabel(l10n.workspace),
-                  _ListTile(
-                    icon: Icons.assessment_outlined,
-                    title: l10n.reports,
-                    route: AppRoutes.reports,
-                  ),
+                  if (allows(AppPermission.viewReports))
+                    _ListTile(
+                      icon: Icons.assessment_outlined,
+                      title: l10n.reports,
+                      route: AppRoutes.reports,
+                    ),
                   _ListTile(
                     icon: Icons.notifications_outlined,
                     title: l10n.notifications,
@@ -392,11 +497,12 @@ class _AppDrawer extends ConsumerWidget {
                     title: l10n.customerSupport,
                     route: AppRoutes.support,
                   ),
-                  _ListTile(
-                    icon: Icons.manage_accounts_outlined,
-                    title: l10n.myTeam,
-                    route: AppRoutes.farmManagement,
-                  ),
+                  if (allows(AppPermission.manageMembers))
+                    _ListTile(
+                      icon: Icons.manage_accounts_outlined,
+                      title: l10n.myTeam,
+                      route: AppRoutes.farmManagement,
+                    ),
                   _ListTile(
                     icon: Icons.settings_outlined,
                     title: l10n.settings,

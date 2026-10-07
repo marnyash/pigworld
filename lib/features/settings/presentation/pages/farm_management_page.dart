@@ -9,6 +9,7 @@ import '../../../../security/authorization/roles.dart';
 import '../../../auth/domain/entities/session.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/entities/farm_join_request.dart';
+import '../../domain/entities/farm_member.dart';
 import '../providers/farm_team_provider.dart';
 import '../providers/farm_access_provider.dart';
 
@@ -22,6 +23,13 @@ class FarmManagementPage extends ConsumerWidget {
     final access = ref.watch(farmAccessProvider);
     final team = ref.watch(farmTeamProvider);
     final isOwner = role == UserRole.farmOwner;
+    final canViewMembers =
+        isOwner ||
+        (session != null &&
+            (access.valueOrNull
+                    ?.permissionsFor(session.user.id)
+                    .contains(AppPermission.manageMembers) ??
+                false));
     return Scaffold(
       appBar: AppBar(title: const Text('My team')),
       body: RefreshIndicator(
@@ -129,6 +137,8 @@ class FarmManagementPage extends ConsumerWidget {
             Text(
               isOwner
                   ? (session?.selectedFarm?.name ?? 'Your farms')
+                  : canViewMembers
+                  ? 'People with access'
                   : 'Find a farm to work with',
               style: Theme.of(context).textTheme.headlineSmall,
             ),
@@ -136,9 +146,11 @@ class FarmManagementPage extends ConsumerWidget {
             Text(
               isOwner
                   ? 'Manage members, review join requests, and create additional farms.'
+                  : canViewMembers
+                  ? 'View the people who have access to this farm.'
                   : 'Send a request to a farm owner. You can join after they approve it.',
             ),
-            if (!isOwner) ...[
+            if (!canViewMembers) ...[
               const SizedBox(height: 20),
               _JoinFarmCard(ref: ref),
               const SizedBox(height: 24),
@@ -235,13 +247,13 @@ class FarmManagementPage extends ConsumerWidget {
               ),
             ],
             const SizedBox(height: 20),
-            if (isOwner && session?.selectedFarm != null)
+            if (canViewMembers && session?.selectedFarm != null)
               Text(
                 'People with access',
                 style: Theme.of(context).textTheme.titleLarge,
               ),
             const SizedBox(height: 8),
-            if (isOwner && session?.selectedFarm != null)
+            if (canViewMembers && session?.selectedFarm != null)
               access.when(
                 loading: () => const Center(
                   child: Padding(
@@ -255,97 +267,119 @@ class FarmManagementPage extends ConsumerWidget {
                 ),
                 data: (state) => Column(
                   children: [
-                    for (final member in state.members) ...[
+                    for (final member in state.members)
                       Card(
                         clipBehavior: Clip.antiAlias,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 6,
-                          ),
-                          child: ListTile(
-                            leading: CircleAvatar(
-                              backgroundColor: AppColors.primaryGreen
-                                  .withValues(alpha: 0.12),
-                              foregroundColor: AppColors.deepGreen,
-                              child: Text(
-                                member.name.trim().isEmpty
-                                    ? '?'
-                                    : member.name.trim()[0].toUpperCase(),
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.w800,
-                                ),
-                              ),
-                            ),
-                            title: Text(
-                              member.name,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            subtitle: Padding(
-                              padding: const EdgeInsets.only(top: 5),
-                              child: Text(member.email),
-                            ),
-                            trailing: Chip(
-                              visualDensity: VisualDensity.compact,
-                              side: BorderSide.none,
-                              backgroundColor: Theme.of(
-                                context,
-                              ).colorScheme.secondaryContainer,
-                              label: Text(_roleName(member.role)),
-                            ),
-                          ),
-                        ),
-                      ),
-                      if (isOwner && member.role != UserRole.farmOwner)
-                        Card(
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 8),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Padding(
-                                  padding: EdgeInsets.symmetric(horizontal: 16),
-                                  child: Text('Policies'),
-                                ),
-                                for (final policy in const [
-                                  (AppPermission.manageHerd, 'Manage herd'),
-                                  (
-                                    AppPermission.manageBreeding,
-                                    'Manage breeding',
-                                  ),
-                                  (AppPermission.manageFeed, 'Manage feed'),
-                                  (
-                                    AppPermission.manageFinance,
-                                    'Manage finances',
-                                  ),
-                                  (AppPermission.manageSales, 'Manage sales'),
-                                  (AppPermission.viewReports, 'View reports'),
-                                  (
-                                    AppPermission.manageMembers,
-                                    'Manage team members',
-                                  ),
-                                ])
-                                  CheckboxListTile(
-                                    dense: true,
-                                    value: member.permissions.contains(
-                                      policy.$1,
+                        child: isOwner
+                            ? ExpansionTile(
+                                leading: CircleAvatar(
+                                  backgroundColor: AppColors.primaryGreen
+                                      .withValues(alpha: 0.12),
+                                  foregroundColor: AppColors.deepGreen,
+                                  child: Text(
+                                    member.name.trim().isEmpty
+                                        ? '?'
+                                        : member.name.trim()[0].toUpperCase(),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w800,
                                     ),
-                                    title: Text(policy.$2),
-                                    onChanged: (value) => ref
-                                        .read(farmAccessProvider.notifier)
-                                        .togglePermission(
-                                          member.id,
+                                  ),
+                                ),
+                                title: Text(
+                                  member.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  '${member.email}\n${_roleName(member.role)}',
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                children: [
+                                  if (member.role == UserRole.farmOwner)
+                                    const ListTile(
+                                      dense: true,
+                                      title: Text(
+                                        'Farm owners always have full access.',
+                                      ),
+                                    )
+                                  else ...[
+                                    const Divider(height: 1),
+                                    for (final policy in const [
+                                      (
+                                        AppPermission.manageHerd,
+                                        'Herd & animal health',
+                                      ),
+                                      (
+                                        AppPermission.manageBreeding,
+                                        'Breeding',
+                                      ),
+                                      (
+                                        AppPermission.manageFeed,
+                                        'Feed & inventory',
+                                      ),
+                                      (AppPermission.manageFinance, 'Finances'),
+                                      (
+                                        AppPermission.viewSales,
+                                        'View sales & customers',
+                                      ),
+                                      (
+                                        AppPermission.manageSales,
+                                        'Manage sales',
+                                      ),
+                                      (AppPermission.viewTasks, 'View tasks'),
+                                      (
+                                        AppPermission.manageTasks,
+                                        'Manage tasks',
+                                      ),
+                                      (
+                                        AppPermission.viewReports,
+                                        'View reports',
+                                      ),
+                                      (
+                                        AppPermission.manageMembers,
+                                        'Manage team members',
+                                      ),
+                                    ])
+                                      CheckboxListTile(
+                                        dense: true,
+                                        value: member.permissions.contains(
+                                          policy.$1,
+                                        ),
+                                        title: Text(policy.$2),
+                                        onChanged: (value) => _updatePermission(
+                                          context,
+                                          ref,
+                                          member,
                                           policy.$1,
                                           value ?? false,
                                         ),
+                                      ),
+                                  ],
+                                ],
+                              )
+                            : ListTile(
+                                leading: CircleAvatar(
+                                  backgroundColor: AppColors.primaryGreen
+                                      .withValues(alpha: 0.12),
+                                  foregroundColor: AppColors.deepGreen,
+                                  child: Text(
+                                    member.name.trim().isEmpty
+                                        ? '?'
+                                        : member.name.trim()[0].toUpperCase(),
                                   ),
-                              ],
-                            ),
-                          ),
-                        ),
-                    ],
+                                ),
+                                title: Text(member.name),
+                                subtitle: Text(
+                                  '${member.email}\n${_roleName(member.role)}',
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                      ),
                   ],
                 ),
               ),
@@ -353,6 +387,25 @@ class FarmManagementPage extends ConsumerWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _updatePermission(
+    BuildContext context,
+    WidgetRef ref,
+    FarmMember member,
+    AppPermission permission,
+    bool allowed,
+  ) async {
+    try {
+      await ref
+          .read(farmAccessProvider.notifier)
+          .togglePermission(member.id, permission, allowed);
+    } on Object catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not update policy: $error')),
+      );
+    }
   }
 
   static Future<void> _showAddFarmDialog(

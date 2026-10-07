@@ -55,6 +55,16 @@ class FarmAccessNotifier extends AsyncNotifier<FarmAccessState> {
     final updatedPermissions = allowed
         ? {...member.permissions, permission}
         : member.permissions.difference({permission});
+    if (permission == AppPermission.manageSales && allowed) {
+      updatedPermissions.add(AppPermission.viewSales);
+    } else if (permission == AppPermission.viewSales && !allowed) {
+      updatedPermissions.remove(AppPermission.manageSales);
+    }
+    if (permission == AppPermission.manageTasks && allowed) {
+      updatedPermissions.add(AppPermission.viewTasks);
+    } else if (permission == AppPermission.viewTasks && !allowed) {
+      updatedPermissions.remove(AppPermission.manageTasks);
+    }
 
     state = AsyncData(
       FarmAccessState(
@@ -71,10 +81,10 @@ class FarmAccessNotifier extends AsyncNotifier<FarmAccessState> {
       await ref
           .read(farmMembersApiProvider)
           .updatePermissions(farmId, memberId, updatedPermissions);
-    } catch (_) {
-      // Roll back optimistic update on failure by refetching from the server.
+    } on Object {
       state = AsyncData(current);
       ref.invalidateSelf();
+      rethrow;
     }
   }
 
