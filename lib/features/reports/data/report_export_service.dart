@@ -38,6 +38,9 @@ class ReportExportService {
       case 'xlsx':
         await _writeXlsx(file, data);
         break;
+      case 'doc':
+        await file.writeAsString(_buildWordDocument(reportName, data));
+        break;
       default:
         await file.writeAsString(_buildTextReport(data));
     }
@@ -72,6 +75,8 @@ class ReportExportService {
         return 'txt';
       case 'xlsx':
         return 'xlsx';
+      case 'doc':
+        return 'doc';
       default:
         return 'txt';
     }
@@ -84,44 +89,28 @@ class ReportExportService {
   ) async {
     final pdf = pw.Document();
 
+    final records = _records(data);
     pdf.addPage(
-      pw.Page(
-        build: (pw.Context context) {
-          final rows = <pw.TableRow>[
-            pw.TableRow(
-              children: [
-                pw.Text(
-                  'Field',
-                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-                ),
-                pw.Text(
-                  'Value',
-                  style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
-                ),
-              ],
-            ),
-            ...data.entries.map(
-              (entry) => pw.TableRow(
-                children: [pw.Text(entry.key), pw.Text(entry.value.toString())],
-              ),
-            ),
-          ];
-
-          return pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              pw.Text(
-                reportName,
-                style: pw.TextStyle(
-                  fontSize: 20,
-                  fontWeight: pw.FontWeight.bold,
+      pw.MultiPage(
+        build: (context) => [
+          pw.Text(
+            reportName,
+            style: pw.TextStyle(fontSize: 20, fontWeight: pw.FontWeight.bold),
+          ),
+          pw.SizedBox(height: 8),
+          ...data.entries
+              .where((entry) => entry.key != 'records')
+              .map(
+                (entry) => pw.Padding(
+                  padding: const pw.EdgeInsets.only(bottom: 4),
+                  child: pw.Text('${entry.key}: ${entry.value}'),
                 ),
               ),
-              pw.SizedBox(height: 20),
-              pw.Table(border: pw.TableBorder.all(), children: rows),
-            ],
-          );
-        },
+          if (records.isNotEmpty) ...[
+            pw.SizedBox(height: 12),
+            _pdfRecordsTable(records),
+          ],
+        ],
       ),
     );
 
@@ -130,14 +119,37 @@ class ReportExportService {
 
   Future<void> _writeXlsx(File file, Map<String, dynamic> data) async {
     final excel = Excel.createExcel();
-    final sheet = excel['Report'];
-    sheet.appendRow([TextCellValue('Field'), TextCellValue('Value')]);
-
-    for (final entry in data.entries) {
-      sheet.appendRow([
-        TextCellValue(entry.key),
-        TextCellValue(entry.value.toString()),
-      ]);
+    final records = _records(data);
+    if (records.isEmpty) {
+      final sheet = excel['Report'];
+      sheet.appendRow([TextCellValue('Field'), TextCellValue('Value')]);
+      for (final entry in data.entries) {
+        sheet.appendRow([
+          TextCellValue(entry.key),
+          TextCellValue(entry.value.toString()),
+        ]);
+      }
+    } else {
+      final summary = excel['Summary'];
+      summary.appendRow([TextCellValue('Field'), TextCellValue('Value')]);
+      for (final entry in data.entries.where(
+        (entry) => entry.key != 'records',
+      )) {
+        summary.appendRow([
+          TextCellValue(entry.key),
+          TextCellValue(entry.value.toString()),
+        ]);
+      }
+      final columns = _recordColumns(records);
+      final rows = excel['Records'];
+      rows.appendRow(columns.map(TextCellValue.new).toList());
+      for (final record in records) {
+        rows.appendRow(
+          columns
+              .map((column) => TextCellValue('${record[column] ?? ''}'))
+              .toList(),
+        );
+      }
     }
 
     final bytes = excel.save();
@@ -147,6 +159,88 @@ class ReportExportService {
 
     await file.writeAsBytes(bytes);
   }
+
+  String _buildWordDocument(String reportName, Map<String, dynamic> data) {
+    final records = _records(data);
+    final buffer = StringBuffer()
+      ..writeln('<!doctype html>')
+      ..writeln(
+        '<html><head><meta charset="utf-8"><meta http-equiv="Content-Type" content="application/msword; charset=utf-8"></head><body>',
+      )
+      ..writeln('<h1>${_escapeHtml(reportName)}</h1>');
+    for (final entry in data.entries.where((entry) => entry.key != 'records')) {
+      buffer.writeln(
+        '<p><strong>${_escapeHtml(entry.key)}:</strong> ${_escapeHtml(entry.value.toString())}</p>',
+      );
+    }
+    if (records.isNotEmpty) {
+      buffer.writeln(
+        '<table border="1" cellspacing="0" cellpadding="5"><thead><tr>',
+      );
+      for (final column in _recordColumns(records)) {
+        buffer.writeln('<th>${_escapeHtml(column)}</th>');
+      }
+      buffer.writeln('</tr></thead><tbody>');
+      for (final record in records) {
+        buffer.writeln('<tr>');
+        for (final column in _recordColumns(records)) {
+          buffer.writeln('<td>${_escapeHtml('${record[column] ?? ''}')}</td>');
+        }
+        buffer.writeln('</tr>');
+      }
+      buffer.writeln('</tbody></table>');
+    }
+    buffer.writeln('</body></html>');
+    return buffer.toString();
+  }
+
+  pw.Widget _pdfRecordsTable(List<Map<String, dynamic>> records) {
+    final columns = _recordColumns(records);
+    return pw.Table(
+      border: pw.TableBorder.all(),
+      children: [
+        pw.TableRow(
+          children: columns
+              .map(
+                (column) => pw.Padding(
+                  padding: const pw.EdgeInsets.all(4),
+                  child: pw.Text(
+                    column,
+                    style: pw.TextStyle(fontWeight: pw.FontWeight.bold),
+                  ),
+                ),
+              )
+              .toList(),
+        ),
+        for (final record in records)
+          pw.TableRow(
+            children: columns
+                .map(
+                  (column) => pw.Padding(
+                    padding: const pw.EdgeInsets.all(4),
+                    child: pw.Text('${record[column] ?? ''}'),
+                  ),
+                )
+                .toList(),
+          ),
+      ],
+    );
+  }
+
+  List<Map<String, dynamic>> _records(Map<String, dynamic> data) =>
+      (data['records'] as List<dynamic>? ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .toList(growable: false);
+
+  List<String> _recordColumns(List<Map<String, dynamic>> records) =>
+      {for (final record in records) ...record.keys}.toList(growable: false);
+
+  String _escapeHtml(String value) => value
+      .replaceAll('&', '&amp;')
+      .replaceAll('<', '&lt;')
+      .replaceAll('>', '&gt;')
+      .replaceAll('"', '&quot;')
+      .replaceAll("'", '&#39;');
 
   String _buildCsv(Map<String, dynamic> data) {
     final rows = [

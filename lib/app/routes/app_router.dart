@@ -441,16 +441,6 @@ class _AppDrawer extends ConsumerWidget {
                       route: AppRoutes.medication,
                     ),
                     _ListTile(
-                      icon: Icons.health_and_safety,
-                      title: 'Deworming',
-                      route: AppRoutes.deworming,
-                    ),
-                    _ListTile(
-                      icon: Icons.warning_amber_outlined,
-                      title: 'Mortality',
-                      route: AppRoutes.mortality,
-                    ),
-                    _ListTile(
                       icon: Icons.monitor_weight_outlined,
                       title: l10n.growth,
                       route: AppRoutes.growth,

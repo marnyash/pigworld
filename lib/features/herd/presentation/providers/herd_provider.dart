@@ -1,3 +1,5 @@
+import 'dart:typed_data';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../features/auth/presentation/providers/auth_providers.dart';
@@ -24,6 +26,7 @@ class HerdNotifier extends AsyncNotifier<List<Animal>> {
   Future<void> createSow({
     required String tag,
     DateTime? birthDate,
+    double? weightKg,
     String? notes,
   }) async {
     final farmId = ref.read(authProvider).valueOrNull?.selectedFarm?.id;
@@ -34,10 +37,40 @@ class HerdNotifier extends AsyncNotifier<List<Animal>> {
           farmId: farmId,
           tag: tag,
           birthDate: birthDate,
+          weightKg: weightKg,
           notes: notes,
         );
     ref.invalidateSelf();
     await future;
+  }
+
+  Future<void> createAnimal({
+    required String tag,
+    required String type,
+    required String sex,
+    DateTime? birthDate,
+    double? weightKg,
+    String? notes,
+    Uint8List? imageBytes,
+    String? imageName,
+  }) async {
+    final farmId = ref.read(authProvider).valueOrNull?.selectedFarm?.id;
+    if (farmId == null) throw StateError('No farm selected.');
+    final animal = await ref
+        .read(herdApiProvider)
+        .createAnimal(
+          farmId: farmId,
+          tag: tag,
+          type: type,
+          sex: sex,
+          birthDate: birthDate,
+          weightKg: weightKg,
+          notes: notes,
+          imageBytes: imageBytes,
+          imageName: imageName,
+        );
+    final animals = state.valueOrNull ?? const <Animal>[];
+    state = AsyncData([animal, ...animals]);
   }
 
   Future<void> updateAnimal({
@@ -45,7 +78,10 @@ class HerdNotifier extends AsyncNotifier<List<Animal>> {
     String? tag,
     String? status,
     DateTime? birthDate,
+    double? weightKg,
     String? notes,
+    Uint8List? imageBytes,
+    String? imageName,
   }) async {
     final farmId = ref.read(authProvider).valueOrNull?.selectedFarm?.id;
     if (farmId == null) throw StateError('No farm selected.');
@@ -57,7 +93,10 @@ class HerdNotifier extends AsyncNotifier<List<Animal>> {
           tag: tag,
           status: status,
           birthDate: birthDate,
+          weightKg: weightKg,
           notes: notes,
+          imageBytes: imageBytes,
+          imageName: imageName,
         );
     ref.invalidateSelf();
     await future;

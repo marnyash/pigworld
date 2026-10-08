@@ -1,5 +1,8 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
@@ -7,6 +10,7 @@ import '../../../../l10n/generated/app_localizations.dart';
 import '../../../../shared/components/bottom_navigation.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../health/presentation/providers/health_providers.dart';
+import '../../../reports/presentation/widgets/herd_reports_browser.dart';
 import '../../domain/entities/animal.dart';
 import '../providers/herd_provider.dart';
 
@@ -39,7 +43,7 @@ class HerdPage extends ConsumerWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddSowDialog(context, ref),
+        onPressed: () => _showAddAnimalDialog(context, ref),
         icon: const Icon(Icons.add),
         label: Text(l10n.addPig),
       ),
@@ -95,14 +99,12 @@ class HerdPage extends ConsumerWidget {
                               (status) => Padding(
                                 padding: const EdgeInsets.only(right: 8),
                                 child: FilterChip(
-                                  label: Text(
-                                    switch (status) {
-                                      'all' => l10n.allPigs,
-                                      'active' => l10n.active,
-                                      'sold' => l10n.sold,
-                                      _ => l10n.deceased,
-                                    },
-                                  ),
+                                  label: Text(switch (status) {
+                                    'all' => l10n.allPigs,
+                                    'active' => l10n.active,
+                                    'sold' => l10n.sold,
+                                    _ => l10n.deceased,
+                                  }),
                                   selected: statusFilter == status,
                                   onSelected: (_) => setLocalState(
                                     () => statusFilter = status,
@@ -140,7 +142,9 @@ class HerdPage extends ConsumerWidget {
                     _HerdStatusSummary(
                       pregnant: pregnantCount,
                       vaccinated: vaccinatedCount,
-                      active: animals.where((animal) => animal.status == 'active').length,
+                      active: animals
+                          .where((animal) => animal.status == 'active')
+                          .length,
                     ),
                     if (registeredHerdCount > 0) ...[
                       const SizedBox(height: AppDimensions.spacingMedium),
@@ -150,6 +154,9 @@ class HerdPage extends ConsumerWidget {
                         pregnantPigs: registeredFarm?.pregnantPigCount ?? 0,
                       ),
                     ],
+                    const SizedBox(height: AppDimensions.spacingLarge),
+                    const HerdReportsBrowser(),
+                    const SizedBox(height: AppDimensions.spacingLarge),
                     const SizedBox(height: AppDimensions.spacingLarge),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -192,13 +199,36 @@ class HerdPage extends ConsumerWidget {
                         ),
                       )
                     else
-                      ...filteredAnimals.map(
-                        (animal) => _AnimalCard(
-                          animal: animal,
-                          onEdit: () =>
-                              _showEditAnimalDialog(context, ref, animal),
-                          onArchive: () => _archiveAnimal(context, ref, animal),
-                        ),
+                      LayoutBuilder(
+                        builder: (context, constraints) {
+                          final columns = constraints.maxWidth >= 700
+                              ? 3
+                              : constraints.maxWidth >= 380
+                              ? 2
+                              : 1;
+                          return GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: filteredAnimals.length,
+                            gridDelegate:
+                                SliverGridDelegateWithFixedCrossAxisCount(
+                                  crossAxisCount: columns,
+                                  crossAxisSpacing: AppDimensions.spacingMedium,
+                                  mainAxisSpacing: AppDimensions.spacingMedium,
+                                  childAspectRatio: columns == 1 ? 2.1 : 0.78,
+                                ),
+                            itemBuilder: (context, index) {
+                              final animal = filteredAnimals[index];
+                              return _AnimalCard(
+                                animal: animal,
+                                onEdit: () =>
+                                    _showEditAnimalDialog(context, ref, animal),
+                                onArchive: () =>
+                                    _archiveAnimal(context, ref, animal),
+                              );
+                            },
+                          );
+                        },
                       ),
                   ],
                 ),
@@ -210,24 +240,43 @@ class HerdPage extends ConsumerWidget {
     );
   }
 
-  Future<void> _showAddSowDialog(BuildContext context, WidgetRef ref) async {
+  Future<void> _showAddAnimalDialog(BuildContext context, WidgetRef ref) async {
     await showDialog<void>(
       context: context,
-      builder: (dialogContext) => _AddSowDialog(
-        onSave: (tag, birthDate, notes) async {
-          try {
-            await ref
-                .read(herdProvider.notifier)
-                .createSow(tag: tag, birthDate: birthDate, notes: notes);
-            if (dialogContext.mounted) Navigator.pop(dialogContext);
-          } catch (error) {
-            if (context.mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Could not add sow: $error')),
-              );
-            }
-          }
-        },
+      builder: (dialogContext) => _AddAnimalDialog(
+        onSave:
+            (
+              tag,
+              type,
+              sex,
+              birthDate,
+              weightKg,
+              notes,
+              image,
+              imageName,
+            ) async {
+              try {
+                await ref
+                    .read(herdProvider.notifier)
+                    .createAnimal(
+                      tag: tag,
+                      type: type,
+                      sex: sex,
+                      birthDate: birthDate,
+                      weightKg: weightKg,
+                      notes: notes,
+                      imageBytes: image,
+                      imageName: imageName,
+                    );
+                if (dialogContext.mounted) Navigator.pop(dialogContext);
+              } catch (error) {
+                if (context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Could not add pig: $error')),
+                  );
+                }
+              }
+            },
       ),
     );
   }
@@ -275,71 +324,134 @@ class HerdPage extends ConsumerWidget {
   ) async {
     final tagController = TextEditingController(text: animal.tag);
     final notesController = TextEditingController(text: animal.notes ?? '');
+    final weightController = TextEditingController(
+      text: animal.weightKg?.toString() ?? '',
+    );
     String status = animal.status;
+    XFile? image;
     try {
       await showDialog<void>(
         context: context,
-        builder: (dialogContext) => AlertDialog(
-          title: Text('Edit ${animal.tag}'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: tagController,
-                decoration: const InputDecoration(labelText: 'Tag'),
-              ),
-              DropdownButtonFormField<String>(
-                initialValue: status,
-                items: const [
-                  DropdownMenuItem(value: 'active', child: Text('Active')),
-                  DropdownMenuItem(value: 'sold', child: Text('Sold')),
-                  DropdownMenuItem(value: 'deceased', child: Text('Deceased')),
+        builder: (dialogContext) => StatefulBuilder(
+          builder: (context, setState) => AlertDialog(
+            title: Text('Edit ${animal.tag}'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: tagController,
+                    decoration: const InputDecoration(labelText: 'Tag'),
+                  ),
+                  DropdownButtonFormField<String>(
+                    initialValue: status,
+                    items: const [
+                      DropdownMenuItem(value: 'active', child: Text('Active')),
+                      DropdownMenuItem(value: 'sold', child: Text('Sold')),
+                      DropdownMenuItem(
+                        value: 'deceased',
+                        child: Text('Deceased'),
+                      ),
+                    ],
+                    onChanged: (value) => status = value ?? status,
+                    decoration: const InputDecoration(labelText: 'Status'),
+                  ),
+                  TextField(
+                    controller: notesController,
+                    decoration: const InputDecoration(labelText: 'Notes'),
+                  ),
+                  TextField(
+                    controller: weightController,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
+                    decoration: const InputDecoration(labelText: 'Weight (kg)'),
+                  ),
+                  const SizedBox(height: 12),
+                  if (image != null)
+                    FutureBuilder(
+                      future: image!.readAsBytes(),
+                      builder: (context, snapshot) => snapshot.hasData
+                          ? Image.memory(
+                              snapshot.data!,
+                              height: 120,
+                              fit: BoxFit.cover,
+                            )
+                          : const SizedBox(
+                              height: 120,
+                              child: Center(child: CircularProgressIndicator()),
+                            ),
+                    )
+                  else if (animal.imageUrl != null)
+                    Image.network(
+                      animal.imageUrl!,
+                      height: 120,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, _, _) =>
+                          const Icon(Icons.pets_outlined, size: 48),
+                    )
+                  else
+                    const Icon(Icons.pets_outlined, size: 48),
+                  TextButton.icon(
+                    onPressed: () async {
+                      final picked = await ImagePicker().pickImage(
+                        source: ImageSource.gallery,
+                        maxWidth: 1600,
+                        imageQuality: 80,
+                      );
+                      if (picked != null) setState(() => image = picked);
+                    },
+                    icon: const Icon(Icons.add_a_photo_outlined),
+                    label: Text(
+                      image == null ? 'Change photo' : 'Choose another photo',
+                    ),
+                  ),
                 ],
-                onChanged: (value) => status = value ?? status,
-                decoration: const InputDecoration(labelText: 'Status'),
               ),
-              TextField(
-                controller: notesController,
-                decoration: const InputDecoration(labelText: 'Notes'),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () async {
+                  if (tagController.text.trim().isEmpty) return;
+                  try {
+                    await ref
+                        .read(herdProvider.notifier)
+                        .updateAnimal(
+                          animalId: animal.id,
+                          tag: tagController.text,
+                          status: status,
+                          weightKg: double.tryParse(weightController.text),
+                          notes: notesController.text,
+                          imageBytes: image == null
+                              ? null
+                              : await image!.readAsBytes(),
+                          imageName: image?.name,
+                        );
+                    if (dialogContext.mounted) Navigator.pop(dialogContext);
+                  } catch (error) {
+                    if (dialogContext.mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Could not update animal: $error'),
+                        ),
+                      );
+                    }
+                  }
+                },
+                child: const Text('Save'),
               ),
             ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () async {
-                if (tagController.text.trim().isEmpty) return;
-                try {
-                  await ref
-                      .read(herdProvider.notifier)
-                      .updateAnimal(
-                        animalId: animal.id,
-                        tag: tagController.text,
-                        status: status,
-                        notes: notesController.text,
-                      );
-                  if (dialogContext.mounted) Navigator.pop(dialogContext);
-                } catch (error) {
-                  if (dialogContext.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text('Could not update animal: $error'),
-                      ),
-                    );
-                  }
-                }
-              },
-              child: const Text('Save'),
-            ),
-          ],
         ),
       );
     } finally {
       tagController.dispose();
       notesController.dispose();
+      weightController.dispose();
     }
   }
 }
@@ -358,9 +470,21 @@ class _HerdStatusSummary extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final items = [
-      _HerdStatusMetric(label: AppLocalizations.of(context).pregnant, value: '$pregnant', color: AppColors.pigPink),
-      _HerdStatusMetric(label: AppLocalizations.of(context).vaccinated, value: '$vaccinated', color: AppColors.info),
-      _HerdStatusMetric(label: AppLocalizations.of(context).active, value: '$active', color: AppColors.success),
+      _HerdStatusMetric(
+        label: AppLocalizations.of(context).pregnant,
+        value: '$pregnant',
+        color: AppColors.pigPink,
+      ),
+      _HerdStatusMetric(
+        label: AppLocalizations.of(context).vaccinated,
+        value: '$vaccinated',
+        color: AppColors.info,
+      ),
+      _HerdStatusMetric(
+        label: AppLocalizations.of(context).active,
+        value: '$active',
+        color: AppColors.success,
+      ),
     ];
 
     return Container(
@@ -509,27 +633,41 @@ class _HerdSummary extends StatelessWidget {
   );
 }
 
-class _AddSowDialog extends StatefulWidget {
-  const _AddSowDialog({required this.onSave});
+class _AddAnimalDialog extends StatefulWidget {
+  const _AddAnimalDialog({required this.onSave});
 
-  final Future<void> Function(String tag, DateTime? birthDate, String notes)
+  final Future<void> Function(
+    String tag,
+    String type,
+    String sex,
+    DateTime? birthDate,
+    double weightKg,
+    String notes,
+    Uint8List? image,
+    String? imageName,
+  )
   onSave;
 
   @override
-  State<_AddSowDialog> createState() => _AddSowDialogState();
+  State<_AddAnimalDialog> createState() => _AddAnimalDialogState();
 }
 
-class _AddSowDialogState extends State<_AddSowDialog> {
+class _AddAnimalDialogState extends State<_AddAnimalDialog> {
   final _formKey = GlobalKey<FormState>();
   final _tagController = TextEditingController();
   final _notesController = TextEditingController();
+  final _weightController = TextEditingController();
   DateTime? _birthDate;
+  XFile? _image;
+  String _type = 'sow';
+  String _sex = 'female';
   bool _saving = false;
 
   @override
   void dispose() {
     _tagController.dispose();
     _notesController.dispose();
+    _weightController.dispose();
     super.dispose();
   }
 
@@ -538,45 +676,116 @@ class _AddSowDialogState extends State<_AddSowDialog> {
     setState(() => _saving = true);
     await widget.onSave(
       _tagController.text.trim(),
+      _type,
+      _sex,
       _birthDate,
+      double.parse(_weightController.text),
       _notesController.text,
+      _image == null ? null : await _image!.readAsBytes(),
+      _image?.name,
     );
     if (mounted) setState(() => _saving = false);
   }
 
   @override
   Widget build(BuildContext context) => AlertDialog(
-    title: const Text('Add sow'),
+    title: const Text('Add pig'),
     content: Form(
       key: _formKey,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          TextFormField(
-            controller: _tagController,
-            decoration: const InputDecoration(labelText: 'Tag'),
-            validator: (value) => value == null || value.trim().isEmpty
-                ? 'Enter an animal tag.'
-                : null,
-          ),
-          TextField(
-            controller: _notesController,
-            decoration: const InputDecoration(labelText: 'Notes (optional)'),
-          ),
-          const SizedBox(height: 8),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton.icon(
-              onPressed: _saving ? null : _pickBirthDate,
-              icon: const Icon(Icons.calendar_today_outlined),
-              label: Text(
-                _birthDate == null
-                    ? 'Add birth date'
-                    : 'Born ${_birthDate!.day}/${_birthDate!.month}/${_birthDate!.year}',
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextFormField(
+              controller: _tagController,
+              decoration: const InputDecoration(labelText: 'Tag'),
+              validator: (value) => value == null || value.trim().isEmpty
+                  ? 'Enter an animal tag.'
+                  : null,
+            ),
+            TextFormField(
+              controller: _weightController,
+              keyboardType: const TextInputType.numberWithOptions(
+                decimal: true,
+              ),
+              decoration: const InputDecoration(labelText: 'Weight (kg)'),
+              validator: (value) {
+                final weight = double.tryParse(value?.trim() ?? '');
+                if (weight == null || weight <= 0) {
+                  return 'Enter a weight greater than zero.';
+                }
+                return null;
+              },
+            ),
+            DropdownButtonFormField<String>(
+              initialValue: _type,
+              decoration: const InputDecoration(labelText: 'Type'),
+              items: const [
+                DropdownMenuItem(value: 'boar', child: Text('Male pig')),
+                DropdownMenuItem(value: 'sow', child: Text('Female pig')),
+                DropdownMenuItem(value: 'piglet', child: Text('Piglet')),
+              ],
+              onChanged: (value) {
+                if (value == null) return;
+                setState(() {
+                  _type = value;
+                  _sex = switch (value) {
+                    'boar' => 'male',
+                    'sow' => 'female',
+                    _ => 'unknown',
+                  };
+                });
+              },
+            ),
+            if (_type == 'piglet')
+              DropdownButtonFormField<String>(
+                initialValue: _sex,
+                decoration: const InputDecoration(labelText: 'Sex'),
+                items: const [
+                  DropdownMenuItem(value: 'unknown', child: Text('Not set')),
+                  DropdownMenuItem(value: 'male', child: Text('Male')),
+                  DropdownMenuItem(value: 'female', child: Text('Female')),
+                ],
+                onChanged: (value) => setState(() => _sex = value ?? _sex),
+              ),
+            TextField(
+              controller: _notesController,
+              decoration: const InputDecoration(labelText: 'Notes (optional)'),
+            ),
+            const SizedBox(height: 8),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: _saving ? null : _pickBirthDate,
+                icon: const Icon(Icons.calendar_today_outlined),
+                label: Text(
+                  _birthDate == null
+                      ? 'Add birth date'
+                      : 'Born ${_birthDate!.day}/${_birthDate!.month}/${_birthDate!.year}',
+                ),
               ),
             ),
-          ),
-        ],
+            if (_image != null)
+              FutureBuilder(
+                future: _image!.readAsBytes(),
+                builder: (context, snapshot) => snapshot.hasData
+                    ? Image.memory(
+                        snapshot.data!,
+                        height: 120,
+                        fit: BoxFit.cover,
+                      )
+                    : const SizedBox(
+                        height: 120,
+                        child: Center(child: CircularProgressIndicator()),
+                      ),
+              ),
+            TextButton.icon(
+              onPressed: _saving ? null : _pickImage,
+              icon: const Icon(Icons.add_a_photo_outlined),
+              label: Text(_image == null ? 'Add a photo' : 'Change photo'),
+            ),
+          ],
+        ),
       ),
     ),
     actions: [
@@ -591,7 +800,7 @@ class _AddSowDialogState extends State<_AddSowDialog> {
                 dimension: 18,
                 child: CircularProgressIndicator(strokeWidth: 2),
               )
-            : const Text('Add sow'),
+            : const Text('Add pig'),
       ),
     ],
   );
@@ -605,6 +814,15 @@ class _AddSowDialogState extends State<_AddSowDialog> {
       initialDate: _birthDate ?? now,
     );
     if (picked != null && mounted) setState(() => _birthDate = picked);
+  }
+
+  Future<void> _pickImage() async {
+    final picked = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 1600,
+      imageQuality: 80,
+    );
+    if (picked != null && mounted) setState(() => _image = picked);
   }
 }
 
@@ -622,63 +840,107 @@ class _AnimalCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final active = animal.status == 'active';
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 25,
-              backgroundColor: AppColors.pigPink.withValues(alpha: 0.25),
-              child: const Icon(
-                Icons.pets_outlined,
-                color: AppColors.deepGreen,
+      clipBehavior: Clip.antiAlias,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final horizontal = constraints.maxWidth > 280;
+          final photo = animal.imageUrl == null
+              ? const ColoredBox(
+                  color: AppColors.pigPink,
+                  child: Center(
+                    child: Icon(
+                      Icons.pets_outlined,
+                      size: 42,
+                      color: AppColors.deepGreen,
+                    ),
+                  ),
+                )
+              : Image.network(
+                  animal.imageUrl!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => const ColoredBox(
+                    color: AppColors.pigPink,
+                    child: Center(
+                      child: Icon(
+                        Icons.broken_image_outlined,
+                        color: AppColors.deepGreen,
+                      ),
+                    ),
+                  ),
+                );
+          final details = Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(animal.tag, style: Theme.of(context).textTheme.titleSmall),
+              const SizedBox(height: 3),
+              Text(
+                '${animal.type} · ${animal.sex} · ${_ageLabel(animal.birthDate)}${animal.weightKg == null ? '' : ' · ${animal.weightKg} kg'}',
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              const SizedBox(height: 7),
+              Wrap(
+                spacing: 6,
+                runSpacing: 4,
                 children: [
-                  Text(
-                    animal.tag,
-                    style: Theme.of(context).textTheme.titleSmall,
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    '${animal.type} · ${animal.sex} · ${_ageLabel(animal.birthDate)}',
-                  ),
-                  const SizedBox(height: 7),
-                  Wrap(
-                    spacing: 6,
-                    runSpacing: 4,
-                    children: [
-                      _DetailChip(label: active ? 'Healthy' : animal.status),
-                      const _DetailChip(label: 'RFID not set'),
-                      const _DetailChip(label: 'Pen not set'),
-                    ],
-                  ),
+                  _DetailChip(label: active ? 'Healthy' : animal.status),
+                  const _DetailChip(label: 'RFID not set'),
+                  const _DetailChip(label: 'Pen not set'),
                 ],
               ),
-            ),
-            PopupMenuButton<String>(
-              onSelected: (value) {
-                if (value == 'edit') onEdit();
-                if (value == 'archive') onArchive();
-              },
-              itemBuilder: (context) => const [
-                PopupMenuItem(value: 'view', child: Text('View profile')),
-                PopupMenuItem(value: 'edit', child: Text('Edit')),
-                PopupMenuItem(
-                  value: 'archive',
-                  child: Text('Delete / archive'),
+            ],
+          );
+          if (horizontal) {
+            return Row(
+              children: [
+                SizedBox(width: 112, height: double.infinity, child: photo),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: details,
+                  ),
                 ),
+                _AnimalActions(onEdit: onEdit, onArchive: onArchive),
               ],
-            ),
-          ],
-        ),
+            );
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(child: photo),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(12, 10, 4, 10),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: details),
+                    _AnimalActions(onEdit: onEdit, onArchive: onArchive),
+                  ],
+                ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
+}
+
+class _AnimalActions extends StatelessWidget {
+  const _AnimalActions({required this.onEdit, required this.onArchive});
+
+  final VoidCallback onEdit;
+  final VoidCallback onArchive;
+
+  @override
+  Widget build(BuildContext context) => PopupMenuButton<String>(
+    onSelected: (value) {
+      if (value == 'edit') onEdit();
+      if (value == 'archive') onArchive();
+    },
+    itemBuilder: (context) => const [
+      PopupMenuItem(value: 'edit', child: Text('Edit')),
+      PopupMenuItem(value: 'archive', child: Text('Delete / archive')),
+    ],
+  );
 }
 
 class _DetailChip extends StatelessWidget {

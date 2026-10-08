@@ -5,6 +5,7 @@ import 'package:proj/app/theme/app_dimensions.dart';
 import 'package:proj/features/reports/domain/entities/report_metrics.dart';
 import 'package:proj/features/reports/presentation/pages/animal_report_page.dart';
 import 'package:proj/features/reports/presentation/providers/reports_providers.dart';
+import 'package:proj/features/reports/presentation/widgets/herd_reports_browser.dart';
 import 'package:proj/features/settings/presentation/providers/settings_providers.dart';
 
 class ReportsPage extends ConsumerStatefulWidget {
@@ -36,7 +37,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
           ),
           const SizedBox(height: AppDimensions.spacingLarge),
           DefaultTabController(
-            length: 2,
+            length: 3,
             child: Column(
               children: [
                 Container(
@@ -48,7 +49,8 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
                   ),
                   child: TabBar(
                     tabs: const [
-                      Tab(text: 'Reports'),
+                      Tab(text: 'Finance'),
+                      Tab(text: 'Herd'),
                       Tab(text: 'Analytics'),
                     ],
                     labelColor: AppColors.primaryGreen,
@@ -88,6 +90,10 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
                             const _ReportCategories(),
                           ],
                         ),
+                      ),
+                      const SingleChildScrollView(
+                        padding: EdgeInsets.zero,
+                        child: HerdReportsBrowser(),
                       ),
                       SingleChildScrollView(
                         padding: EdgeInsets.zero,

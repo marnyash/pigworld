@@ -70,6 +70,7 @@ class _AnimalReportPageState extends ConsumerState<AnimalReportPage> {
             itemBuilder: (_) => const [
               PopupMenuItem(value: 'pdf', child: Text('Export PDF')),
               PopupMenuItem(value: 'xlsx', child: Text('Export Excel')),
+              PopupMenuItem(value: 'doc', child: Text('Export Word')),
             ],
           ),
         ],

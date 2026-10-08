@@ -15,7 +15,10 @@ import '../../../../security/authorization/roles.dart';
 import '../../../../shared/components/bottom_navigation.dart';
 import '../../data/farm_buyer.dart';
 import '../../data/farm_sale.dart';
+import 'post_pig_herd_tab.dart';
+import 'pig_marketplace_tabs.dart';
 import '../providers/farm_sales_provider.dart';
+import '../providers/pig_marketplace_provider.dart';
 
 class SalesPage extends ConsumerWidget {
   const SalesPage({super.key});
@@ -39,161 +42,185 @@ class SalesPage extends ConsumerWidget {
     final range = ref.watch(selectedDateRangeProvider);
     final hasFarm = session?.selectedFarm != null;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.sales),
-        leading: IconButton(
-          tooltip: l10n.openMenu,
-          icon: const Icon(Icons.menu),
-          onPressed: () => navigationScaffoldKey.currentState?.openDrawer(),
-        ),
-        actions: [
-          IconButton(
-            tooltip: l10n.buyerSearch,
-            onPressed: () => context.go(AppRoutes.buyers),
-            icon: const Icon(Icons.people_outline),
+    return DefaultTabController(
+      length: 3,
+      child: Scaffold(
+        appBar: AppBar(
+          title: Text(l10n.sales),
+          leading: IconButton(
+            tooltip: l10n.openMenu,
+            icon: const Icon(Icons.menu),
+            onPressed: () => navigationScaffoldKey.currentState?.openDrawer(),
           ),
-        ],
-      ),
-      floatingActionButton: canManage && hasFarm
-          ? FloatingActionButton.extended(
-              onPressed: () => _showSaleDialog(
-                context,
-                ref,
-                salesState.valueOrNull?.buyers ?? const [],
-              ),
-              icon: const Icon(Icons.add_shopping_cart_outlined),
-              label: Text(l10n.addFarmSale),
-            )
-          : null,
-      body: RefreshIndicator(
-        onRefresh: () async {
-          await Future.wait([
-            ref.refresh(farmSalesProvider.future),
-            ref.refresh(reportMetricsProvider.future),
-          ]);
-        },
-        child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(AppDimensions.pagePadding),
+          actions: [
+            IconButton(
+              tooltip: l10n.buyerSearch,
+              onPressed: () => context.go(AppRoutes.buyers),
+              icon: const Icon(Icons.people_outline),
+            ),
+          ],
+          bottom: const TabBar(
+            isScrollable: true,
+            tabs: [
+              Tab(text: 'For buyers'),
+              Tab(text: 'Post pig'),
+              Tab(text: 'My sales'),
+            ],
+          ),
+        ),
+        body: TabBarView(
           children: [
-            Card(
-              color: AppColors.deepGreen,
-              child: Padding(
-                padding: const EdgeInsets.all(AppDimensions.spacingLarge),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            const ForBuyersTab(),
+            PostPigHerdTab(canManage: canManage),
+            Scaffold(
+              backgroundColor: Colors.transparent,
+              floatingActionButton: canManage && hasFarm
+                  ? FloatingActionButton.extended(
+                      onPressed: () => _showSaleDialog(
+                        context,
+                        ref,
+                        salesState.valueOrNull?.buyers ?? const [],
+                      ),
+                      icon: const Icon(Icons.add_shopping_cart_outlined),
+                      label: Text(l10n.addFarmSale),
+                    )
+                  : null,
+              body: RefreshIndicator(
+                onRefresh: () async {
+                  await Future.wait([
+                    ref.refresh(farmSalesProvider.future),
+                    ref.refresh(reportMetricsProvider.future),
+                    ref.refresh(pigMarketplaceProvider.future),
+                  ]);
+                },
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(AppDimensions.pagePadding),
                   children: [
-                    Text(
-                      l10n.farmSales,
-                      style: Theme.of(context).textTheme.headlineSmall
-                          ?.copyWith(color: AppColors.inverseText),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      l10n.salesIntro,
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: AppColors.inverseMutedText,
+                    Card(
+                      color: AppColors.deepGreen,
+                      child: Padding(
+                        padding: const EdgeInsets.all(
+                          AppDimensions.spacingLarge,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              l10n.farmSales,
+                              style: Theme.of(context).textTheme.headlineSmall
+                                  ?.copyWith(color: AppColors.inverseText),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              l10n.salesIntro,
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(color: AppColors.inverseMutedText),
+                            ),
+                            const SizedBox(height: 12),
+                            Text(
+                              session?.selectedFarm?.name ?? l10n.selectFarm,
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(color: AppColors.inverseMutedText),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    Text(
-                      session?.selectedFarm?.name ?? l10n.selectFarm,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: AppColors.inverseMutedText,
+                    const SizedBox(height: AppDimensions.spacingLarge),
+                    if (!hasFarm)
+                      _MessageCard(
+                        icon: Icons.agriculture_outlined,
+                        message: l10n.selectFarm,
+                      )
+                    else ...[
+                      metrics.when(
+                        loading: () => const LinearProgressIndicator(),
+                        error: (_, _) => const SizedBox.shrink(),
+                        data: (data) => Card(
+                          child: ListTile(
+                            leading: const CircleAvatar(
+                              child: Icon(Icons.pets_outlined),
+                            ),
+                            title: Text(l10n.salesAnimalsMarkedSold),
+                            subtitle: Text(
+                              '${_periodLabel(range)} · ${data.salesCount}',
+                            ),
+                            trailing: Text(
+                              '${data.salesCount}',
+                              style: Theme.of(context).textTheme.headlineSmall,
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
+                      const SizedBox(height: AppDimensions.spacingLarge),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              l10n.farmSales,
+                              style: Theme.of(context).textTheme.titleLarge,
+                            ),
+                          ),
+                          TextButton.icon(
+                            onPressed: () => context.go(AppRoutes.buyers),
+                            icon: const Icon(Icons.people_outline),
+                            label: Text(l10n.buyers),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: AppDimensions.spacingSmall),
+                      salesState.when(
+                        loading: () => const Padding(
+                          padding: EdgeInsets.all(24),
+                          child: Center(child: CircularProgressIndicator()),
+                        ),
+                        error: (error, _) => _MessageCard(
+                          icon: Icons.error_outline,
+                          message: '${l10n.salesLoadError}\n$error',
+                          action: TextButton(
+                            onPressed: () => ref.invalidate(farmSalesProvider),
+                            child: Text(l10n.retry),
+                          ),
+                        ),
+                        data: (data) => data.sales.isEmpty
+                            ? _MessageCard(
+                                icon: Icons.receipt_long_outlined,
+                                message: l10n.noSalesYet,
+                                action: TextButton(
+                                  onPressed: () => context.go(AppRoutes.buyers),
+                                  child: Text(l10n.addBuyer),
+                                ),
+                              )
+                            : Column(
+                                children: [
+                                  for (final sale in data.sales)
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                        bottom: AppDimensions.spacingMedium,
+                                      ),
+                                      child: _SaleCard(
+                                        sale: sale,
+                                        canManage: canManage,
+                                        onStatusChanged: (status) =>
+                                            _updateStatus(
+                                              context,
+                                              ref,
+                                              sale.id,
+                                              status,
+                                            ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                      ),
+                    ],
+                    if (hasFarm)
+                      MyMarketplaceSalesSection(canManage: canManage),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: AppDimensions.spacingLarge),
-            if (!hasFarm)
-              _MessageCard(
-                icon: Icons.agriculture_outlined,
-                message: l10n.selectFarm,
-              )
-            else ...[
-              metrics.when(
-                loading: () => const LinearProgressIndicator(),
-                error: (_, _) => const SizedBox.shrink(),
-                data: (data) => Card(
-                  child: ListTile(
-                    leading: const CircleAvatar(
-                      child: Icon(Icons.pets_outlined),
-                    ),
-                    title: Text(l10n.salesAnimalsMarkedSold),
-                    subtitle: Text(
-                      '${_periodLabel(range)} · ${data.salesCount}',
-                    ),
-                    trailing: Text(
-                      '${data.salesCount}',
-                      style: Theme.of(context).textTheme.headlineSmall,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: AppDimensions.spacingLarge),
-              Row(
-                children: [
-                  Expanded(
-                    child: Text(
-                      l10n.farmSales,
-                      style: Theme.of(context).textTheme.titleLarge,
-                    ),
-                  ),
-                  TextButton.icon(
-                    onPressed: () => context.go(AppRoutes.buyers),
-                    icon: const Icon(Icons.people_outline),
-                    label: Text(l10n.buyers),
-                  ),
-                ],
-              ),
-              const SizedBox(height: AppDimensions.spacingSmall),
-              salesState.when(
-                loading: () => const Padding(
-                  padding: EdgeInsets.all(24),
-                  child: Center(child: CircularProgressIndicator()),
-                ),
-                error: (error, _) => _MessageCard(
-                  icon: Icons.error_outline,
-                  message: '${l10n.salesLoadError}\n$error',
-                  action: TextButton(
-                    onPressed: () => ref.invalidate(farmSalesProvider),
-                    child: Text(l10n.retry),
-                  ),
-                ),
-                data: (data) => data.sales.isEmpty
-                    ? _MessageCard(
-                        icon: Icons.receipt_long_outlined,
-                        message: l10n.noSalesYet,
-                        action: TextButton(
-                          onPressed: () => context.go(AppRoutes.buyers),
-                          child: Text(l10n.addBuyer),
-                        ),
-                      )
-                    : Column(
-                        children: [
-                          for (final sale in data.sales)
-                            Padding(
-                              padding: const EdgeInsets.only(
-                                bottom: AppDimensions.spacingMedium,
-                              ),
-                              child: _SaleCard(
-                                sale: sale,
-                                canManage: canManage,
-                                onStatusChanged: (status) => _updateStatus(
-                                  context,
-                                  ref,
-                                  sale.id,
-                                  status,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-              ),
-            ],
           ],
         ),
       ),
