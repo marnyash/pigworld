@@ -93,6 +93,44 @@ void main() {
     expect(find.text('Change photo'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  test('updating an animal applies the server-returned photo URL', () async {
+    final api = _FakeHerdApi(
+      animals: [
+        const Animal(
+          id: 'animal-1',
+          tag: 'PIG-1',
+          type: 'sow',
+          sex: 'female',
+          status: 'active',
+        ),
+      ],
+    );
+    final container = ProviderContainer(
+      overrides: [
+        authProvider.overrideWith(_TestAuthNotifier.new),
+        herdApiProvider.overrideWithValue(api),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await container.read(herdProvider.future);
+    final imageBytes = Uint8List.fromList([1, 2, 3]);
+    await container
+        .read(herdProvider.notifier)
+        .updateAnimal(
+          animalId: 'animal-1',
+          imageBytes: imageBytes,
+          imageName: 'replacement.jpg',
+        );
+
+    expect(api.updatedImageBytes, imageBytes);
+    expect(api.updatedImageName, 'replacement.jpg');
+    expect(
+      container.read(herdProvider).valueOrNull?.single.imageUrl,
+      'https://example.com/replacement.jpg',
+    );
+  });
 }
 
 class _TestAuthNotifier extends AuthNotifier {
@@ -121,6 +159,8 @@ class _FakeHerdApi extends HerdApi {
   final List<Animal> _animals;
   final List<String> createdTags = [];
   final List<double?> createdWeights = [];
+  Uint8List? updatedImageBytes;
+  String? updatedImageName;
   var _nextId = 1;
 
   @override
@@ -152,5 +192,37 @@ class _FakeHerdApi extends HerdApi {
     );
     _animals.add(animal);
     return animal;
+  }
+
+  @override
+  Future<Animal> updateAnimal({
+    required String farmId,
+    required String animalId,
+    String? tag,
+    String? status,
+    DateTime? birthDate,
+    double? weightKg,
+    String? notes,
+    Uint8List? imageBytes,
+    String? imageName,
+  }) async {
+    updatedImageBytes = imageBytes;
+    updatedImageName = imageName;
+    final index = _animals.indexWhere((animal) => animal.id == animalId);
+    final updated = Animal(
+      id: animalId,
+      tag: tag ?? _animals[index].tag,
+      type: _animals[index].type,
+      sex: _animals[index].sex,
+      status: status ?? _animals[index].status,
+      birthDate: birthDate ?? _animals[index].birthDate,
+      weightKg: weightKg ?? _animals[index].weightKg,
+      notes: notes ?? _animals[index].notes,
+      imageUrl: imageBytes == null
+          ? _animals[index].imageUrl
+          : 'https://example.com/replacement.jpg',
+    );
+    _animals[index] = updated;
+    return updated;
   }
 }

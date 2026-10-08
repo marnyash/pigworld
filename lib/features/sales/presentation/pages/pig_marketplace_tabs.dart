@@ -371,8 +371,6 @@ class _ListingCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Card(
     child: ListTile(
-      leading: const CircleAvatar(child: Icon(Icons.pets_outlined)),
-      title: Text(listing.title),
       leading: listing.imageUrl == null || listing.imageUrl!.isEmpty
           ? const CircleAvatar(child: Icon(Icons.pets_outlined))
           : ClipRRect(
@@ -389,6 +387,7 @@ class _ListingCard extends StatelessWidget {
                 ),
               ),
             ),
+      title: Text(listing.title),
       subtitle: Text(
         '${listing.breed} · ${listing.quantity} available'
         '${listing.location == null || listing.location!.isEmpty ? '' : ' · ${listing.location}'}',

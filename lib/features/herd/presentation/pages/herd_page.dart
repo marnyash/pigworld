@@ -215,7 +215,7 @@ class HerdPage extends ConsumerWidget {
                                   crossAxisCount: columns,
                                   crossAxisSpacing: AppDimensions.spacingMedium,
                                   mainAxisSpacing: AppDimensions.spacingMedium,
-                                  childAspectRatio: columns == 1 ? 2.1 : 0.78,
+                                  childAspectRatio: columns == 1 ? 1.6 : 0.65,
                                 ),
                             itemBuilder: (context, index) {
                               final animal = filteredAnimals[index];
@@ -385,6 +385,7 @@ class HerdPage extends ConsumerWidget {
                   else if (animal.imageUrl != null)
                     Image.network(
                       animal.imageUrl!,
+                      key: ValueKey(animal.imageUrl),
                       height: 120,
                       fit: BoxFit.cover,
                       errorBuilder: (_, _, _) =>
@@ -674,17 +675,26 @@ class _AddAnimalDialogState extends State<_AddAnimalDialog> {
   Future<void> _save() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     setState(() => _saving = true);
-    await widget.onSave(
-      _tagController.text.trim(),
-      _type,
-      _sex,
-      _birthDate,
-      double.parse(_weightController.text),
-      _notesController.text,
-      _image == null ? null : await _image!.readAsBytes(),
-      _image?.name,
-    );
-    if (mounted) setState(() => _saving = false);
+    try {
+      await widget.onSave(
+        _tagController.text.trim(),
+        _type,
+        _sex,
+        _birthDate,
+        double.parse(_weightController.text),
+        _notesController.text,
+        _image == null ? null : await _image!.readAsBytes(),
+        _image?.name,
+      );
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not prepare pig details: $error')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   @override
@@ -857,6 +867,7 @@ class _AnimalCard extends StatelessWidget {
                 )
               : Image.network(
                   animal.imageUrl!,
+                  key: ValueKey(animal.imageUrl),
                   fit: BoxFit.cover,
                   errorBuilder: (_, _, _) => const ColoredBox(
                     color: AppColors.pigPink,

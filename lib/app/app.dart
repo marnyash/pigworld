@@ -66,7 +66,7 @@ class _AppRootState extends ConsumerState<_AppRoot> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      onGenerateTitle: (context) => AppLocalizations.of(context)!.appTitle,
+      onGenerateTitle: (context) => AppLocalizations.of(context).appTitle,
       theme: AppTheme.light,
       darkTheme: AppTheme.dark,
       themeMode: ref.watch(themeModeProvider),
@@ -75,27 +75,24 @@ class _AppRootState extends ConsumerState<_AppRoot> {
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       routerConfig: AppRouter.router,
-      builder: (context, child) => Overlay(
-        initialEntries: [
-          OverlayEntry(
-            builder: (context) => _OfflineBannerOverlay(child: child),
-          ),
-        ],
-      ),
+      builder: (context, child) =>
+          _AppShell(child: child ?? const SizedBox.shrink()),
     );
   }
 }
 
-class _OfflineBannerOverlay extends ConsumerWidget {
-  const _OfflineBannerOverlay({required this.child});
+class _AppShell extends ConsumerWidget {
+  const _AppShell({required this.child});
 
-  final Widget? child;
+  final Widget child;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isOffline =
         ref.watch(connectivityProvider).valueOrNull ==
         ConnectivityStatus.offline;
+    final l10n = AppLocalizations.of(context);
+
     return Column(
       children: [
         if (isOffline)
@@ -107,7 +104,7 @@ class _OfflineBannerOverlay extends ConsumerWidget {
                 padding: const EdgeInsets.symmetric(vertical: 6),
                 child: Center(
                   child: Text(
-                    AppLocalizations.of(context)!.noInternetConnection,
+                    l10n.noInternetConnection,
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.onError,
                       fontSize: 12,
@@ -118,7 +115,7 @@ class _OfflineBannerOverlay extends ConsumerWidget {
             ),
           ),
         const _NotificationBanner(),
-        Expanded(child: child ?? const SizedBox.shrink()),
+        Expanded(child: child),
       ],
     );
   }
@@ -201,7 +198,7 @@ class _NotificationBannerState extends ConsumerState<_NotificationBanner> {
                 IconButton(
                   tooltip: AppLocalizations.of(
                     context,
-                  )!.dismissNotificationBanner,
+                  ).dismissNotificationBanner,
                   icon: const Icon(Icons.close, color: Colors.white),
                   onPressed: () => setState(
                     () => _dismissedNotificationId = notification.id,

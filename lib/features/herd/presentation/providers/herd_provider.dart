@@ -85,7 +85,7 @@ class HerdNotifier extends AsyncNotifier<List<Animal>> {
   }) async {
     final farmId = ref.read(authProvider).valueOrNull?.selectedFarm?.id;
     if (farmId == null) throw StateError('No farm selected.');
-    await ref
+    final updatedAnimal = await ref
         .read(herdApiProvider)
         .updateAnimal(
           farmId: farmId,
@@ -98,8 +98,16 @@ class HerdNotifier extends AsyncNotifier<List<Animal>> {
           imageBytes: imageBytes,
           imageName: imageName,
         );
-    ref.invalidateSelf();
-    await future;
+    final animals = [...?state.valueOrNull];
+    final animalIndex = animals.indexWhere(
+      (animal) => animal.id == updatedAnimal.id,
+    );
+    if (animalIndex == -1) {
+      animals.add(updatedAnimal);
+    } else {
+      animals[animalIndex] = updatedAnimal;
+    }
+    state = AsyncData(animals);
   }
 
   Future<void> archiveAnimal(String animalId) async {
