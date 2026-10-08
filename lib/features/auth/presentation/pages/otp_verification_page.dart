@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -131,23 +132,32 @@ class _OtpVerificationPageState extends ConsumerState<OtpVerificationPage> {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
-              TextFormField(
-                controller: _otpController,
-                keyboardType: TextInputType.number,
-                textAlign: TextAlign.center,
-                maxLength: 6,
-                decoration: const InputDecoration(
-                  labelText: 'Enter OTP',
-                  border: OutlineInputBorder(),
+              AutofillGroup(
+                child: TextFormField(
+                  key: const ValueKey('login-otp-code'),
+                  controller: _otpController,
+                  keyboardType: TextInputType.number,
+                  textInputAction: TextInputAction.done,
+                  autofillHints: const [AutofillHints.oneTimeCode],
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(6),
+                  ],
+                  textAlign: TextAlign.center,
+                  maxLength: 6,
+                  decoration: const InputDecoration(
+                    labelText: 'Enter OTP',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) {
+                    final code = value?.trim() ?? '';
+                    if (code.isEmpty) return 'Enter the OTP code';
+                    if (!RegExp(r'^\d{6}$').hasMatch(code)) {
+                      return 'Enter the 6-digit code';
+                    }
+                    return null;
+                  },
                 ),
-                validator: (value) {
-                  final code = value?.trim() ?? '';
-                  if (code.isEmpty) return 'Enter the OTP code';
-                  if (!RegExp(r'^\d{6}$').hasMatch(code)) {
-                    return 'Enter the 6-digit code';
-                  }
-                  return null;
-                },
               ),
               const SizedBox(height: 20),
               if (_error != null) ...[
