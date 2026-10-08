@@ -54,8 +54,13 @@ class HerdApi {
     required String tag,
     required String type,
     required String sex,
+    String? status,
+    String? name,
     DateTime? birthDate,
     double? weightKg,
+    bool isPregnant = false,
+    DateTime? lastDewormedAt,
+    DateTime? lastVaccinatedAt,
     String? notes,
     Uint8List? imageBytes,
     String? imageName,
@@ -65,7 +70,15 @@ class HerdApi {
         'tag': tag,
         'type': type,
         'sex': sex,
+        if (status != null) 'status': status,
+        if (name != null && name.trim().isNotEmpty) 'name': name.trim(),
         'birth_date': ?birthDate?.toIso8601String().split('T').first,
+        'is_pregnant': isPregnant,
+        'last_dewormed_at': lastDewormedAt?.toIso8601String().split('T').first,
+        'last_vaccinated_at': lastVaccinatedAt
+            ?.toIso8601String()
+            .split('T')
+            .first,
         if (weightKg != null) 'weight_kg': weightKg,
         if (notes != null && notes.trim().isNotEmpty) 'notes': notes.trim(),
       };

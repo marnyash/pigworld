@@ -39,19 +39,85 @@ void main() {
 
     await tester.tap(find.text('Add Pig'));
     await tester.pumpAndSettle();
-    expect(find.text('Male pig'), findsOneWidget);
-    expect(find.text('Female pig'), findsOneWidget);
-    expect(find.text('Piglet'), findsOneWidget);
-    expect(find.text('Add a photo'), findsOneWidget);
+    expect(find.text('Add pig details'), findsOneWidget);
+    expect(find.text('Pig name (optional)'), findsOneWidget);
+    expect(find.text('Add photo'), findsOneWidget);
     final fields = find.byType(TextFormField);
     await tester.enterText(fields.at(0), 'PIG-NEW');
-    await tester.enterText(fields.at(1), '45.5');
-    await tester.tap(find.text('Add pig').last);
+    await tester.enterText(fields.at(1), 'Daisy');
+    await tester.drag(find.byType(ListView).last, const Offset(0, -300));
+    await tester.pumpAndSettle();
+    await tester.enterText(fields.at(2), '45.5');
+    await tester.tap(find.text('Add pig'));
     await tester.pumpAndSettle();
 
     expect(api.createdTags, ['PIG-NEW']);
     expect(api.createdWeights, [45.5]);
-    expect(find.text('PIG-NEW'), findsOneWidget);
+    expect(api.createdNames, ['Daisy']);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('registered female and piglet gaps show addable detail slots', (
+    WidgetTester tester,
+  ) async {
+    final api = _FakeHerdApi(
+      animals: [
+        const Animal(
+          id: 'animal-1',
+          tag: 'PIG-001',
+          type: 'sow',
+          sex: 'female',
+          status: 'active',
+        ),
+      ],
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authProvider.overrideWith(
+            () => _TestAuthNotifier(
+              farm: const Farm(
+                id: 'farm-1',
+                name: 'Test Farm',
+                motherPigCount: 2,
+                registeredPigletCount: 1,
+              ),
+            ),
+          ),
+          herdApiProvider.overrideWithValue(api),
+          healthOverviewProvider.overrideWith((ref) async => {'vaccinated': 0}),
+        ],
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: HerdPage(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.text('Complete registered pig details'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('Female pig 1'), findsOneWidget);
+    expect(find.text('Piglet 1'), findsOneWidget);
+    expect(find.text('Suggested tag: PIG-002'), findsOneWidget);
+    expect(find.text('Suggested tag: PIG-003'), findsOneWidget);
+
+    await tester.tap(find.text('Suggested tag: PIG-003'));
+    await tester.pumpAndSettle();
+    expect(find.text('Add pig details'), findsOneWidget);
+    expect(find.text('PIG-003'), findsOneWidget);
+    expect(
+      tester
+          .widget<DropdownButtonFormField<String>>(
+            find.byType(DropdownButtonFormField<String>).first,
+          )
+          .initialValue,
+      'piglet',
+    );
     expect(tester.takeException(), isNull);
   });
 
@@ -85,6 +151,8 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    await tester.drag(find.byType(ListView).first, const Offset(0, -800));
+    await tester.pumpAndSettle();
     await tester.tap(find.byType(PopupMenuButton<String>).first);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Edit'));
@@ -134,6 +202,10 @@ void main() {
 }
 
 class _TestAuthNotifier extends AuthNotifier {
+  _TestAuthNotifier({this.farm = const Farm(id: 'farm-1', name: 'Test Farm')});
+
+  final Farm farm;
+
   @override
   AsyncValue<Session?> build() => AsyncData(
     Session(
@@ -145,8 +217,8 @@ class _TestAuthNotifier extends AuthNotifier {
         email: 'test@example.com',
         role: UserRole.farmOwner,
       ),
-      farms: const [Farm(id: 'farm-1', name: 'Test Farm')],
-      selectedFarm: const Farm(id: 'farm-1', name: 'Test Farm'),
+      farms: [farm],
+      selectedFarm: farm,
     ),
   );
 }
@@ -159,6 +231,7 @@ class _FakeHerdApi extends HerdApi {
   final List<Animal> _animals;
   final List<String> createdTags = [];
   final List<double?> createdWeights = [];
+  final List<String?> createdNames = [];
   Uint8List? updatedImageBytes;
   String? updatedImageName;
   var _nextId = 1;
@@ -172,22 +245,32 @@ class _FakeHerdApi extends HerdApi {
     required String tag,
     required String type,
     required String sex,
+    String? status,
+    String? name,
     DateTime? birthDate,
     double? weightKg,
+    bool isPregnant = false,
+    DateTime? lastDewormedAt,
+    DateTime? lastVaccinatedAt,
     String? notes,
     Uint8List? imageBytes,
     String? imageName,
   }) async {
     createdTags.add(tag);
     createdWeights.add(weightKg);
+    createdNames.add(name);
     final animal = Animal(
       id: 'animal-${_nextId++}',
       tag: tag,
       type: type,
       sex: sex,
-      status: 'active',
+      status: status ?? 'active',
+      name: name,
       birthDate: birthDate,
       weightKg: weightKg,
+      isPregnant: isPregnant,
+      lastDewormedAt: lastDewormedAt,
+      lastVaccinatedAt: lastVaccinatedAt,
       notes: notes,
     );
     _animals.add(animal);
@@ -200,8 +283,13 @@ class _FakeHerdApi extends HerdApi {
     required String animalId,
     String? tag,
     String? status,
+    String? name,
+    String? sex,
     DateTime? birthDate,
     double? weightKg,
+    bool? isPregnant,
+    DateTime? lastDewormedAt,
+    DateTime? lastVaccinatedAt,
     String? notes,
     Uint8List? imageBytes,
     String? imageName,
@@ -213,10 +301,14 @@ class _FakeHerdApi extends HerdApi {
       id: animalId,
       tag: tag ?? _animals[index].tag,
       type: _animals[index].type,
-      sex: _animals[index].sex,
+      sex: sex ?? _animals[index].sex,
       status: status ?? _animals[index].status,
+      name: name ?? _animals[index].name,
       birthDate: birthDate ?? _animals[index].birthDate,
       weightKg: weightKg ?? _animals[index].weightKg,
+      isPregnant: isPregnant ?? _animals[index].isPregnant,
+      lastDewormedAt: lastDewormedAt ?? _animals[index].lastDewormedAt,
+      lastVaccinatedAt: lastVaccinatedAt ?? _animals[index].lastVaccinatedAt,
       notes: notes ?? _animals[index].notes,
       imageUrl: imageBytes == null
           ? _animals[index].imageUrl

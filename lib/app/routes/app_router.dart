@@ -515,6 +515,9 @@ class _AppDrawer extends ConsumerWidget {
                       if (session != null) {
                         try {
                           await ref
+                              .read(feedReminderServiceProvider)
+                              .cancelFeedReminders();
+                          await ref
                               .read(feedScheduleStorageProvider)
                               .clearUser(session.user.id);
                         } on Object {

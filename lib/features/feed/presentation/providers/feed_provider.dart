@@ -4,49 +4,87 @@ import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/feed_api.dart';
 import '../../data/feed_schedule_local_data_source.dart';
+import '../../data/feed_reminder_service.dart';
 
-final feedScheduleStorageProvider = Provider(
+final feedScheduleStorageProvider = Provider<FeedScheduleLocalDataSource>(
   (_) => FeedScheduleLocalDataSource(),
 );
 
 final feedScheduleProvider =
-    AsyncNotifierProvider<FeedScheduleNotifier, Map<String, bool>>(
+    AsyncNotifierProvider<FeedScheduleNotifier, List<FeedScheduleEntry>>(
       FeedScheduleNotifier.new,
     );
 
-class FeedScheduleNotifier extends AsyncNotifier<Map<String, bool>> {
+final feedReminderServiceProvider = Provider<FeedReminderService>(
+  (_) => FeedReminderService(),
+);
+
+class FeedScheduleNotifier extends AsyncNotifier<List<FeedScheduleEntry>> {
   @override
-  Future<Map<String, bool>> build() async {
+  Future<List<FeedScheduleEntry>> build() async {
+    final reminders = ref.watch(feedReminderServiceProvider);
+    await reminders.initialize();
     final session = ref.watch(authProvider).valueOrNull;
     final farm = session?.selectedFarm;
     final user = session?.user;
-    if (farm == null || user == null)
+    if (farm == null || user == null) {
       return FeedScheduleLocalDataSource.defaults;
-    return ref
+    }
+    final entries = await ref
         .watch(feedScheduleStorageProvider)
         .read(userId: user.id, farmId: farm.id);
+    await reminders.sync(entries);
+    return entries;
   }
 
-  Future<void> setCompleted(String name, bool completed) async {
-    if (!FeedScheduleLocalDataSource.defaults.containsKey(name)) {
-      throw ArgumentError.value(name, 'name', 'Unknown feeding time');
-    }
+  Future<void> saveEntries(List<FeedScheduleEntry> entries) async {
     final session = ref.read(authProvider).valueOrNull;
     final farm = session?.selectedFarm;
     final user = session?.user;
     if (farm == null || user == null) throw StateError('No farm selected.');
 
+    if (entries.length > 20 ||
+        entries.map((entry) => entry.id).toSet().length != entries.length) {
+      throw ArgumentError(
+        'Feeding schedule entries must have unique ids (up to 20).',
+      );
+    }
     final previous = state.valueOrNull ?? FeedScheduleLocalDataSource.defaults;
-    final updated = {...previous, name: completed};
-    state = AsyncData(updated);
     try {
       await ref
           .read(feedScheduleStorageProvider)
-          .write(userId: user.id, farmId: farm.id, completed: updated);
+          .write(userId: user.id, farmId: farm.id, entries: entries);
+      await ref.read(feedReminderServiceProvider).sync(entries);
+      state = AsyncData(entries);
     } on Object {
-      state = AsyncData(previous);
+      await ref
+          .read(feedScheduleStorageProvider)
+          .write(userId: user.id, farmId: farm.id, entries: previous);
+      await ref.read(feedReminderServiceProvider).sync(previous);
       rethrow;
     }
+  }
+
+  Future<void> setCompleted(String id, bool completed) async {
+    final entries = state.valueOrNull ?? FeedScheduleLocalDataSource.defaults;
+    final index = entries.indexWhere((entry) => entry.id == id);
+    if (index < 0) throw ArgumentError.value(id, 'id', 'Unknown feeding time');
+    final updated = [...entries];
+    updated[index] = updated[index].copyWith(completed: completed);
+    await saveEntries(updated);
+  }
+
+  Future<void> setReminder(String id, bool enabled) async {
+    final entries = state.valueOrNull ?? FeedScheduleLocalDataSource.defaults;
+    final index = entries.indexWhere((entry) => entry.id == id);
+    if (index < 0) throw ArgumentError.value(id, 'id', 'Unknown feeding time');
+    if (enabled &&
+        !await ref.read(feedReminderServiceProvider).requestPermission()) {
+      throw const FeedReminderPermissionDenied();
+    }
+    final updated = [...entries];
+    updated[index] = updated[index].copyWith(remindersEnabled: enabled);
+    await saveEntries(updated);
   }
 }
 

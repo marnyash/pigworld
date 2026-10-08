@@ -42,7 +42,11 @@ class HerdPage extends ConsumerWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAddAnimalDialog(context, ref),
+        onPressed: () => _showAnimalDetailsPage(
+          context,
+          ref,
+          initialTag: _nextPigTag(herd.valueOrNull ?? const <Animal>[]),
+        ),
         icon: const Icon(Icons.add),
         label: Text(l10n.addPig),
       ),
@@ -74,6 +78,37 @@ class HerdPage extends ConsumerWidget {
               final displayedHerdCount = animals.length > registeredHerdCount
                   ? animals.length
                   : registeredHerdCount;
+              final reservedTags = animals
+                  .map((animal) => animal.tag.toUpperCase())
+                  .toSet();
+              final remainingMothers =
+                  ((registeredFarm?.motherPigCount ?? 0) -
+                          animals
+                              .where((animal) => animal.type == 'sow')
+                              .length)
+                      .clamp(0, registeredHerdCount)
+                      .toInt();
+              final remainingPiglets =
+                  ((registeredFarm?.registeredPigletCount ?? 0) -
+                          animals
+                              .where((animal) => animal.type == 'piglet')
+                              .length)
+                      .clamp(0, registeredHerdCount)
+                      .toInt();
+              final registrationSlots = <_RegistrationSlot>[
+                for (var index = 0; index < remainingMothers; index++)
+                  _RegistrationSlot(
+                    type: 'sow',
+                    number: index + 1,
+                    suggestedTag: _nextPigTag(animals, reservedTags),
+                  ),
+                for (var index = 0; index < remainingPiglets; index++)
+                  _RegistrationSlot(
+                    type: 'piglet',
+                    number: index + 1,
+                    suggestedTag: _nextPigTag(animals, reservedTags),
+                  ),
+              ];
               return RefreshIndicator(
                 onRefresh: () async => ref.invalidate(herdProvider),
                 child: ListView(
@@ -154,6 +189,18 @@ class HerdPage extends ConsumerWidget {
                         motherPigs: registeredFarm?.motherPigCount ?? 0,
                         piglets: registeredFarm?.registeredPigletCount ?? 0,
                         pregnantPigs: registeredFarm?.pregnantPigCount ?? 0,
+                      ),
+                    ],
+                    if (registrationSlots.isNotEmpty) ...[
+                      const SizedBox(height: AppDimensions.spacingMedium),
+                      _RegistrationSlotsGrid(
+                        slots: registrationSlots,
+                        onAdd: (slot) => _showAnimalDetailsPage(
+                          context,
+                          ref,
+                          initialType: slot.type,
+                          initialTag: slot.suggestedTag,
+                        ),
                       ),
                     ],
                     const SizedBox(height: AppDimensions.spacingLarge),
@@ -242,43 +289,17 @@ class HerdPage extends ConsumerWidget {
     );
   }
 
-  Future<void> _showAddAnimalDialog(BuildContext context, WidgetRef ref) async {
-    await showDialog<void>(
-      context: context,
-      builder: (dialogContext) => _AddAnimalDialog(
-        onSave:
-            (
-              tag,
-              type,
-              sex,
-              birthDate,
-              weightKg,
-              notes,
-              image,
-              imageName,
-            ) async {
-              try {
-                await ref
-                    .read(herdProvider.notifier)
-                    .createAnimal(
-                      tag: tag,
-                      type: type,
-                      sex: sex,
-                      birthDate: birthDate,
-                      weightKg: weightKg,
-                      notes: notes,
-                      imageBytes: image,
-                      imageName: imageName,
-                    );
-                if (dialogContext.mounted) Navigator.pop(dialogContext);
-              } catch (error) {
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Could not add pig: $error')),
-                  );
-                }
-              }
-            },
+  Future<void> _showAnimalDetailsPage(
+    BuildContext context,
+    WidgetRef ref, {
+    String initialType = 'sow',
+    required String initialTag,
+  }) async {
+    await Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        fullscreenDialog: true,
+        builder: (_) =>
+            _EditAnimalPage(initialType: initialType, initialTag: initialTag),
       ),
     );
   }
@@ -334,9 +355,15 @@ class HerdPage extends ConsumerWidget {
 }
 
 class _EditAnimalPage extends ConsumerStatefulWidget {
-  const _EditAnimalPage({required this.animal});
+  const _EditAnimalPage({
+    this.animal,
+    this.initialType = 'sow',
+    this.initialTag,
+  });
 
-  final Animal animal;
+  final Animal? animal;
+  final String initialType;
+  final String? initialTag;
 
   @override
   ConsumerState<_EditAnimalPage> createState() => _EditAnimalPageState();
@@ -344,6 +371,7 @@ class _EditAnimalPage extends ConsumerStatefulWidget {
 
 class _EditAnimalPageState extends ConsumerState<_EditAnimalPage> {
   final _formKey = GlobalKey<FormState>();
+  late final TextEditingController _tagController;
   late final TextEditingController _nameController;
   late final TextEditingController _weightController;
   late final TextEditingController _notesController;
@@ -355,28 +383,41 @@ class _EditAnimalPageState extends ConsumerState<_EditAnimalPage> {
   late DateTime? _lastVaccinatedAt;
   Uint8List? _imageBytes;
   String? _imageName;
+  late String _type;
   bool _saving = false;
 
-  Animal get animal => widget.animal;
+  Animal? get animal => widget.animal;
+  bool get isCreating => animal == null;
 
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: animal.name ?? '');
-    _weightController = TextEditingController(
-      text: animal.weightKg?.toString() ?? '',
+    _tagController = TextEditingController(
+      text: animal?.tag ?? widget.initialTag ?? '',
     );
-    _notesController = TextEditingController(text: animal.notes ?? '');
-    _sex = animal.sex;
-    _status = animal.status;
-    _isPregnant = animal.isPregnant;
-    _birthDate = animal.birthDate;
-    _lastDewormedAt = animal.lastDewormedAt;
-    _lastVaccinatedAt = animal.lastVaccinatedAt;
+    _nameController = TextEditingController(text: animal?.name ?? '');
+    _weightController = TextEditingController(
+      text: animal?.weightKg?.toString() ?? '',
+    );
+    _notesController = TextEditingController(text: animal?.notes ?? '');
+    _type = animal?.type ?? widget.initialType;
+    _sex =
+        animal?.sex ??
+        switch (_type) {
+          'boar' => 'male',
+          'sow' => 'female',
+          _ => 'unknown',
+        };
+    _status = animal?.status ?? 'active';
+    _isPregnant = animal?.isPregnant ?? false;
+    _birthDate = animal?.birthDate;
+    _lastDewormedAt = animal?.lastDewormedAt;
+    _lastVaccinatedAt = animal?.lastVaccinatedAt;
   }
 
   @override
   void dispose() {
+    _tagController.dispose();
     _nameController.dispose();
     _weightController.dispose();
     _notesController.dispose();
@@ -424,30 +465,51 @@ class _EditAnimalPageState extends ConsumerState<_EditAnimalPage> {
     if (_saving || !(_formKey.currentState?.validate() ?? false)) return;
     setState(() => _saving = true);
     try {
-      await ref
-          .read(herdProvider.notifier)
-          .updateAnimal(
-            animalId: animal.id,
-            name: _nameController.text.trim(),
-            sex: _sex,
-            status: _status,
-            birthDate: _birthDate,
-            weightKg: double.tryParse(_weightController.text.trim()),
-            isPregnant: _sex == 'female' && _isPregnant,
-            lastDewormedAt: _lastDewormedAt,
-            lastVaccinatedAt: _lastVaccinatedAt,
-            notes: _notesController.text,
-            imageBytes: _imageBytes,
-            imageName: _imageName,
-          );
+      if (isCreating) {
+        await ref
+            .read(herdProvider.notifier)
+            .createAnimal(
+              tag: _tagController.text.trim(),
+              type: _type,
+              sex: _sex,
+              status: _status,
+              name: _nameController.text.trim(),
+              birthDate: _birthDate,
+              weightKg: double.tryParse(_weightController.text.trim()),
+              isPregnant: _sex == 'female' && _isPregnant,
+              lastDewormedAt: _lastDewormedAt,
+              lastVaccinatedAt: _lastVaccinatedAt,
+              notes: _notesController.text,
+              imageBytes: _imageBytes,
+              imageName: _imageName,
+            );
+      } else {
+        await ref
+            .read(herdProvider.notifier)
+            .updateAnimal(
+              animalId: animal!.id,
+              name: _nameController.text.trim(),
+              sex: _sex,
+              status: _status,
+              birthDate: _birthDate,
+              weightKg: double.tryParse(_weightController.text.trim()),
+              isPregnant: _sex == 'female' && _isPregnant,
+              lastDewormedAt: _lastDewormedAt,
+              lastVaccinatedAt: _lastVaccinatedAt,
+              notes: _notesController.text,
+              imageBytes: _imageBytes,
+              imageName: _imageName,
+            );
+      }
       if (!mounted) return;
       Navigator.of(context).pop();
     } catch (error) {
       if (mounted) {
         setState(() => _saving = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not update ${animal.tag}: $error')),
-        );
+        final action = isCreating ? 'add pig' : 'update ${animal!.tag}';
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Could not $action: $error')));
       }
     }
   }
@@ -460,7 +522,7 @@ class _EditAnimalPageState extends ConsumerState<_EditAnimalPage> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
-      title: Text('Edit ${animal.tag}'),
+      title: Text(isCreating ? 'Add pig details' : 'Edit ${animal!.tag}'),
       leading: IconButton(
         tooltip: 'Back',
         onPressed: _saving ? null : () => Navigator.of(context).pop(),
@@ -480,14 +542,14 @@ class _EditAnimalPageState extends ConsumerState<_EditAnimalPage> {
                 height: 180,
                 child: _imageBytes != null
                     ? Image.memory(_imageBytes!, fit: BoxFit.cover)
-                    : animal.imageUrl == null
+                    : animal?.imageUrl == null
                     ? const ColoredBox(
                         color: AppColors.pigPink,
                         child: Icon(Icons.pets_outlined, size: 64),
                       )
                     : Image.network(
-                        animal.imageUrl!,
-                        key: ValueKey(animal.imageUrl),
+                        animal!.imageUrl!,
+                        key: ValueKey(animal!.imageUrl),
                         fit: BoxFit.cover,
                         errorBuilder: (_, _, _) => const ColoredBox(
                           color: AppColors.pigPink,
@@ -502,15 +564,53 @@ class _EditAnimalPageState extends ConsumerState<_EditAnimalPage> {
               onPressed: _saving ? null : _pickImage,
               icon: const Icon(Icons.add_a_photo_outlined),
               label: Text(
-                _imageBytes == null ? 'Change photo' : 'Photo selected',
+                _imageBytes == null
+                    ? (isCreating ? 'Add photo' : 'Change photo')
+                    : 'Photo selected',
               ),
             ),
           ),
           const SizedBox(height: AppDimensions.spacingMedium),
-          InputDecorator(
-            decoration: const InputDecoration(labelText: 'App-assigned tag'),
-            child: Text(animal.tag),
-          ),
+          if (isCreating)
+            TextFormField(
+              controller: _tagController,
+              textCapitalization: TextCapitalization.characters,
+              decoration: const InputDecoration(labelText: 'Pig tag'),
+              validator: (value) => value == null || value.trim().isEmpty
+                  ? 'Enter an animal tag.'
+                  : null,
+            )
+          else
+            InputDecorator(
+              decoration: const InputDecoration(labelText: 'App-assigned tag'),
+              child: Text(animal!.tag),
+            ),
+          if (isCreating) ...[
+            const SizedBox(height: AppDimensions.spacingMedium),
+            DropdownButtonFormField<String>(
+              initialValue: _type,
+              decoration: const InputDecoration(labelText: 'Pig type'),
+              items: const [
+                DropdownMenuItem(value: 'sow', child: Text('Female pig')),
+                DropdownMenuItem(value: 'piglet', child: Text('Piglet')),
+                DropdownMenuItem(value: 'boar', child: Text('Male pig')),
+              ],
+              onChanged: _saving
+                  ? null
+                  : (value) {
+                      if (value == null) return;
+                      setState(() {
+                        _type = value;
+                        _sex = switch (value) {
+                          'boar' => 'male',
+                          'sow' => 'female',
+                          _ => 'unknown',
+                        };
+                        if (_sex != 'female') _isPregnant = false;
+                      });
+                    },
+            ),
+          ],
           const SizedBox(height: AppDimensions.spacingMedium),
           TextFormField(
             controller: _nameController,
@@ -532,24 +632,25 @@ class _EditAnimalPageState extends ConsumerState<_EditAnimalPage> {
             },
           ),
           const SizedBox(height: AppDimensions.spacingMedium),
-          DropdownButtonFormField<String>(
-            initialValue: _sex,
-            decoration: const InputDecoration(labelText: 'Gender'),
-            items: const [
-              DropdownMenuItem(value: 'female', child: Text('Female')),
-              DropdownMenuItem(value: 'male', child: Text('Male')),
-              DropdownMenuItem(value: 'unknown', child: Text('Not set')),
-            ],
-            onChanged: _saving
-                ? null
-                : (value) {
-                    if (value == null) return;
-                    setState(() {
-                      _sex = value;
-                      if (_sex != 'female') _isPregnant = false;
-                    });
-                  },
-          ),
+          if (!isCreating || _type == 'piglet')
+            DropdownButtonFormField<String>(
+              initialValue: _sex,
+              decoration: const InputDecoration(labelText: 'Gender'),
+              items: const [
+                DropdownMenuItem(value: 'female', child: Text('Female')),
+                DropdownMenuItem(value: 'male', child: Text('Male')),
+                DropdownMenuItem(value: 'unknown', child: Text('Not set')),
+              ],
+              onChanged: _saving
+                  ? null
+                  : (value) {
+                      if (value == null) return;
+                      setState(() {
+                        _sex = value;
+                        if (_sex != 'female') _isPregnant = false;
+                      });
+                    },
+            ),
           if (_sex == 'female')
             SwitchListTile(
               contentPadding: EdgeInsets.zero,
@@ -642,7 +743,7 @@ class _EditAnimalPageState extends ConsumerState<_EditAnimalPage> {
                 dimension: 20,
                 child: CircularProgressIndicator(strokeWidth: 2),
               )
-            : const Text('Save pig details'),
+            : Text(isCreating ? 'Add pig' : 'Save pig details'),
       ),
     ),
   );
@@ -825,205 +926,128 @@ class _HerdSummary extends StatelessWidget {
   );
 }
 
-class _AddAnimalDialog extends StatefulWidget {
-  const _AddAnimalDialog({required this.onSave});
+class _RegistrationSlot {
+  const _RegistrationSlot({
+    required this.type,
+    required this.number,
+    required this.suggestedTag,
+  });
 
-  final Future<void> Function(
-    String tag,
-    String type,
-    String sex,
-    DateTime? birthDate,
-    double weightKg,
-    String notes,
-    Uint8List? image,
-    String? imageName,
-  )
-  onSave;
-
-  @override
-  State<_AddAnimalDialog> createState() => _AddAnimalDialogState();
+  final String type;
+  final int number;
+  final String suggestedTag;
 }
 
-class _AddAnimalDialogState extends State<_AddAnimalDialog> {
-  final _formKey = GlobalKey<FormState>();
-  final _tagController = TextEditingController();
-  final _notesController = TextEditingController();
-  final _weightController = TextEditingController();
-  DateTime? _birthDate;
-  XFile? _image;
-  String _type = 'sow';
-  String _sex = 'female';
-  bool _saving = false;
+class _RegistrationSlotsGrid extends StatelessWidget {
+  const _RegistrationSlotsGrid({required this.slots, required this.onAdd});
+
+  final List<_RegistrationSlot> slots;
+  final ValueChanged<_RegistrationSlot> onAdd;
 
   @override
-  void dispose() {
-    _tagController.dispose();
-    _notesController.dispose();
-    _weightController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _save() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
-    setState(() => _saving = true);
-    try {
-      await widget.onSave(
-        _tagController.text.trim(),
-        _type,
-        _sex,
-        _birthDate,
-        double.parse(_weightController.text),
-        _notesController.text,
-        _image == null ? null : await _image!.readAsBytes(),
-        _image?.name,
-      );
-    } catch (error) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not prepare pig details: $error')),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _saving = false);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: const Text('Add pig'),
-    content: Form(
-      key: _formKey,
-      child: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TextFormField(
-              controller: _tagController,
-              decoration: const InputDecoration(labelText: 'Tag'),
-              validator: (value) => value == null || value.trim().isEmpty
-                  ? 'Enter an animal tag.'
-                  : null,
-            ),
-            TextFormField(
-              controller: _weightController,
-              keyboardType: const TextInputType.numberWithOptions(
-                decimal: true,
-              ),
-              decoration: const InputDecoration(labelText: 'Weight (kg)'),
-              validator: (value) {
-                final weight = double.tryParse(value?.trim() ?? '');
-                if (weight == null || weight <= 0) {
-                  return 'Enter a weight greater than zero.';
-                }
-                return null;
-              },
-            ),
-            DropdownButtonFormField<String>(
-              initialValue: _type,
-              decoration: const InputDecoration(labelText: 'Type'),
-              items: const [
-                DropdownMenuItem(value: 'boar', child: Text('Male pig')),
-                DropdownMenuItem(value: 'sow', child: Text('Female pig')),
-                DropdownMenuItem(value: 'piglet', child: Text('Piglet')),
-              ],
-              onChanged: (value) {
-                if (value == null) return;
-                setState(() {
-                  _type = value;
-                  _sex = switch (value) {
-                    'boar' => 'male',
-                    'sow' => 'female',
-                    _ => 'unknown',
-                  };
-                });
-              },
-            ),
-            if (_type == 'piglet')
-              DropdownButtonFormField<String>(
-                initialValue: _sex,
-                decoration: const InputDecoration(labelText: 'Sex'),
-                items: const [
-                  DropdownMenuItem(value: 'unknown', child: Text('Not set')),
-                  DropdownMenuItem(value: 'male', child: Text('Male')),
-                  DropdownMenuItem(value: 'female', child: Text('Female')),
-                ],
-                onChanged: (value) => setState(() => _sex = value ?? _sex),
-              ),
-            TextField(
-              controller: _notesController,
-              decoration: const InputDecoration(labelText: 'Notes (optional)'),
-            ),
-            const SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                onPressed: _saving ? null : _pickBirthDate,
-                icon: const Icon(Icons.calendar_today_outlined),
-                label: Text(
-                  _birthDate == null
-                      ? 'Add birth date'
-                      : 'Born ${_birthDate!.day}/${_birthDate!.month}/${_birthDate!.year}',
-                ),
-              ),
-            ),
-            if (_image != null)
-              FutureBuilder(
-                future: _image!.readAsBytes(),
-                builder: (context, snapshot) => snapshot.hasData
-                    ? Image.memory(
-                        snapshot.data!,
-                        height: 120,
-                        fit: BoxFit.cover,
-                      )
-                    : const SizedBox(
-                        height: 120,
-                        child: Center(child: CircularProgressIndicator()),
-                      ),
-              ),
-            TextButton.icon(
-              onPressed: _saving ? null : _pickImage,
-              icon: const Icon(Icons.add_a_photo_outlined),
-              label: Text(_image == null ? 'Add a photo' : 'Change photo'),
-            ),
-          ],
-        ),
-      ),
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(AppDimensions.spacingMedium),
+    decoration: BoxDecoration(
+      color: AppColors.warningContainer.withValues(alpha: 0.45),
+      borderRadius: BorderRadius.circular(AppDimensions.radius),
+      border: Border.all(color: AppColors.warmGold.withValues(alpha: 0.4)),
     ),
-    actions: [
-      TextButton(
-        onPressed: _saving ? null : () => Navigator.pop(context),
-        child: const Text('Cancel'),
-      ),
-      FilledButton(
-        onPressed: _saving ? null : _save,
-        child: _saving
-            ? const SizedBox.square(
-                dimension: 18,
-                child: CircularProgressIndicator(strokeWidth: 2),
-              )
-            : const Text('Add pig'),
-      ),
-    ],
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Complete registered pig details',
+          style: Theme.of(context).textTheme.titleMedium,
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '${slots.length} registered pig${slots.length == 1 ? '' : 's'} still need individual records.',
+        ),
+        const SizedBox(height: AppDimensions.spacingMedium),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final columns = constraints.maxWidth >= 340 ? 2 : 1;
+            return GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: slots.length,
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: columns,
+                mainAxisExtent: 142,
+                crossAxisSpacing: AppDimensions.spacingMedium,
+                mainAxisSpacing: AppDimensions.spacingMedium,
+              ),
+              itemBuilder: (context, index) {
+                final slot = slots[index];
+                final isPiglet = slot.type == 'piglet';
+                return Card(
+                  margin: EdgeInsets.zero,
+                  color: Theme.of(context).colorScheme.surface,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(AppDimensions.radius),
+                    onTap: () => onAdd(slot),
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                isPiglet
+                                    ? Icons.child_care_outlined
+                                    : Icons.pets_outlined,
+                                color: AppColors.primaryGreen,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  '${isPiglet ? 'Piglet' : 'Female pig'} ${slot.number}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context).textTheme.titleSmall,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Suggested tag: ${slot.suggestedTag}',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.bodySmall,
+                          ),
+                          const Spacer(),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: TextButton.icon(
+                              onPressed: () => onAdd(slot),
+                              icon: const Icon(Icons.add, size: 18),
+                              label: const Text('Add details'),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        ),
+      ],
+    ),
   );
+}
 
-  Future<void> _pickBirthDate() async {
-    final now = DateTime.now();
-    final picked = await showDatePicker(
-      context: context,
-      firstDate: DateTime(1990),
-      lastDate: now,
-      initialDate: _birthDate ?? now,
-    );
-    if (picked != null && mounted) setState(() => _birthDate = picked);
-  }
-
-  Future<void> _pickImage() async {
-    final picked = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
-      maxWidth: 1600,
-      imageQuality: 80,
-    );
-    if (picked != null && mounted) setState(() => _image = picked);
+String _nextPigTag(Iterable<Animal> animals, [Set<String>? reservedTags]) {
+  final reserved =
+      reservedTags ?? animals.map((animal) => animal.tag.toUpperCase()).toSet();
+  var number = 1;
+  while (true) {
+    final tag = 'PIG-${number.toString().padLeft(3, '0')}';
+    if (reserved.add(tag)) return tag;
+    number++;
   }
 }
 

@@ -7,6 +7,7 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../shared/components/bottom_navigation.dart';
 import '../../data/feed_api.dart';
 import '../../data/feed_schedule_local_data_source.dart';
+import '../../data/feed_reminder_service.dart';
 import '../providers/feed_provider.dart';
 import '../../../settings/presentation/providers/settings_providers.dart';
 
@@ -60,34 +61,154 @@ class _FeedPageState extends ConsumerState<FeedPage> {
           error: error,
           onRetry: () => ref.invalidate(feedProvider),
         ),
-        data: (snapshot) => _Dashboard(
-          snapshot: snapshot,
-          schedule:
-              schedule.valueOrNull ?? FeedScheduleLocalDataSource.defaults,
-          currency: currency,
-          onScheduleChanged: (name, value) async {
-            try {
-              await ref
-                  .read(feedScheduleProvider.notifier)
-                  .setCompleted(name, value);
-              if (value && context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('$name feeding marked complete')),
-                );
+        data: (snapshot) => schedule.when(
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, _) => _ErrorView(
+            error: error,
+            onRetry: () => ref.invalidate(feedScheduleProvider),
+          ),
+          data: (entries) => _Dashboard(
+            snapshot: snapshot,
+            schedule: entries,
+            currency: currency,
+            onScheduleChanged: (entry, value) async {
+              try {
+                await ref
+                    .read(feedScheduleProvider.notifier)
+                    .setCompleted(entry.id, value);
+                if (value && context.mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('${entry.name} marked complete')),
+                  );
+                }
+              } catch (error) {
+                _showScheduleError(error);
               }
-            } catch (_) {
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Could not save the feeding checklist.'),
-                  ),
-                );
+            },
+            onReminderChanged: (entry, value) async {
+              try {
+                await ref
+                    .read(feedScheduleProvider.notifier)
+                    .setReminder(entry.id, value);
+              } catch (error) {
+                _showScheduleError(error);
               }
-            }
-          },
+            },
+            onEditSchedule: _editSchedule,
+            onDeleteSchedule: (entry) async {
+              final entries = ref.read(feedScheduleProvider).valueOrNull;
+              if (entries == null) return;
+              try {
+                await ref
+                    .read(feedScheduleProvider.notifier)
+                    .saveEntries(
+                      entries.where((item) => item.id != entry.id).toList(),
+                    );
+              } catch (error) {
+                _showScheduleError(error);
+              }
+            },
+          ),
         ),
       ),
     );
+  }
+
+  void _showScheduleError(Object error) {
+    if (!mounted) return;
+    final message = error is FeedReminderPermissionDenied
+        ? 'Allow notifications in system settings to enable feeding reminders.'
+        : 'Could not update feeding schedule: $error';
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _editSchedule(FeedScheduleEntry? entry) async {
+    final nameController = TextEditingController(text: entry?.name ?? '');
+    var time = entry == null
+        ? const TimeOfDay(hour: 8, minute: 0)
+        : TimeOfDay(hour: entry.hour, minute: entry.minute);
+    try {
+      final result = await showDialog<({String name, TimeOfDay time})>(
+        context: context,
+        builder: (dialogContext) => StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            title: Text(
+              entry == null ? 'Add feeding time' : 'Edit feeding time',
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  autofocus: true,
+                  textCapitalization: TextCapitalization.sentences,
+                  decoration: const InputDecoration(labelText: 'Feeding name'),
+                  maxLength: 40,
+                ),
+                const SizedBox(height: 8),
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Time'),
+                  trailing: TextButton.icon(
+                    onPressed: () async {
+                      final selected = await showTimePicker(
+                        context: dialogContext,
+                        initialTime: time,
+                      );
+                      if (selected != null) {
+                        setDialogState(() => time = selected);
+                      }
+                    },
+                    icon: const Icon(Icons.schedule_rounded),
+                    label: Text(time.format(context)),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () {
+                  final name = nameController.text.trim();
+                  if (name.isEmpty) return;
+                  Navigator.pop(dialogContext, (name: name, time: time));
+                },
+                child: const Text('Save'),
+              ),
+            ],
+          ),
+        ),
+      );
+      if (result == null || !mounted) return;
+      final entries = ref.read(feedScheduleProvider).valueOrNull;
+      if (entries == null) return;
+      final minutes = result.time.hour * 60 + result.time.minute;
+      final replacement =
+          (entry ??
+                  FeedScheduleEntry(
+                    id: DateTime.now().microsecondsSinceEpoch.toString(),
+                    name: result.name,
+                    minutesAfterMidnight: minutes,
+                  ))
+              .copyWith(name: result.name, minutesAfterMidnight: minutes);
+      final updated = entry == null
+          ? [...entries, replacement]
+          : entries
+                .map((item) => item.id == entry.id ? replacement : item)
+                .toList();
+      try {
+        await ref.read(feedScheduleProvider.notifier).saveEntries(updated);
+      } catch (error) {
+        _showScheduleError(error);
+      }
+    } finally {
+      nameController.dispose();
+    }
   }
 
   Future<void> _showUsageDialog(FeedSnapshot snapshot) async {
@@ -181,12 +302,18 @@ class _Dashboard extends StatefulWidget {
     required this.schedule,
     required this.currency,
     required this.onScheduleChanged,
+    required this.onReminderChanged,
+    required this.onEditSchedule,
+    required this.onDeleteSchedule,
   });
 
   final FeedSnapshot snapshot;
-  final Map<String, bool> schedule;
+  final List<FeedScheduleEntry> schedule;
   final String currency;
-  final void Function(String, bool) onScheduleChanged;
+  final void Function(FeedScheduleEntry, bool) onScheduleChanged;
+  final void Function(FeedScheduleEntry, bool) onReminderChanged;
+  final void Function(FeedScheduleEntry?) onEditSchedule;
+  final void Function(FeedScheduleEntry) onDeleteSchedule;
 
   @override
   State<_Dashboard> createState() => _DashboardState();
@@ -266,6 +393,10 @@ class _DashboardState extends State<_Dashboard> {
                   values: schedule,
                   highlightedName: nextSchedule,
                   onChanged: widget.onScheduleChanged,
+                  onReminderChanged: widget.onReminderChanged,
+                  onEdit: widget.onEditSchedule,
+                  onDelete: widget.onDeleteSchedule,
+                  onAdd: () => widget.onEditSchedule(null),
                 ),
               ),
               _FeedSlide(
@@ -477,33 +608,55 @@ class _ScheduleCard extends StatelessWidget {
     required this.values,
     required this.highlightedName,
     required this.onChanged,
+    required this.onReminderChanged,
+    required this.onEdit,
+    required this.onDelete,
+    required this.onAdd,
   });
 
-  final Map<String, bool> values;
+  final List<FeedScheduleEntry> values;
   final String? highlightedName;
-  final void Function(String, bool) onChanged;
+  final void Function(FeedScheduleEntry, bool) onChanged;
+  final void Function(FeedScheduleEntry, bool) onReminderChanged;
+  final void Function(FeedScheduleEntry?) onEdit;
+  final void Function(FeedScheduleEntry) onDelete;
+  final VoidCallback onAdd;
 
   @override
   Widget build(BuildContext context) {
-    const items = [
-      ('Morning', '06:30', 'Pens A1, A2'),
-      ('Afternoon', '13:00', 'Pens B1, B2'),
-      ('Evening', '17:30', 'Sow house'),
-    ];
+    final items = [
+      ...values,
+    ]..sort((a, b) => a.minutesAfterMidnight.compareTo(b.minutesAfterMidnight));
     return Card(
       child: Column(
         children: [
           for (var index = 0; index < items.length; index++) ...[
             _ScheduleRow(
-              name: items[index].$1,
-              time: items[index].$2,
-              pens: items[index].$3,
-              checked: values[items[index].$1] ?? false,
-              highlighted: items[index].$1 == highlightedName,
-              onChanged: (value) => onChanged(items[index].$1, value),
+              entry: items[index],
+              checked: items[index].completed,
+              highlighted: items[index].id == highlightedName,
+              onChanged: (value) => onChanged(items[index], value),
+              onReminderChanged: (value) =>
+                  onReminderChanged(items[index], value),
+              onEdit: () => onEdit(items[index]),
+              onDelete: () => onDelete(items[index]),
             ),
             if (index < items.length - 1) const Divider(height: 1),
           ],
+          if (items.isEmpty)
+            const Padding(
+              padding: EdgeInsets.all(20),
+              child: Text('No feeding times yet. Add your daily schedule.'),
+            ),
+          const Divider(height: 1),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: onAdd,
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Add feeding time'),
+            ),
+          ),
         ],
       ),
     );
@@ -512,87 +665,144 @@ class _ScheduleCard extends StatelessWidget {
 
 class _ScheduleRow extends StatelessWidget {
   const _ScheduleRow({
-    required this.name,
-    required this.time,
-    required this.pens,
+    required this.entry,
     required this.checked,
     required this.highlighted,
     required this.onChanged,
+    required this.onReminderChanged,
+    required this.onEdit,
+    required this.onDelete,
   });
-  final String name, time, pens;
+  final FeedScheduleEntry entry;
   final bool checked;
   final bool highlighted;
   final ValueChanged<bool> onChanged;
+  final ValueChanged<bool> onReminderChanged;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
   @override
-  Widget build(BuildContext context) => Container(
-    decoration: BoxDecoration(
-      color: checked
-          ? AppColors.successContainer.withValues(alpha: .45)
-          : highlighted
-          ? AppColors.warningContainer.withValues(alpha: .55)
-          : null,
-      border: highlighted
-          ? Border.all(color: AppColors.warmGold.withValues(alpha: .5))
-          : null,
-      borderRadius: BorderRadius.circular(14),
-    ),
-    child: ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 2),
-      leading: Container(
-        width: 40,
-        height: 40,
-        decoration: BoxDecoration(
-          color: checked
-              ? AppColors.successContainer
-              : highlighted
-              ? AppColors.warningContainer
-              : AppColors.surfaceMuted,
-          shape: BoxShape.circle,
-        ),
-        child: Icon(
-          checked ? Icons.check_rounded : Icons.schedule_rounded,
-          color: checked
-              ? AppColors.success
-              : highlighted
-              ? AppColors.warning
-              : AppColors.primaryGreen,
-        ),
+  Widget build(BuildContext context) {
+    final time = TimeOfDay(
+      hour: entry.hour,
+      minute: entry.minute,
+    ).format(context);
+    return Container(
+      decoration: BoxDecoration(
+        color: checked
+            ? AppColors.successContainer.withValues(alpha: .45)
+            : highlighted
+            ? AppColors.warningContainer.withValues(alpha: .55)
+            : null,
+        border: highlighted
+            ? Border.all(color: AppColors.warmGold.withValues(alpha: .5))
+            : null,
+        borderRadius: BorderRadius.circular(14),
       ),
-      title: Text(
-        '$name  ·  $time',
-        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-          color: highlighted ? AppColors.deepGreen : null,
-          fontWeight: highlighted ? FontWeight.w700 : null,
-        ),
-      ),
-      subtitle: Text(pens),
-      trailing: Row(
-        mainAxisSize: MainAxisSize.min,
+      padding: const EdgeInsets.fromLTRB(12, 4, 8, 8),
+      child: Column(
         children: [
-          if (highlighted && !checked)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-              decoration: BoxDecoration(
-                color: AppColors.warningContainer,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: const Text(
-                'Next',
-                style: TextStyle(
-                  color: AppColors.warning,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
+          Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: checked
+                      ? AppColors.successContainer
+                      : highlighted
+                      ? AppColors.warningContainer
+                      : AppColors.surfaceMuted,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  checked ? Icons.check_rounded : Icons.schedule_rounded,
+                  color: checked
+                      ? AppColors.success
+                      : highlighted
+                      ? AppColors.warning
+                      : AppColors.primaryGreen,
                 ),
               ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      entry.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                        color: highlighted ? AppColors.deepGreen : null,
+                        fontWeight: highlighted ? FontWeight.w700 : null,
+                      ),
+                    ),
+                    Text(
+                      time,
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: AppColors.mutedText,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (highlighted && !checked)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.warningContainer,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Text(
+                    'Next',
+                    style: TextStyle(
+                      color: AppColors.warning,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              PopupMenuButton<String>(
+                tooltip: 'Edit feeding time',
+                onSelected: (action) {
+                  if (action == 'edit') onEdit();
+                  if (action == 'delete') onDelete();
+                },
+                itemBuilder: (_) => const [
+                  PopupMenuItem(value: 'edit', child: Text('Edit')),
+                  PopupMenuItem(value: 'delete', child: Text('Delete')),
+                ],
+              ),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.only(left: 48),
+            child: Row(
+              children: [
+                const Icon(Icons.notifications_outlined, size: 18),
+                const SizedBox(width: 6),
+                const Expanded(child: Text('Phone reminder')),
+                Switch(
+                  value: entry.remindersEnabled,
+                  onChanged: onReminderChanged,
+                ),
+                const SizedBox(width: 4),
+                const Text('Done'),
+                Checkbox(
+                  value: checked,
+                  onChanged: (value) => onChanged(value ?? false),
+                ),
+              ],
             ),
-          Checkbox(
-            value: checked,
-            onChanged: (value) => onChanged(value ?? false),
           ),
         ],
       ),
-    ),
-  );
+    );
+  }
 }
 
 class _DailyConsumption extends StatelessWidget {
@@ -796,23 +1006,17 @@ String _stockUnit(List<FeedStock> stock) => stock.isEmpty
     : 'mixed units';
 String _usageUnit(List<FeedUsage> usage, List<FeedStock> stock) =>
     usage.isNotEmpty ? usage.first.unit : _stockUnit(stock);
-String? _nextScheduleName(Map<String, bool> completed) {
-  const schedule = [
-    ('Morning', 6, 30),
-    ('Afternoon', 13, 0),
-    ('Evening', 17, 30),
-  ];
+String? _nextScheduleName(List<FeedScheduleEntry> schedule) {
   final now = DateTime.now();
   final currentMinutes = now.hour * 60 + now.minute;
-  for (final (name, hour, minute) in schedule) {
-    if (!(completed[name] ?? false) && hour * 60 + minute <= currentMinutes) {
-      return name;
+  final incomplete = schedule.where((entry) => !entry.completed).toList()
+    ..sort((a, b) => a.minutesAfterMidnight.compareTo(b.minutesAfterMidnight));
+  for (final entry in incomplete) {
+    if (entry.minutesAfterMidnight <= currentMinutes) {
+      return entry.id;
     }
   }
-  for (final (name, _, _) in schedule) {
-    if (!(completed[name] ?? false)) return name;
-  }
-  return null;
+  return incomplete.firstOrNull?.id;
 }
 
 bool _isToday(DateTime value) {
