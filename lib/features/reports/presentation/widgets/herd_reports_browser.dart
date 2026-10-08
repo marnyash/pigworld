@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:proj/app/theme/app_colors.dart';
 import 'package:proj/app/theme/app_dimensions.dart';
 import 'package:proj/features/auth/presentation/providers/auth_provider.dart';
-import 'package:proj/features/auth/presentation/providers/auth_providers.dart';
 import 'package:proj/features/breeding/domain/entities/pregnancy.dart';
 import 'package:proj/features/breeding/presentation/providers/pregnancy_provider.dart';
 import 'package:proj/features/feed/data/feed_api.dart';
@@ -87,35 +86,36 @@ class _HerdReportsBrowserState extends ConsumerState<HerdReportsBrowser> {
     final pregnancyState = ref.watch(pregnancyProvider);
     final healthState = ref.watch(healthRecordsProvider);
     final feedState = ref.watch(feedProvider);
-    final pregnant = (pregnancyState.valueOrNull ?? const <Pregnancy>[])
-        .where(
-          (item) =>
-              !{'farrowed', 'aborted'}.contains(item.status.toLowerCase()),
-        )
-        .map((item) {
-          final sow = _findAnimal(animals, item.sowId, item.sowTag);
-          final tag = item.sowTag ?? sow?.tag ?? 'Pig ${item.sowId}';
-          return _ReportEntry(
-            title: tag,
-            subtitle:
-                '${item.status} · due ${_date(item.expectedFarrowingDate)}',
-            category: _ReportCategory.pregnant,
-            data: {
-              'pig': tag,
-              'status': item.status,
-              'mating_date': _date(item.matingDate),
-              'expected_farrowing_date': _date(item.expectedFarrowingDate),
-              'actual_farrowing_date': item.actualFarrowingDate == null
-                  ? ''
-                  : _date(item.actualFarrowingDate!),
-              'expected_litter_size': item.expectedLitterSize ?? '',
-              'born_alive': item.bornAlive ?? '',
-              'stillborn': item.stillborn ?? '',
-              'notes': item.notes ?? '',
-            },
-          );
-        })
-        .toList();
+    final pregnant = (pregnancyState.valueOrNull ?? const <Pregnancy>[]).map((
+      item,
+    ) {
+      final sow = _findAnimal(animals, item.sowId, item.sowTag);
+      final tag = item.sowTag ?? sow?.tag ?? 'Pig ${item.sowId}';
+      return _ReportEntry(
+        title: tag,
+        subtitle: '${item.status} · due ${_date(item.expectedFarrowingDate)}',
+        category: _ReportCategory.pregnant,
+        data: {
+          'pig': tag,
+          'boar': item.boarTag ?? item.boarId ?? '',
+          'status': item.status,
+          'mating_date': _date(item.matingDate),
+          'confirmation_date': item.confirmationDate == null
+              ? ''
+              : _date(item.confirmationDate!),
+          'expected_farrowing_date': _date(item.expectedFarrowingDate),
+          'actual_farrowing_date': item.actualFarrowingDate == null
+              ? ''
+              : _date(item.actualFarrowingDate!),
+          'expected_litter_size': item.expectedLitterSize ?? '',
+          'born_alive': item.bornAlive ?? '',
+          'stillborn': item.stillborn ?? '',
+          'mummified': item.mummified ?? '',
+          'weaned': item.weaned ?? '',
+          'notes': item.notes ?? '',
+        },
+      );
+    }).toList();
     final health = (healthState.valueOrNull ?? const <HealthRecord>[]).map((
       item,
     ) {
@@ -227,7 +227,7 @@ class _HerdReportsBrowserState extends ConsumerState<HerdReportsBrowser> {
               mainAxisSpacing: AppDimensions.spacingMedium,
               children: [
                 _CategoryCard(
-                  title: 'Pregnant',
+                  title: 'Pregnancy',
                   subtitle: 'Pregnancy and farrowing',
                   count: pregnant.length,
                   icon: Icons.favorite_outline,
@@ -301,6 +301,21 @@ class _HerdReportsBrowserState extends ConsumerState<HerdReportsBrowser> {
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
               ),
+              if (visibleEntries.isNotEmpty)
+                PopupMenuButton<String>(
+                  tooltip: 'Export ${_label(_category!)} report',
+                  onSelected: (format) => _exportEntries(
+                    context,
+                    visibleEntries,
+                    _category!,
+                    format,
+                  ),
+                  itemBuilder: (context) => const [
+                    PopupMenuItem(value: 'pdf', child: Text('Export PDF')),
+                    PopupMenuItem(value: 'xlsx', child: Text('Export Excel')),
+                  ],
+                  icon: const Icon(Icons.download_outlined),
+                ),
               Text('${visibleEntries.length}'),
             ],
           ),
@@ -394,6 +409,37 @@ class _HerdReportsBrowserState extends ConsumerState<HerdReportsBrowser> {
           'report_category': _label(category),
           ...entry.data,
           'records': [entry.data],
+        },
+      );
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Report exported: $path')));
+    } catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Report export failed: $error'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    }
+  }
+
+  Future<void> _exportEntries(
+    BuildContext context,
+    List<_ReportEntry> entries,
+    _ReportCategory category,
+    String format,
+  ) async {
+    try {
+      final path = await ReportExportService().exportReport(
+        reportName: '${_label(category)}_Report',
+        format: format,
+        data: {
+          'report_category': _label(category),
+          'record_count': entries.length,
+          'records': entries.map((entry) => entry.data).toList(),
         },
       );
       if (!context.mounted) return;
@@ -534,7 +580,7 @@ Animal? _findAnimal(List<Animal> animals, String id, String? tag) {
 }
 
 String _label(_ReportCategory category) => switch (category) {
-  _ReportCategory.pregnant => 'Pregnant',
+  _ReportCategory.pregnant => 'Pregnancy',
   _ReportCategory.health => 'Health',
   _ReportCategory.feed => 'Feed',
 };

@@ -25,100 +25,105 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('Reports & Analytics'), elevation: 0),
-      body: ListView(
+      body: Padding(
         padding: const EdgeInsets.all(AppDimensions.pagePadding),
-        children: [
-          _DateRangeFilter(
-            selectedRange: dateRange,
-            onRangeChanged: (range) {
-              ref.read(selectedDateRangeProvider.notifier).state = range;
-              ref.invalidate(reportMetricsProvider);
-            },
-          ),
-          const SizedBox(height: AppDimensions.spacingLarge),
-          DefaultTabController(
-            length: 3,
-            child: Column(
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.surfaceContainerHighest,
-                    borderRadius: BorderRadius.circular(AppDimensions.radius),
-                  ),
-                  child: TabBar(
-                    tabs: const [
-                      Tab(text: 'Finance'),
-                      Tab(text: 'Herd'),
-                      Tab(text: 'Analytics'),
-                    ],
-                    labelColor: AppColors.primaryGreen,
-                    indicatorColor: AppColors.primaryGreen,
-                    unselectedLabelColor: Theme.of(
-                      context,
-                    ).colorScheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: AppDimensions.spacingLarge),
-                SizedBox(
-                  height: 520,
-                  child: TabBarView(
-                    children: [
-                      SingleChildScrollView(
-                        padding: EdgeInsets.zero,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            metrics.when(
-                              data: (data) => _ReportsDashboard(
-                                metrics: data,
+        child: Column(
+          children: [
+            _DateRangeFilter(
+              selectedRange: dateRange,
+              onRangeChanged: (range) {
+                ref.read(selectedDateRangeProvider.notifier).state = range;
+                ref.invalidate(reportMetricsProvider);
+              },
+            ),
+            const SizedBox(height: AppDimensions.spacingLarge),
+            Expanded(
+              child: DefaultTabController(
+                length: 3,
+                child: Column(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Theme.of(
+                          context,
+                        ).colorScheme.surfaceContainerHighest,
+                        borderRadius: BorderRadius.circular(
+                          AppDimensions.radius,
+                        ),
+                      ),
+                      child: TabBar(
+                        tabs: const [
+                          Tab(text: 'Finance'),
+                          Tab(text: 'Herd'),
+                          Tab(text: 'Analytics'),
+                        ],
+                        labelColor: AppColors.primaryGreen,
+                        indicatorColor: AppColors.primaryGreen,
+                        unselectedLabelColor: Theme.of(
+                          context,
+                        ).colorScheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: AppDimensions.spacingLarge),
+                    Expanded(
+                      child: TabBarView(
+                        children: [
+                          ListView(
+                            padding: EdgeInsets.zero,
+                            children: [
+                              metrics.when(
+                                data: (data) => _ReportsDashboard(
+                                  metrics: data,
+                                  currency: currency,
+                                ),
+                                loading: () => const Center(
+                                  child: CircularProgressIndicator(),
+                                ),
+                                error: (error, _) =>
+                                    Center(child: Text('Error: $error')),
+                              ),
+                              const SizedBox(
+                                height: AppDimensions.spacingLarge,
+                              ),
+                              Text(
+                                'Report library',
+                                style: Theme.of(context).textTheme.titleLarge,
+                              ),
+                              const SizedBox(
+                                height: AppDimensions.spacingMedium,
+                              ),
+                              const _ReportCategories(),
+                            ],
+                          ),
+                          const SingleChildScrollView(
+                            padding: EdgeInsets.zero,
+                            child: HerdReportsBrowser(),
+                          ),
+                          ListView(
+                            padding: EdgeInsets.zero,
+                            children: [
+                              Text(
+                                'Analytics overview',
+                                style: Theme.of(context).textTheme.titleLarge,
+                              ),
+                              const SizedBox(
+                                height: AppDimensions.spacingMedium,
+                              ),
+                              _AnalyticsCharts(
+                                metrics: metrics,
                                 currency: currency,
                               ),
-                              loading: () => const Center(
-                                child: CircularProgressIndicator(),
-                              ),
-                              error: (error, _) =>
-                                  Center(child: Text('Error: $error')),
-                            ),
-                            const SizedBox(height: AppDimensions.spacingLarge),
-                            Text(
-                              'Report library',
-                              style: Theme.of(context).textTheme.titleLarge,
-                            ),
-                            const SizedBox(height: AppDimensions.spacingMedium),
-                            const _ReportCategories(),
-                          ],
-                        ),
+                            ],
+                          ),
+                        ],
                       ),
-                      const SingleChildScrollView(
-                        padding: EdgeInsets.zero,
-                        child: HerdReportsBrowser(),
-                      ),
-                      SingleChildScrollView(
-                        padding: EdgeInsets.zero,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Analytics overview',
-                              style: Theme.of(context).textTheme.titleLarge,
-                            ),
-                            const SizedBox(height: AppDimensions.spacingMedium),
-                            _AnalyticsCharts(
-                              metrics: metrics,
-                              currency: currency,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -157,12 +162,6 @@ class _DateRangeFilter extends StatelessWidget {
                   ),
                 );
               }),
-              FilterChip(
-                label: const Text('Custom'),
-                onSelected: (_) {
-                  // TODO: Show date range picker
-                },
-              ),
             ],
           ),
         ),
@@ -184,38 +183,40 @@ class _ReportsDashboard extends StatelessWidget {
       children: [
         Text('Overview', style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: AppDimensions.spacingMedium),
-        GridView.count(
-          crossAxisCount: 2,
-          crossAxisSpacing: AppDimensions.spacingMedium,
-          mainAxisSpacing: AppDimensions.spacingMedium,
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          children: [
-            _MetricCard(
-              icon: Icons.attach_money,
-              label: 'Subscription payments',
-              value: '$currency ${metrics.totalRevenue.toStringAsFixed(0)}',
-              color: AppColors.primaryGreen,
-            ),
-            _MetricCard(
-              icon: Icons.warning,
-              label: 'Mortality Rate',
-              value: '${metrics.mortalityRate.toStringAsFixed(1)}%',
-              color: AppColors.danger,
-            ),
-            _MetricCard(
-              icon: Icons.trending_up,
-              label: 'Average Growth',
-              value: '${metrics.averageGrowth.toStringAsFixed(1)} kg',
-              color: AppColors.primaryGreen,
-            ),
-            _MetricCard(
-              icon: Icons.restaurant,
-              label: 'Feed consumed',
-              value: metrics.feedConsumption.toStringAsFixed(1),
-              color: AppColors.aqua,
-            ),
-          ],
+        LayoutBuilder(
+          builder: (context, constraints) => GridView.count(
+            crossAxisCount: constraints.maxWidth < 360 ? 1 : 2,
+            crossAxisSpacing: AppDimensions.spacingMedium,
+            mainAxisSpacing: AppDimensions.spacingMedium,
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            children: [
+              _MetricCard(
+                icon: Icons.attach_money,
+                label: 'Total revenue',
+                value: '$currency ${metrics.totalRevenue.toStringAsFixed(0)}',
+                color: AppColors.primaryGreen,
+              ),
+              _MetricCard(
+                icon: Icons.warning,
+                label: 'Mortality Rate',
+                value: '${metrics.mortalityRate.toStringAsFixed(1)}%',
+                color: AppColors.danger,
+              ),
+              _MetricCard(
+                icon: Icons.trending_up,
+                label: 'Average Growth',
+                value: '${metrics.averageGrowth.toStringAsFixed(1)} kg',
+                color: AppColors.primaryGreen,
+              ),
+              _MetricCard(
+                icon: Icons.restaurant,
+                label: 'Feed consumed',
+                value: metrics.feedConsumption.toStringAsFixed(1),
+                color: AppColors.aqua,
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -292,39 +293,41 @@ class _AnalyticsCharts extends StatelessWidget {
     return metrics.when(
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, _) => Text('Could not load analytics: $error'),
-      data: (data) => GridView.count(
-        crossAxisCount: 2,
-        crossAxisSpacing: AppDimensions.spacingMedium,
-        mainAxisSpacing: AppDimensions.spacingMedium,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        children: [
-          _AnalyticsMetricCard(
-            title: 'Subscription payments',
-            value: '$currency ${data.totalRevenue.toStringAsFixed(2)}',
-            icon: Icons.payments_outlined,
-          ),
-          _AnalyticsMetricCard(
-            title: 'Feed consumed',
-            value: data.feedConsumption.toStringAsFixed(1),
-            icon: Icons.restaurant_outlined,
-          ),
-          _AnalyticsMetricCard(
-            title: 'Average weight gain',
-            value: '${data.averageGrowth.toStringAsFixed(1)} kg',
-            icon: Icons.trending_up,
-          ),
-          _AnalyticsMetricCard(
-            title: 'Animals marked sold',
-            value: '${data.salesCount}',
-            icon: Icons.sell_outlined,
-          ),
-          _AnalyticsMetricCard(
-            title: 'Current mortality rate',
-            value: '${data.mortalityRate.toStringAsFixed(1)}%',
-            icon: Icons.warning_amber_outlined,
-          ),
-        ],
+      data: (data) => LayoutBuilder(
+        builder: (context, constraints) => GridView.count(
+          crossAxisCount: constraints.maxWidth < 360 ? 1 : 2,
+          crossAxisSpacing: AppDimensions.spacingMedium,
+          mainAxisSpacing: AppDimensions.spacingMedium,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          children: [
+            _AnalyticsMetricCard(
+              title: 'Total revenue',
+              value: '$currency ${data.totalRevenue.toStringAsFixed(2)}',
+              icon: Icons.payments_outlined,
+            ),
+            _AnalyticsMetricCard(
+              title: 'Feed consumed',
+              value: data.feedConsumption.toStringAsFixed(1),
+              icon: Icons.restaurant_outlined,
+            ),
+            _AnalyticsMetricCard(
+              title: 'Average weight gain',
+              value: '${data.averageGrowth.toStringAsFixed(1)} kg',
+              icon: Icons.trending_up,
+            ),
+            _AnalyticsMetricCard(
+              title: 'Animals marked sold',
+              value: '${data.salesCount}',
+              icon: Icons.sell_outlined,
+            ),
+            _AnalyticsMetricCard(
+              title: 'Current mortality rate',
+              value: '${data.mortalityRate.toStringAsFixed(1)}%',
+              icon: Icons.warning_amber_outlined,
+            ),
+          ],
+        ),
       ),
     );
   }
