@@ -59,13 +59,28 @@ class SalesPage extends ConsumerWidget {
               icon: const Icon(Icons.people_outline),
             ),
           ],
-          bottom: const TabBar(
-            isScrollable: true,
-            tabs: [
-              Tab(text: 'For buyers'),
-              Tab(text: 'Post pig'),
-              Tab(text: 'My sales'),
-            ],
+          bottom: const PreferredSize(
+            preferredSize: Size.fromHeight(56),
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(16, 0, 16, 8),
+              child: TabBar(
+                isScrollable: true,
+                dividerColor: Colors.transparent,
+                indicatorSize: TabBarIndicatorSize.tab,
+                indicator: BoxDecoration(
+                  color: AppColors.primaryGreen,
+                  borderRadius: BorderRadius.all(Radius.circular(14)),
+                ),
+                labelColor: Colors.white,
+                unselectedLabelColor: AppColors.mutedText,
+                labelStyle: TextStyle(fontWeight: FontWeight.w700),
+                tabs: [
+                  Tab(text: 'For buyers'),
+                  Tab(text: 'Post pig'),
+                  Tab(text: 'My sales'),
+                ],
+              ),
+            ),
           ),
         ),
         body: TabBarView(

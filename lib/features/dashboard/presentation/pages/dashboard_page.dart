@@ -46,7 +46,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
+    final l10n = AppLocalizations.of(context);
     final session = ref.watch(authProvider).valueOrNull;
     final role = session?.user.role;
     final access = ref.watch(farmAccessProvider);
@@ -188,50 +188,126 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                       ),
                     ),
                   ),
-                Card(
-                  color: AppColors.deepGreen,
-                  child: Padding(
-                    padding: const EdgeInsets.all(AppDimensions.spacingLarge),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.inverseText.withValues(
-                              alpha: 0.15,
-                            ),
-                            borderRadius: BorderRadius.circular(999),
-                          ),
-                          child: Text(
-                            l10n.farmOverview,
-                            style: TextStyle(
-                              color: AppColors.inverseText,
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          '${l10n.goodDay}, $firstName',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.headlineSmall
-                              ?.copyWith(color: AppColors.inverseText),
-                        ),
-                        const SizedBox(height: 6),
-                        Text(
-                          crmMessage?.body ?? l10n.farmRunningSmoothly,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: Theme.of(context).textTheme.bodyMedium
-                              ?.copyWith(color: AppColors.inverseMutedText),
-                        ),
-                      ],
+                Container(
+                  clipBehavior: Clip.antiAlias,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(24),
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [AppColors.primaryGreen, AppColors.deepGreen],
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.deepGreen.withValues(alpha: 0.18),
+                        blurRadius: 20,
+                        offset: const Offset(0, 10),
+                      ),
+                    ],
+                  ),
+                  child: Stack(
+                    children: [
+                      Positioned(
+                        right: -45,
+                        bottom: -75,
+                        child: Opacity(
+                          opacity: 0.12,
+                          child: Image.asset(
+                            'assets/images/logo.jpeg',
+                            width: 220,
+                            height: 220,
+                            fit: BoxFit.contain,
+                          ),
+                        ),
+                      ),
+                      Padding(
+                        padding: const EdgeInsets.all(
+                          AppDimensions.spacingLarge,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 11,
+                                vertical: 7,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.inverseText.withValues(
+                                  alpha: 0.14,
+                                ),
+                                borderRadius: BorderRadius.circular(999),
+                                border: Border.all(
+                                  color: AppColors.inverseText.withValues(
+                                    alpha: 0.15,
+                                  ),
+                                ),
+                              ),
+                              child: Text(
+                                l10n.farmOverview,
+                                style: const TextStyle(
+                                  color: AppColors.inverseText,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            Text(
+                              '${l10n.goodDay}, $firstName',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.headlineSmall
+                                  ?.copyWith(
+                                    color: AppColors.inverseText,
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              crmMessage?.body ?? l10n.farmRunningSmoothly,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(
+                                    color: AppColors.inverseMutedText,
+                                    height: 1.4,
+                                  ),
+                            ),
+                            const SizedBox(height: 18),
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.location_on_outlined,
+                                  size: 17,
+                                  color: AppColors.leaf,
+                                ),
+                                const SizedBox(width: 5),
+                                Expanded(
+                                  child: Text(
+                                    farmName,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: const TextStyle(
+                                      color: AppColors.inverseText,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                                if (herdCount > 0)
+                                  Text(
+                                    '$herdCount ${l10n.herdSize.toLowerCase()}',
+                                    style: const TextStyle(
+                                      color: AppColors.inverseMutedText,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 if (notifications.any((item) => !item.isRead)) ...[
@@ -259,7 +335,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                     physics: const NeverScrollableScrollPhysics(),
                     mainAxisSpacing: AppDimensions.spacingMedium,
                     crossAxisSpacing: AppDimensions.spacingMedium,
-                    childAspectRatio: 1.0,
+                    childAspectRatio: 1.08,
                     children: statCards,
                   ),
                 if (allows(AppPermission.manageHerd) &&
@@ -447,31 +523,59 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      child: Padding(
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(AppDimensions.radius),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [color.withValues(alpha: 0.08), AppColors.surface],
+          ),
+          border: Border.all(color: color.withValues(alpha: 0.12)),
+        ),
         padding: const EdgeInsets.all(AppDimensions.spacingMedium),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.12),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, color: color),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(9),
+                  decoration: BoxDecoration(
+                    color: color.withValues(alpha: 0.14),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(icon, color: color, size: 21),
+                ),
+                const Spacer(),
+                Container(
+                  width: 7,
+                  height: 7,
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ],
             ),
             const Spacer(),
             Text(
               value,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.headlineMedium,
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                fontWeight: FontWeight.w800,
+                color: AppColors.text,
+              ),
             ),
+            const SizedBox(height: 2),
             Text(
               label,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodyMedium,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: AppColors.mutedText),
             ),
           ],
         ),
@@ -495,17 +599,17 @@ class _HerdStatusCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final metrics = [
       _HerdStatusMetric(
-        label: AppLocalizations.of(context)!.pregnant,
+        label: AppLocalizations.of(context).pregnant,
         value: '$pregnant',
         color: AppColors.pigPink,
       ),
       _HerdStatusMetric(
-        label: AppLocalizations.of(context)!.vaccinated,
+        label: AppLocalizations.of(context).vaccinated,
         value: '$vaccinated',
         color: AppColors.info,
       ),
       _HerdStatusMetric(
-        label: AppLocalizations.of(context)!.active,
+        label: AppLocalizations.of(context).active,
         value: '$active',
         color: AppColors.success,
       ),
@@ -594,13 +698,21 @@ class _QuickAction extends StatelessWidget {
       borderRadius: BorderRadius.circular(AppDimensions.radius),
       onTap: onTap,
       child: Container(
-        width: 94,
+        width: 104,
         padding: const EdgeInsets.symmetric(
           vertical: AppDimensions.spacingMedium,
         ),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.13),
+          color: Theme.of(context).colorScheme.surface,
           borderRadius: BorderRadius.circular(AppDimensions.radius),
+          border: Border.all(color: color.withValues(alpha: 0.18)),
+          boxShadow: [
+            BoxShadow(
+              color: color.withValues(alpha: 0.07),
+              blurRadius: 12,
+              offset: const Offset(0, 5),
+            ),
+          ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
