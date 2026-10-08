@@ -110,18 +110,31 @@ class HerdApi {
     required String animalId,
     String? tag,
     String? status,
+    String? name,
+    String? sex,
     DateTime? birthDate,
     double? weightKg,
+    bool? isPregnant,
+    DateTime? lastDewormedAt,
+    DateTime? lastVaccinatedAt,
     String? notes,
     Uint8List? imageBytes,
     String? imageName,
   }) async {
     try {
       final data = {
-        'tag': tag?.trim(),
-        'status': status,
+        if (tag != null) 'tag': tag.trim(),
+        if (status != null) 'status': status,
+        if (name != null) 'name': name.trim().isEmpty ? null : name.trim(),
+        if (sex != null) 'sex': sex,
         'birth_date': birthDate?.toIso8601String().split('T').first,
         'weight_kg': weightKg,
+        if (isPregnant != null) 'is_pregnant': isPregnant,
+        'last_dewormed_at': lastDewormedAt?.toIso8601String().split('T').first,
+        'last_vaccinated_at': lastVaccinatedAt
+            ?.toIso8601String()
+            .split('T')
+            .first,
         'notes': notes?.trim(),
       };
       final response = imageBytes == null
