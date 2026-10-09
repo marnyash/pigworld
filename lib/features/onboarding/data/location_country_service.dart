@@ -3,6 +3,7 @@ import 'package:geolocator/geolocator.dart';
 
 class LocationCountryService {
   Future<String?> detectCountry() async {
+    if (GeocodingPlatformFactory.instance == null) return null;
     if (!await Geolocator.isLocationServiceEnabled()) return null;
 
     var permission = await Geolocator.checkPermission();

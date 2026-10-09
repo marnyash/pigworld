@@ -34,7 +34,7 @@ class FarmLocationPickerDialog extends StatefulWidget {
 
 class _FarmLocationPickerDialogState extends State<FarmLocationPickerDialog> {
   static const _defaultPosition = LatLng(-1.286389, 36.817223);
-  final _geocoding = Geocoding();
+  Geocoding? _geocoding;
 
   late LatLng _selected;
   GoogleMapController? _controller;
@@ -46,6 +46,9 @@ class _FarmLocationPickerDialogState extends State<FarmLocationPickerDialog> {
   @override
   void initState() {
     super.initState();
+    if (GeocodingPlatformFactory.instance != null) {
+      _geocoding = Geocoding();
+    }
     _selected = widget.initialLatitude != null && widget.initialLongitude != null
         ? LatLng(widget.initialLatitude!, widget.initialLongitude!)
         : _defaultPosition;
@@ -183,9 +186,14 @@ class _FarmLocationPickerDialogState extends State<FarmLocationPickerDialog> {
   Future<void> _searchAddress() async {
     final query = _searchController.text.trim();
     if (query.isEmpty) return;
+    final geocoding = _geocoding;
+    if (geocoding == null) {
+      _message('Address search is unavailable on this platform.');
+      return;
+    }
     setState(() => _searching = true);
     try {
-      final matches = await _geocoding.locationFromAddress(query);
+      final matches = await geocoding.locationFromAddress(query);
       if (matches.isEmpty) throw const FormatException('No location found.');
       final match = matches.first;
       await _select(LatLng(match.latitude, match.longitude));
@@ -226,7 +234,9 @@ class _FarmLocationPickerDialogState extends State<FarmLocationPickerDialog> {
     });
     await _controller?.animateCamera(CameraUpdate.newLatLngZoom(point, 15));
     try {
-      final placemarks = await _geocoding.placemarkFromCoordinates(
+      final geocoding = _geocoding;
+      if (geocoding == null) return;
+      final placemarks = await geocoding.placemarkFromCoordinates(
         point.latitude,
         point.longitude,
       );
