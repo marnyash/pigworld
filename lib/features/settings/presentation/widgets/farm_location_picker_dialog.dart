@@ -198,7 +198,9 @@ class _FarmLocationPickerDialogState extends State<FarmLocationPickerDialog> {
       final match = matches.first;
       await _select(LatLng(match.latitude, match.longitude));
     } catch (_) {
-      if (mounted) _message('Could not find that place. Try a more specific address.');
+      if (mounted) {
+        _message('Could not find that place. Try a more specific address.');
+      }
     } finally {
       if (mounted) setState(() => _searching = false);
     }
