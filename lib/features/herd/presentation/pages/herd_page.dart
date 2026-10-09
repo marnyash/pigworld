@@ -24,6 +24,13 @@ class HerdPage extends ConsumerWidget {
     final registeredFarm = ref.watch(authProvider).valueOrNull?.selectedFarm;
     final healthOverview = ref.watch(healthOverviewProvider);
     final registeredHerdCount = registeredFarm?.registeredHerdCount ?? 0;
+    final currentAnimals = herd.valueOrNull ?? const <Animal>[];
+    final remainingRegistrationCount =
+        (registeredHerdCount - currentAnimals.length).clamp(
+          0,
+          registeredHerdCount,
+        );
+    final canAutoFillHerd = herd.hasValue && remainingRegistrationCount > 0;
     final vaccinatedCount = healthOverview.valueOrNull?['vaccinated'] ?? 0;
     return Scaffold(
       appBar: AppBar(
@@ -41,14 +48,36 @@ class HerdPage extends ConsumerWidget {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _showAnimalDetailsPage(
-          context,
-          ref,
-          initialTag: _nextPigTag(herd.valueOrNull ?? const <Animal>[]),
-        ),
-        icon: const Icon(Icons.add),
-        label: Text(l10n.addPig),
+      floatingActionButton: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          if (canAutoFillHerd) ...[
+            FloatingActionButton.extended(
+              heroTag: 'autofill-herd',
+              onPressed: () => _autoFillRegisteredPigs(
+                context,
+                ref,
+                animals: currentAnimals,
+                registeredHerdCount: registeredHerdCount,
+                motherPigCount: registeredFarm?.motherPigCount ?? 0,
+              ),
+              icon: const Icon(Icons.auto_awesome),
+              label: const Text('Auto-fill herd'),
+            ),
+            const SizedBox(height: 12),
+          ],
+          FloatingActionButton.extended(
+            heroTag: 'add-herd-pig',
+            onPressed: () => _showAnimalDetailsPage(
+              context,
+              ref,
+              initialTag: _nextPigTag(currentAnimals),
+            ),
+            icon: const Icon(Icons.add),
+            label: Text(l10n.addPig),
+          ),
+        ],
       ),
       body: herd.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -1049,6 +1078,93 @@ String _nextPigTag(Iterable<Animal> animals, [Set<String>? reservedTags]) {
     if (reserved.add(tag)) return tag;
     number++;
   }
+}
+
+Future<void> _autoFillRegisteredPigs(
+  BuildContext context,
+  WidgetRef ref, {
+  required List<Animal> animals,
+  required int registeredHerdCount,
+  required int motherPigCount,
+}) async {
+  final remaining = (registeredHerdCount - animals.length).clamp(
+    0,
+    registeredHerdCount,
+  );
+  if (remaining == 0) return;
+
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: const Text('Auto-fill registered herd?'),
+      content: Text(
+        'Create $remaining active pig records with generated tags and default details? You can edit each pig and add photos later.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext, false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.pop(dialogContext, true),
+          child: Text('Create $remaining pigs'),
+        ),
+      ],
+    ),
+  );
+  if (confirmed != true || !context.mounted) return;
+
+  final progressDialog = showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => AlertDialog(
+      content: Row(
+        children: [
+          const CircularProgressIndicator(),
+          const SizedBox(width: 20),
+          Expanded(child: Text('Creating $remaining pig records…')),
+        ],
+      ),
+    ),
+  );
+
+  final reservedTags = animals
+      .map((animal) => animal.tag.toUpperCase())
+      .toSet();
+  final remainingMothers =
+      (motherPigCount - animals.where((animal) => animal.type == 'sow').length)
+          .clamp(0, remaining);
+  var created = 0;
+  String? failedTag;
+  Object? failure;
+  for (var index = 0; index < remaining; index++) {
+    final tag = _nextPigTag(animals, reservedTags);
+    final isMother = index < remainingMothers;
+    try {
+      await ref
+          .read(herdProvider.notifier)
+          .createAnimal(
+            tag: tag,
+            type: isMother ? 'sow' : 'piglet',
+            sex: isMother ? 'female' : 'unknown',
+            status: 'active',
+          );
+      created++;
+    } catch (error) {
+      failedTag = tag;
+      failure = error;
+      break;
+    }
+  }
+
+  if (context.mounted) Navigator.of(context, rootNavigator: true).pop();
+  await progressDialog;
+  if (!context.mounted) return;
+
+  final message = failure == null
+      ? 'Created $created pig records.'
+      : 'Created $created of $remaining pigs. Could not create $failedTag: $failure';
+  ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
 }
 
 class _AnimalCard extends StatelessWidget {

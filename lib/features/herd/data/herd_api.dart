@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:dio/dio.dart';
 
 import '../../../../core/errors/error_handler.dart';
+import '../../../../core/network/api_asset_url.dart';
 import '../domain/entities/animal.dart';
 
 class HerdApi {
@@ -17,7 +18,7 @@ class HerdApi {
       );
       final data = response.data?['data'] as List<dynamic>? ?? [];
       return data
-          .map((item) => Animal.fromJson(item as Map<String, dynamic>))
+          .map((item) => _parseAnimal(item as Map<String, dynamic>))
           .toList();
     } on DioException catch (error) {
       throw ErrorHandler.from(error);
@@ -39,11 +40,11 @@ class HerdApi {
           'type': 'sow',
           'sex': 'female',
           'birth_date': ?birthDate?.toIso8601String().split('T').first,
-          if (weightKg != null) 'weight_kg': weightKg,
+          'weight_kg': ?weightKg,
           if (notes != null && notes.trim().isNotEmpty) 'notes': notes.trim(),
         },
       );
-      return Animal.fromJson(response.data?['data'] as Map<String, dynamic>);
+      return _parseAnimal(response.data?['data'] as Map<String, dynamic>);
     } on DioException catch (error) {
       throw ErrorHandler.from(error);
     }
@@ -70,7 +71,7 @@ class HerdApi {
         'tag': tag,
         'type': type,
         'sex': sex,
-        if (status != null) 'status': status,
+        'status': ?status,
         if (name != null && name.trim().isNotEmpty) 'name': name.trim(),
         'birth_date': ?birthDate?.toIso8601String().split('T').first,
         'is_pregnant': isPregnant,
@@ -79,7 +80,7 @@ class HerdApi {
             ?.toIso8601String()
             .split('T')
             .first,
-        if (weightKg != null) 'weight_kg': weightKg,
+        'weight_kg': ?weightKg,
         if (notes != null && notes.trim().isNotEmpty) 'notes': notes.trim(),
       };
       final response = imageBytes == null
@@ -98,7 +99,7 @@ class HerdApi {
               }),
               options: Options(contentType: 'multipart/form-data'),
             );
-      return Animal.fromJson(response.data?['data'] as Map<String, dynamic>);
+      return _parseAnimal(response.data?['data'] as Map<String, dynamic>);
     } on DioException catch (error) {
       throw ErrorHandler.from(error);
     }
@@ -112,7 +113,7 @@ class HerdApi {
       final response = await _dio.get<Map<String, dynamic>>(
         '/farms/$farmId/animals/$animalId',
       );
-      return Animal.fromJson(response.data?['data'] as Map<String, dynamic>);
+      return _parseAnimal(response.data?['data'] as Map<String, dynamic>);
     } on DioException catch (error) {
       throw ErrorHandler.from(error);
     }
@@ -137,12 +138,12 @@ class HerdApi {
     try {
       final data = {
         if (tag != null) 'tag': tag.trim(),
-        if (status != null) 'status': status,
+        'status': ?status,
         if (name != null) 'name': name.trim().isEmpty ? null : name.trim(),
-        if (sex != null) 'sex': sex,
+        'sex': ?sex,
         'birth_date': birthDate?.toIso8601String().split('T').first,
         'weight_kg': weightKg,
-        if (isPregnant != null) 'is_pregnant': isPregnant,
+        'is_pregnant': ?isPregnant,
         'last_dewormed_at': lastDewormedAt?.toIso8601String().split('T').first,
         'last_vaccinated_at': lastVaccinatedAt
             ?.toIso8601String()
@@ -167,7 +168,7 @@ class HerdApi {
               }),
               options: Options(contentType: 'multipart/form-data'),
             );
-      return Animal.fromJson(response.data?['data'] as Map<String, dynamic>);
+      return _parseAnimal(response.data?['data'] as Map<String, dynamic>);
     } on DioException catch (error) {
       throw ErrorHandler.from(error);
     }
@@ -181,9 +182,17 @@ class HerdApi {
       final response = await _dio.delete<Map<String, dynamic>>(
         '/farms/$farmId/animals/$animalId',
       );
-      return Animal.fromJson(response.data?['data'] as Map<String, dynamic>);
+      return _parseAnimal(response.data?['data'] as Map<String, dynamic>);
     } on DioException catch (error) {
       throw ErrorHandler.from(error);
     }
   }
+
+  Animal _parseAnimal(Map<String, dynamic> json) => Animal.fromJson({
+    ...json,
+    'image_url': resolveApiAssetUrl(
+      json['image_url'] as String?,
+      apiBaseUrl: _dio.options.baseUrl,
+    ),
+  });
 }

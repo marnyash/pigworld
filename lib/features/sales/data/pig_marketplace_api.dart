@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../../../core/errors/error_handler.dart';
+import '../../../../core/network/api_asset_url.dart';
 import 'pig_listing.dart';
 
 class PigMarketplaceApi {
@@ -15,7 +16,7 @@ class PigMarketplaceApi {
       );
       final rows = response.data?['data'] as List<dynamic>? ?? const [];
       return rows
-          .map((row) => PigListing.fromJson(row as Map<String, dynamic>))
+          .map((row) => _parseListing(row as Map<String, dynamic>))
           .toList();
     } on DioException catch (error) {
       throw ErrorHandler.from(error);
@@ -63,4 +64,12 @@ class PigMarketplaceApi {
       throw ErrorHandler.from(error);
     }
   }
+
+  PigListing _parseListing(Map<String, dynamic> json) => PigListing.fromJson({
+    ...json,
+    'image_url': resolveApiAssetUrl(
+      json['image_url'] as String?,
+      apiBaseUrl: _dio.options.baseUrl,
+    ),
+  });
 }

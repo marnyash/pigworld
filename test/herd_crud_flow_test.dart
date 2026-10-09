@@ -121,6 +121,58 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('auto-fill creates uniquely tagged registered pigs', (
+    WidgetTester tester,
+  ) async {
+    final api = _FakeHerdApi(
+      animals: [
+        const Animal(
+          id: 'animal-1',
+          tag: 'PIG-001',
+          type: 'sow',
+          sex: 'female',
+          status: 'active',
+        ),
+      ],
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authProvider.overrideWith(
+            () => _TestAuthNotifier(
+              farm: const Farm(
+                id: 'farm-1',
+                name: 'Test Farm',
+                motherPigCount: 2,
+                registeredPigletCount: 1,
+              ),
+            ),
+          ),
+          herdApiProvider.overrideWithValue(api),
+          healthOverviewProvider.overrideWith((ref) async => {'vaccinated': 0}),
+        ],
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: HerdPage(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Auto-fill herd'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Create 2 pigs'));
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    expect(api.createdTags, ['PIG-002', 'PIG-003']);
+    expect(api.createdTypes, ['sow', 'piglet']);
+    expect(api.createdSexes, ['female', 'unknown']);
+    expect(find.text('Created 2 pig records.'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('editing a pig exposes its photo replacement control', (
     WidgetTester tester,
   ) async {
@@ -232,6 +284,8 @@ class _FakeHerdApi extends HerdApi {
   final List<String> createdTags = [];
   final List<double?> createdWeights = [];
   final List<String?> createdNames = [];
+  final List<String> createdTypes = [];
+  final List<String> createdSexes = [];
   Uint8List? updatedImageBytes;
   String? updatedImageName;
   var _nextId = 1;
@@ -257,6 +311,8 @@ class _FakeHerdApi extends HerdApi {
     String? imageName,
   }) async {
     createdTags.add(tag);
+    createdTypes.add(type);
+    createdSexes.add(sex);
     createdWeights.add(weightKg);
     createdNames.add(name);
     final animal = Animal(
