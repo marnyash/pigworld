@@ -67,7 +67,7 @@ class _SplashPageState extends ConsumerState<SplashPage>
     await _finishSplashTransition();
     if (!mounted) return;
     _navigated = true;
-    context.go(onboardingCompleted ? AppRoutes.login : AppRoutes.appTutorial);
+    context.go(onboardingCompleted ? AppRoutes.login : AppRoutes.language);
   }
 
   Future<void> _finishSplashTransition() async {

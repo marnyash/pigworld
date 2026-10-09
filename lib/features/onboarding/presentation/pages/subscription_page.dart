@@ -77,36 +77,40 @@ class _SubscriptionPageState extends ConsumerState<SubscriptionPage> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('Subscription')),
-    body: ListView(
-      padding: const EdgeInsets.all(24),
-      children: [
-        Text(
-          'Your subscription',
-          style: Theme.of(context).textTheme.headlineSmall,
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          'This is selected automatically for your farm based on the number of mother pigs in your farm records.',
-        ),
-        const SizedBox(height: 24),
-        if (_loadingPlans)
-          const Center(child: CircularProgressIndicator())
-        else if (_selectedPlan == null)
-          Card(
-            color: AppColors.surface,
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Text('No subscription matches your farm size yet.'),
-            ),
-          )
-        else
-          _SubscriptionPlanCard(plan: _selectedPlan!),
-        const SizedBox(height: 16),
-        FilledButton(
-          onPressed: _loadingPlans || _selectedPlan == null ? null : _continue,
-          child: const Text('Proceed'),
-        ),
-      ],
+    body: SafeArea(
+      child: ListView(
+        padding: const EdgeInsets.all(24),
+        children: [
+          Text(
+            'Your subscription',
+            style: Theme.of(context).textTheme.headlineSmall,
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            'This is selected automatically for your farm based on the number of mother pigs in your farm records.',
+          ),
+          const SizedBox(height: 24),
+          if (_loadingPlans)
+            const Center(child: CircularProgressIndicator())
+          else if (_selectedPlan == null)
+            Card(
+              color: AppColors.surface,
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Text('No subscription matches your farm size yet.'),
+              ),
+            )
+          else
+            _SubscriptionPlanCard(plan: _selectedPlan!),
+          const SizedBox(height: 16),
+          FilledButton(
+            onPressed: _loadingPlans || _selectedPlan == null
+                ? null
+                : _continue,
+            child: const Text('Proceed'),
+          ),
+        ],
+      ),
     ),
   );
 }

@@ -91,6 +91,10 @@ class _AppShell extends ConsumerWidget {
     final isOffline =
         ref.watch(connectivityProvider).valueOrNull ==
         ConnectivityStatus.offline;
+    final notification = ref
+        .watch(notificationsProvider)
+        .valueOrNull
+        ?.firstWhereOrNull((item) => !item.isRead);
     final l10n = AppLocalizations.of(context);
 
     return Column(
@@ -114,7 +118,7 @@ class _AppShell extends ConsumerWidget {
               ),
             ),
           ),
-        const _NotificationBanner(),
+        _NotificationBanner(notification: notification),
         Expanded(child: child),
       ],
     );
@@ -122,7 +126,9 @@ class _AppShell extends ConsumerWidget {
 }
 
 class _NotificationBanner extends ConsumerStatefulWidget {
-  const _NotificationBanner();
+  const _NotificationBanner({required this.notification});
+
+  final FarmNotification? notification;
 
   @override
   ConsumerState<_NotificationBanner> createState() =>
@@ -130,14 +136,39 @@ class _NotificationBanner extends ConsumerStatefulWidget {
 }
 
 class _NotificationBannerState extends ConsumerState<_NotificationBanner> {
+  static const _autoDismissDuration = Duration(seconds: 6);
+
+  Timer? _autoDismissTimer;
   String? _dismissedNotificationId;
 
   @override
+  void initState() {
+    super.initState();
+    _startAutoDismiss(widget.notification);
+  }
+
+  @override
+  void didUpdateWidget(covariant _NotificationBanner oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.notification?.id == widget.notification?.id) return;
+
+    _autoDismissTimer?.cancel();
+    _startAutoDismiss(widget.notification);
+  }
+
+  void _startAutoDismiss(FarmNotification? notification) {
+    if (notification == null || notification.id == _dismissedNotificationId) {
+      return;
+    }
+    _autoDismissTimer = Timer(_autoDismissDuration, () {
+      if (!mounted || widget.notification?.id != notification.id) return;
+      setState(() => _dismissedNotificationId = notification.id);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final notification = ref
-        .watch(notificationsProvider)
-        .valueOrNull
-        ?.firstWhereOrNull((item) => !item.isRead);
+    final notification = widget.notification;
 
     if (notification == null || notification.id == _dismissedNotificationId) {
       return const SizedBox.shrink();
@@ -200,9 +231,7 @@ class _NotificationBannerState extends ConsumerState<_NotificationBanner> {
                     context,
                   ).dismissNotificationBanner,
                   icon: const Icon(Icons.close, color: Colors.white),
-                  onPressed: () => setState(
-                    () => _dismissedNotificationId = notification.id,
-                  ),
+                  onPressed: _dismiss,
                 ),
               ],
             ),
@@ -210,6 +239,11 @@ class _NotificationBannerState extends ConsumerState<_NotificationBanner> {
         ),
       ),
     );
+  }
+
+  void _dismiss() {
+    _autoDismissTimer?.cancel();
+    setState(() => _dismissedNotificationId = widget.notification?.id);
   }
 
   Future<void> _openNotification(FarmNotification notification) async {
@@ -220,6 +254,12 @@ class _NotificationBannerState extends ConsumerState<_NotificationBanner> {
     } finally {
       if (mounted) context.push(AppRoutes.notifications);
     }
+  }
+
+  @override
+  void dispose() {
+    _autoDismissTimer?.cancel();
+    super.dispose();
   }
 }
 

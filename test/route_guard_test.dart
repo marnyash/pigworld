@@ -8,7 +8,8 @@ import 'package:proj/security/authorization/roles.dart';
 void main() {
   test('first-run onboarding routes remain public', () {
     expect(RouteGuard.isPublic('/farm-selection'), isTrue);
-    expect(RouteGuard.isPublic('/app-tutorial'), isTrue);
+    expect(RouteGuard.isPublic('/language'), isTrue);
+    expect(RouteGuard.isPublic('/app-tutorial'), isFalse);
   });
 
   test('logged-out users are redirected to splash from protected pages', () {
