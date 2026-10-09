@@ -40,4 +40,5 @@ abstract final class AppRoutes {
   static const paymentMethod = '/payment-method';
   static const paymentStatus = '/payment-status';
   static const createAccount = '/create-account';
+  static const appTutorial = '/app-tutorial';
 }

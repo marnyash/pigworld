@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:share_plus/share_plus.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
@@ -77,9 +78,13 @@ class ForBuyersTab extends ConsumerWidget {
               ],
             ),
           ),
-          const SizedBox(height: AppDimensions.spacingMedium),
+          const SizedBox(height: AppDimensions.spacingLarge),
           listings.when(
-            loading: () => const Center(child: CircularProgressIndicator()),
+            loading: () => const _MarketplaceMessage(
+              message: 'Finding pigs available from farms…',
+              icon: Icons.search,
+              loading: true,
+            ),
             error: (error, _) => _MarketplaceMessage(
               message: 'Marketplace listings could not be loaded: $error',
               action: TextButton(
@@ -152,29 +157,79 @@ class _PostPigTabState extends ConsumerState<PostPigTab> {
     return ListView(
       padding: const EdgeInsets.all(AppDimensions.pagePadding),
       children: [
-        Text(
-          'Post a pig for sale',
-          style: Theme.of(context).textTheme.titleLarge,
+        Container(
+          padding: const EdgeInsets.all(AppDimensions.spacingLarge),
+          decoration: BoxDecoration(
+            color: AppColors.primaryContainer,
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: AppColors.surface.withValues(alpha: 0.72),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.add_business_outlined,
+                  color: AppColors.deepGreen,
+                ),
+              ),
+              const SizedBox(width: AppDimensions.spacingMedium),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Post a pig for sale',
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        color: AppColors.deepGreen,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Create a listing buyers can discover in the marketplace.',
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                        color: AppColors.mutedText,
+                        height: 1.4,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: 8),
-        const Text('Create a listing that buyers can find in the buyer app.'),
         const SizedBox(height: AppDimensions.spacingLarge),
         if (!hasFarm)
           const _MarketplaceMessage(
             message: 'Select a farm before posting pigs.',
+            icon: Icons.agriculture_outlined,
           )
         else if (!widget.canManage)
           const _MarketplaceMessage(
             message: 'You need Manage sales permission to post pigs.',
+            icon: Icons.lock_outline,
           )
         else
           Card(
+            color: AppColors.surface,
             child: Padding(
               padding: const EdgeInsets.all(AppDimensions.spacingLarge),
               child: Form(
                 key: _formKey,
                 child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    _FormSectionLabel(
+                      icon: Icons.sell_outlined,
+                      title: 'Listing details',
+                    ),
+                    const SizedBox(height: AppDimensions.spacingMedium),
                     TextFormField(
                       controller: _title,
                       decoration: const InputDecoration(
@@ -183,6 +238,11 @@ class _PostPigTabState extends ConsumerState<PostPigTab> {
                       validator: _required,
                     ),
                     const SizedBox(height: 12),
+                    _FormSectionLabel(
+                      icon: Icons.pets_outlined,
+                      title: 'Pig details',
+                    ),
+                    const SizedBox(height: AppDimensions.spacingMedium),
                     TextFormField(
                       controller: _breed,
                       decoration: const InputDecoration(labelText: 'Breed'),
@@ -215,6 +275,11 @@ class _PostPigTabState extends ConsumerState<PostPigTab> {
                       ],
                     ),
                     const SizedBox(height: 12),
+                    _FormSectionLabel(
+                      icon: Icons.payments_outlined,
+                      title: 'Pricing',
+                    ),
+                    const SizedBox(height: AppDimensions.spacingMedium),
                     Row(
                       children: [
                         Expanded(
@@ -262,6 +327,11 @@ class _PostPigTabState extends ConsumerState<PostPigTab> {
                       ],
                     ),
                     const SizedBox(height: 12),
+                    _FormSectionLabel(
+                      icon: Icons.notes_outlined,
+                      title: 'More information',
+                    ),
+                    const SizedBox(height: AppDimensions.spacingMedium),
                     TextFormField(
                       controller: _weight,
                       keyboardType: const TextInputType.numberWithOptions(
@@ -387,11 +457,18 @@ class MyMarketplaceSalesSection extends ConsumerWidget {
         const SizedBox(height: AppDimensions.spacingLarge),
         Text(
           'Marketplace listings & buyer requests',
-          style: Theme.of(context).textTheme.titleLarge,
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            color: AppColors.deepGreen,
+            fontWeight: FontWeight.w800,
+          ),
         ),
-        const SizedBox(height: AppDimensions.spacingSmall),
+        const SizedBox(height: AppDimensions.spacingMedium),
         state.when(
-          loading: () => const Center(child: CircularProgressIndicator()),
+          loading: () => const _MarketplaceMessage(
+            message: 'Loading your listings and buyer requests…',
+            icon: Icons.sync,
+            loading: true,
+          ),
           error: (error, _) => _MarketplaceMessage(
             message: 'Marketplace listings could not be loaded: $error',
             action: TextButton(
@@ -465,8 +542,22 @@ class _ListingCard extends StatelessWidget {
                       fontWeight: FontWeight.w800,
                     ),
                   ),
+                  IconButton(
+                    tooltip: 'Share pig listing',
+                    onPressed: () => _shareListing(context, listing),
+                    icon: const Icon(Icons.share_outlined),
+                  ),
                 ],
               ),
+              if (listing.animalId?.isNotEmpty == true) ...[
+                const SizedBox(height: 6),
+                Text(
+                  'Pig ID: ${listing.animalId}',
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: AppColors.mutedText),
+                ),
+              ],
               const SizedBox(height: 7),
               Text(
                 '${listing.breed} · ${listing.quantity} available'
@@ -505,12 +596,26 @@ class _ListingImagePlaceholder extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     height: 180,
     width: double.infinity,
-    color: AppColors.primaryGreen.withValues(alpha: 0.08),
+    decoration: const BoxDecoration(
+      gradient: LinearGradient(
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+        colors: [AppColors.primaryContainer, AppColors.background],
+      ),
+    ),
     alignment: Alignment.center,
-    child: Icon(
-      Icons.pets_outlined,
-      size: 44,
-      color: AppColors.primaryGreen.withValues(alpha: 0.5),
+    child: Container(
+      width: 68,
+      height: 68,
+      decoration: BoxDecoration(
+        color: AppColors.surface.withValues(alpha: 0.75),
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: const Icon(
+        Icons.pets_outlined,
+        size: 34,
+        color: AppColors.primaryGreen,
+      ),
     ),
   );
 }
@@ -613,12 +718,19 @@ class _ManageListingCard extends ConsumerWidget {
                 )
               else
                 Chip(label: Text(listing.status)),
+              IconButton(
+                tooltip: 'Share pig listing',
+                onPressed: () => _shareListing(context, listing),
+                icon: const Icon(Icons.share_outlined),
+              ),
             ],
           ),
           Text(
             '${listing.breed} · ${listing.quantity} available · '
             '${listing.currency} ${listing.pricePerPig.toStringAsFixed(0)} each',
           ),
+          if (listing.animalId?.isNotEmpty == true)
+            Text('Pig ID: ${listing.animalId}'),
           for (final inquiry in listing.inquiries)
             _InquiryRow(
               listing: listing,
@@ -681,22 +793,97 @@ class _InquiryRow extends ConsumerWidget {
   );
 }
 
+Future<void> _shareListing(BuildContext context, PigListing listing) async {
+  try {
+    final renderObject = context.findRenderObject();
+    await SharePlus.instance.share(
+      ShareParams(
+        text: listing.shareText,
+        subject: listing.title,
+        sharePositionOrigin: renderObject is RenderBox
+            ? renderObject.localToGlobal(Offset.zero) & renderObject.size
+            : null,
+      ),
+    );
+  } catch (error) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not share pig listing: $error')),
+      );
+    }
+  }
+}
+
 class _MarketplaceMessage extends StatelessWidget {
-  const _MarketplaceMessage({required this.message, this.action});
+  const _MarketplaceMessage({
+    required this.message,
+    this.action,
+    this.icon = Icons.storefront_outlined,
+    this.loading = false,
+  });
 
   final String message;
   final Widget? action;
+  final IconData icon;
+  final bool loading;
 
   @override
   Widget build(BuildContext context) => Card(
     child: Padding(
       padding: const EdgeInsets.all(AppDimensions.spacingLarge),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text(message, textAlign: TextAlign.center),
+          if (loading)
+            const SizedBox(
+              width: 26,
+              height: 26,
+              child: CircularProgressIndicator(strokeWidth: 2.5),
+            )
+          else
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: AppColors.primaryContainer,
+                borderRadius: BorderRadius.circular(17),
+              ),
+              child: Icon(icon, color: AppColors.deepGreen),
+            ),
+          const SizedBox(height: AppDimensions.spacingMedium),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: AppColors.mutedText,
+              height: 1.4,
+            ),
+          ),
           ?action,
         ],
       ),
     ),
+  );
+}
+
+class _FormSectionLabel extends StatelessWidget {
+  const _FormSectionLabel({required this.icon, required this.title});
+
+  final IconData icon;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      Icon(icon, size: 19, color: AppColors.primaryGreen),
+      const SizedBox(width: AppDimensions.spacingSmall),
+      Text(
+        title,
+        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+          color: AppColors.deepGreen,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    ],
   );
 }

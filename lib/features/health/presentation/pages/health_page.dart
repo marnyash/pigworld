@@ -14,7 +14,7 @@ import '../widgets/vaccination_schedule_section.dart';
 import '../widgets/treatment_records_section.dart';
 import '../widgets/veterinary_visits_section.dart';
 import '../widgets/health_analytics_section.dart';
-import '../widgets/add_health_record_dialog.dart';
+import '../widgets/add_health_record_page.dart';
 
 class HealthPage extends ConsumerStatefulWidget {
   const HealthPage({this.initialTypeFilter = 'all', super.key});
@@ -100,7 +100,7 @@ class _HealthPageState extends ConsumerState<HealthPage>
       ),
       floatingActionButton: canManageRecords
           ? FloatingActionButton.extended(
-              onPressed: () => _showAddHealthRecordDialog(context),
+              onPressed: () => _openAddHealthRecordPage(context),
               icon: const Icon(Icons.add),
               label: const Text('Add Record'),
             )
@@ -294,7 +294,7 @@ class _HealthPageState extends ConsumerState<HealthPage>
                     itemBuilder: (context, index) => _HealthRecordCard(
                       record: records[index],
                       onEdit: canManageRecords
-                          ? () => _showEditHealthRecordDialog(
+                          ? () => _openEditHealthRecordPage(
                               context,
                               records[index],
                             )
@@ -411,32 +411,33 @@ class _HealthPageState extends ConsumerState<HealthPage>
         );
   }
 
-  void _showAddHealthRecordDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (context) => AddHealthRecordDialog(
-        initialType: widget.initialTypeFilter == 'medication'
-            ? 'treatment'
-            : widget.initialTypeFilter == 'all'
-            ? 'treatment'
-            : widget.initialTypeFilter,
-        onSubmit: (data) =>
-            ref.read(healthRecordsProvider.notifier).addRecord(data),
-      ),
-    );
-  }
+  Future<void> _openAddHealthRecordPage(BuildContext context) =>
+      Navigator.of(context).push<void>(
+        MaterialPageRoute(
+          builder: (context) => AddHealthRecordPage(
+            initialType: widget.initialTypeFilter == 'medication'
+                ? 'treatment'
+                : widget.initialTypeFilter == 'all'
+                ? 'treatment'
+                : widget.initialTypeFilter,
+            onSubmit: (data) =>
+                ref.read(healthRecordsProvider.notifier).addRecord(data),
+          ),
+        ),
+      );
 
-  Future<void> _showEditHealthRecordDialog(
+  Future<void> _openEditHealthRecordPage(
     BuildContext context,
     HealthRecord record,
-  ) => showDialog<void>(
-    context: context,
-    builder: (context) => AddHealthRecordDialog(
-      initialType: record.type,
-      initialRecord: record,
-      onSubmit: (data) => ref
-          .read(healthRecordsProvider.notifier)
-          .updateRecord(record.id, data),
+  ) => Navigator.of(context).push<void>(
+    MaterialPageRoute(
+      builder: (context) => AddHealthRecordPage(
+        initialType: record.type,
+        initialRecord: record,
+        onSubmit: (data) => ref
+            .read(healthRecordsProvider.notifier)
+            .updateRecord(record.id, data),
+      ),
     ),
   );
 

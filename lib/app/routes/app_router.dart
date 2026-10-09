@@ -39,6 +39,7 @@ import '../../features/onboarding/presentation/pages/herd_setup_page.dart';
 import '../../features/onboarding/presentation/pages/subscription_page.dart';
 import '../../features/onboarding/presentation/pages/payment_method_page.dart';
 import '../../features/onboarding/presentation/pages/language_page.dart';
+import '../../features/onboarding/presentation/pages/app_tutorial_page.dart';
 import '../../features/onboarding/presentation/pages/permissions_page.dart';
 import '../../features/subscription/presentation/pages/payment_status_page.dart';
 import '../../features/settings/presentation/pages/farm_management_page.dart';
@@ -71,6 +72,10 @@ abstract final class AppRouter {
       GoRoute(
         path: AppRoutes.language,
         builder: (context, state) => const LanguagePage(),
+      ),
+      GoRoute(
+        path: AppRoutes.appTutorial,
+        builder: (context, state) => const AppTutorialPage(),
       ),
       GoRoute(
         path: AppRoutes.country,

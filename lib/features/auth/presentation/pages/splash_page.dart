@@ -26,8 +26,10 @@ class _SplashPageState extends ConsumerState<SplashPage>
     parent: _controller,
     curve: Curves.easeOut,
   );
-  late final Animation<double> _scale = Tween<double>(begin: 0.96, end: 1)
-      .animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
+  late final Animation<double> _scale = Tween<double>(
+    begin: 0.96,
+    end: 1,
+  ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
 
   @override
   void initState() {
@@ -65,7 +67,7 @@ class _SplashPageState extends ConsumerState<SplashPage>
     await _finishSplashTransition();
     if (!mounted) return;
     _navigated = true;
-    context.go(onboardingCompleted ? AppRoutes.login : AppRoutes.language);
+    context.go(onboardingCompleted ? AppRoutes.login : AppRoutes.appTutorial);
   }
 
   Future<void> _finishSplashTransition() async {

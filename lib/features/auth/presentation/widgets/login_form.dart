@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../../app/theme/app_dimensions.dart';
+
 class LoginForm extends StatefulWidget {
   const LoginForm({
     required this.onSubmit,
@@ -44,8 +46,11 @@ class _LoginFormState extends State<LoginForm> {
         TextFormField(
           controller: emailController,
           keyboardType: TextInputType.emailAddress,
+          textInputAction: TextInputAction.next,
+          autofillHints: const [AutofillHints.username, AutofillHints.email],
           decoration: const InputDecoration(
             labelText: 'Email or phone number',
+            hintText: 'you@example.com or phone number',
             prefixIcon: Icon(Icons.alternate_email),
           ),
           validator: (value) {
@@ -68,6 +73,8 @@ class _LoginFormState extends State<LoginForm> {
         TextFormField(
           controller: passwordController,
           keyboardType: TextInputType.text,
+          textInputAction: TextInputAction.done,
+          autofillHints: const [AutofillHints.password],
           obscureText: !passwordVisible,
           decoration: InputDecoration(
             labelText: 'Password',
@@ -91,45 +98,56 @@ class _LoginFormState extends State<LoginForm> {
             return null;
           },
         ),
-        StatefulBuilder(
-          builder: (context, setState) => CheckboxListTile(
+        Material(
+          color: Theme.of(context).colorScheme.surface,
+          child: CheckboxListTile(
             value: rememberMe,
+            dense: true,
+            contentPadding: const EdgeInsets.symmetric(horizontal: 4),
             onChanged: (value) => setState(() => rememberMe = value ?? false),
             title: const Text('Remember me'),
           ),
         ),
-        const SizedBox(height: 16),
-        FilledButton(
-          onPressed: isLoading || !widget.canSubmit
-              ? null
-              : () async {
-                  if (!(formKey.currentState?.validate() ?? false)) return;
-                  setState(() => isLoading = true);
-                  try {
-                    await widget.onSubmit(
-                      emailController.text.trim(),
-                      passwordController.text,
-                      rememberMe,
-                    );
-                  } catch (_) {
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Unable to sign in. Please try again.'),
-                        ),
+        const SizedBox(height: AppDimensions.spacingSmall),
+        SizedBox(
+          width: double.infinity,
+          child: FilledButton(
+            onPressed: isLoading || !widget.canSubmit
+                ? null
+                : () async {
+                    if (!(formKey.currentState?.validate() ?? false)) return;
+                    setState(() => isLoading = true);
+                    try {
+                      await widget.onSubmit(
+                        emailController.text.trim(),
+                        passwordController.text,
+                        rememberMe,
                       );
+                    } catch (_) {
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Unable to sign in. Please try again.',
+                            ),
+                          ),
+                        );
+                      }
+                    } finally {
+                      if (mounted) setState(() => isLoading = false);
                     }
-                  } finally {
-                    if (mounted) setState(() => isLoading = false);
-                  }
-                },
-          child: isLoading
-              ? const SizedBox(
-                  width: 22,
-                  height: 22,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                )
-              : const Text('Sign in'),
+                  },
+            child: isLoading
+                ? const SizedBox(
+                    width: 22,
+                    height: 22,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Text(
+                    'Sign in',
+                    style: TextStyle(fontWeight: FontWeight.w700),
+                  ),
+          ),
         ),
       ],
     ),

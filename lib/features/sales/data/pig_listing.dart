@@ -61,6 +61,23 @@ class PigListing {
   final String? description;
   final List<PigInquiry> inquiries;
 
+  String get shareText {
+    final details = <String>[
+      'Pig World Smart marketplace',
+      title,
+      'Breed: $breed',
+      'Available: $quantity',
+      'Price: $currency ${pricePerPig.toStringAsFixed(0)} per pig',
+      'Listing ID: $id',
+      if (animalId?.isNotEmpty == true) 'Pig ID: $animalId',
+      if (ageWeeks != null) 'Age: $ageWeeks weeks',
+      if (weightKg != null) 'Weight: ${weightKg!.toStringAsFixed(1)} kg',
+      if (location?.trim().isNotEmpty == true) 'Location: ${location!.trim()}',
+      if (description?.trim().isNotEmpty == true) description!.trim(),
+    ];
+    return details.join('\n');
+  }
+
   factory PigListing.fromJson(Map<String, dynamic> json) => PigListing(
     id: '${json['id']}',
     title: '${json['title'] ?? ''}',
@@ -69,7 +86,7 @@ class PigListing {
     pricePerPig: double.tryParse('${json['price_per_pig'] ?? 0}') ?? 0,
     currency: '${json['currency'] ?? 'KES'}',
     status: '${json['status'] ?? 'available'}',
-    animalId: json['animal_id'] as String?,
+    animalId: json['animal_id']?.toString(),
     imageUrl: json['image_url'] as String?,
     ageWeeks: (json['age_weeks'] as num?)?.toInt(),
     weightKg: (json['weight_kg'] as num?)?.toDouble(),

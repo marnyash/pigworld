@@ -14,6 +14,7 @@ abstract final class RouteGuard {
     '/session-expired',
     '/permissions',
     '/language',
+    '/app-tutorial',
     '/country',
     '/account-type',
     '/create-account',
