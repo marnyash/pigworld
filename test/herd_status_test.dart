@@ -5,7 +5,7 @@ import 'package:proj/features/herd/presentation/pages/herd_page.dart';
 import 'package:proj/l10n/generated/app_localizations.dart';
 
 void main() {
-  testWidgets('herd page shows pregnant and vaccinated status', (
+  testWidgets('herd page omits report and status summaries', (
     WidgetTester tester,
   ) async {
     await tester.pumpWidget(
@@ -19,8 +19,10 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Herd status'), findsOneWidget);
-    expect(find.text('Pregnant'), findsOneWidget);
-    expect(find.text('Vaccinated'), findsOneWidget);
+    expect(find.text('Herd status'), findsNothing);
+    expect(find.text('Pregnant'), findsNothing);
+    expect(find.text('Vaccinated'), findsNothing);
+    expect(find.textContaining('Setup saved:'), findsNothing);
+    expect(find.byType(TextField), findsOneWidget);
   });
 }

@@ -106,7 +106,9 @@ void main() {
     expect(find.text('Suggested tag: PIG-002'), findsOneWidget);
     expect(find.text('Suggested tag: PIG-003'), findsOneWidget);
 
-    await tester.tap(find.text('Suggested tag: PIG-003'));
+    final addPigletDetails = find.text('Add details').last;
+    await tester.ensureVisible(addPigletDetails);
+    await tester.tap(addPigletDetails);
     await tester.pumpAndSettle();
     expect(find.text('Add pig details'), findsOneWidget);
     expect(find.text('PIG-003'), findsOneWidget);

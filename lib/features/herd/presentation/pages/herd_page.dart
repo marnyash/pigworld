@@ -9,8 +9,6 @@ import '../../../../app/theme/app_dimensions.dart';
 import '../../../../l10n/generated/app_localizations.dart';
 import '../../../../shared/components/bottom_navigation.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
-import '../../../health/presentation/providers/health_providers.dart';
-import '../../../reports/presentation/widgets/herd_reports_browser.dart';
 import '../../domain/entities/animal.dart';
 import '../providers/herd_provider.dart';
 
@@ -22,7 +20,6 @@ class HerdPage extends ConsumerWidget {
     final l10n = AppLocalizations.of(context);
     final herd = ref.watch(herdProvider);
     final registeredFarm = ref.watch(authProvider).valueOrNull?.selectedFarm;
-    final healthOverview = ref.watch(healthOverviewProvider);
     final registeredHerdCount = registeredFarm?.registeredHerdCount ?? 0;
     final currentAnimals = herd.valueOrNull ?? const <Animal>[];
     final remainingRegistrationCount =
@@ -31,7 +28,6 @@ class HerdPage extends ConsumerWidget {
           registeredHerdCount,
         );
     final canAutoFillHerd = herd.hasValue && remainingRegistrationCount > 0;
-    final vaccinatedCount = healthOverview.valueOrNull?['vaccinated'] ?? 0;
     return Scaffold(
       appBar: AppBar(
         title: Text(l10n.herdPageTitle),
@@ -89,9 +85,6 @@ class HerdPage extends ConsumerWidget {
           ),
         ),
         data: (animals) {
-          final pregnantCount = animals
-              .where((animal) => animal.isPregnant)
-              .length;
           var searchQuery = '';
           var statusFilter = 'all';
           return StatefulBuilder(
@@ -182,44 +175,13 @@ class HerdPage extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: AppDimensions.spacingMedium),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: _HerdSummary(
-                            label: l10n.registeredHerd,
-                            value: '$displayedHerdCount',
-                            icon: Icons.pets_outlined,
-                            color: AppColors.primaryGreen,
-                          ),
-                        ),
-                        const SizedBox(width: AppDimensions.spacingMedium),
-                        Expanded(
-                          child: _HerdSummary(
-                            label: l10n.active,
-                            value:
-                                '${animals.where((animal) => animal.status == 'active').length}',
-                            icon: Icons.favorite_border,
-                            color: AppColors.success,
-                          ),
-                        ),
-                      ],
+                    _HerdSummary(
+                      label: l10n.registeredHerd,
+                      value: '$displayedHerdCount',
+                      icon: Icons.pets_outlined,
+                      color: AppColors.primaryGreen,
                     ),
                     const SizedBox(height: AppDimensions.spacingMedium),
-                    _HerdStatusSummary(
-                      pregnant: pregnantCount,
-                      vaccinated: vaccinatedCount,
-                      active: animals
-                          .where((animal) => animal.status == 'active')
-                          .length,
-                    ),
-                    if (registeredHerdCount > 0) ...[
-                      const SizedBox(height: AppDimensions.spacingMedium),
-                      _RegistrationSummary(
-                        motherPigs: registeredFarm?.motherPigCount ?? 0,
-                        piglets: registeredFarm?.registeredPigletCount ?? 0,
-                        pregnantPigs: registeredFarm?.pregnantPigCount ?? 0,
-                      ),
-                    ],
                     if (registrationSlots.isNotEmpty) ...[
                       const SizedBox(height: AppDimensions.spacingMedium),
                       _RegistrationSlotsGrid(
@@ -232,9 +194,6 @@ class HerdPage extends ConsumerWidget {
                         ),
                       ),
                     ],
-                    const SizedBox(height: AppDimensions.spacingLarge),
-                    const HerdReportsBrowser(),
-                    const SizedBox(height: AppDimensions.spacingLarge),
                     const SizedBox(height: AppDimensions.spacingLarge),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -399,6 +358,8 @@ class _EditAnimalPage extends ConsumerStatefulWidget {
 }
 
 class _EditAnimalPageState extends ConsumerState<_EditAnimalPage> {
+  static const _maximumImageBytes = 5 * 1024 * 1024;
+
   final _formKey = GlobalKey<FormState>();
   late final TextEditingController _tagController;
   late final TextEditingController _nameController;
@@ -463,6 +424,12 @@ class _EditAnimalPageState extends ConsumerState<_EditAnimalPage> {
       if (picked == null || !mounted) return;
       final bytes = await picked.readAsBytes();
       if (!mounted) return;
+      if (bytes.length > _maximumImageBytes) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Pig photos must be 5 MB or smaller.')),
+        );
+        return;
+      }
       setState(() {
         _imageBytes = bytes;
         _imageName = picked.name;
@@ -605,9 +572,14 @@ class _EditAnimalPageState extends ConsumerState<_EditAnimalPage> {
               controller: _tagController,
               textCapitalization: TextCapitalization.characters,
               decoration: const InputDecoration(labelText: 'Pig tag'),
-              validator: (value) => value == null || value.trim().isEmpty
-                  ? 'Enter an animal tag.'
-                  : null,
+              validator: (value) {
+                final tag = value?.trim() ?? '';
+                if (tag.isEmpty) return 'Enter an animal tag.';
+                if (tag.length > 50) {
+                  return 'Pig tags must be 50 characters or less.';
+                }
+                return null;
+              },
             )
           else
             InputDecorator(
@@ -645,6 +617,9 @@ class _EditAnimalPageState extends ConsumerState<_EditAnimalPage> {
             controller: _nameController,
             textCapitalization: TextCapitalization.words,
             decoration: const InputDecoration(labelText: 'Pig name (optional)'),
+            validator: (value) => (value?.trim().length ?? 0) > 100
+                ? 'Pig names must be 100 characters or less.'
+                : null,
           ),
           const SizedBox(height: AppDimensions.spacingMedium),
           TextFormField(
@@ -656,6 +631,9 @@ class _EditAnimalPageState extends ConsumerState<_EditAnimalPage> {
               final weight = double.tryParse(value.trim());
               if (weight == null || weight <= 0) {
                 return 'Enter a weight greater than zero.';
+              }
+              if (weight > 999999.99) {
+                return 'Weight must be 999,999.99 kg or less.';
               }
               return null;
             },
@@ -759,6 +737,9 @@ class _EditAnimalPageState extends ConsumerState<_EditAnimalPage> {
             minLines: 2,
             maxLines: 4,
             decoration: const InputDecoration(labelText: 'Notes (optional)'),
+            validator: (value) => (value?.length ?? 0) > 2000
+                ? 'Notes must be 2,000 characters or less.'
+                : null,
           ),
         ],
       ),
@@ -776,147 +757,6 @@ class _EditAnimalPageState extends ConsumerState<_EditAnimalPage> {
       ),
     ),
   );
-}
-
-class _HerdStatusSummary extends StatelessWidget {
-  const _HerdStatusSummary({
-    required this.pregnant,
-    required this.vaccinated,
-    required this.active,
-  });
-
-  final int pregnant;
-  final int vaccinated;
-  final int active;
-
-  @override
-  Widget build(BuildContext context) {
-    final items = [
-      _HerdStatusMetric(
-        label: AppLocalizations.of(context).pregnant,
-        value: '$pregnant',
-        color: AppColors.pigPink,
-      ),
-      _HerdStatusMetric(
-        label: AppLocalizations.of(context).vaccinated,
-        value: '$vaccinated',
-        color: AppColors.info,
-      ),
-      _HerdStatusMetric(
-        label: AppLocalizations.of(context).active,
-        value: '$active',
-        color: AppColors.success,
-      ),
-    ];
-
-    return Container(
-      padding: const EdgeInsets.all(AppDimensions.spacingMedium),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppDimensions.radius),
-        border: Border.all(color: AppColors.outline),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            AppLocalizations.of(context).herdStatus,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: AppDimensions.spacingMedium),
-          Row(
-            children: items
-                .map(
-                  (item) => Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child: Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: item.color.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              item.label,
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              item.value,
-                              style: Theme.of(context).textTheme.titleLarge,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                )
-                .toList(),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _HerdStatusMetric {
-  const _HerdStatusMetric({
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
-  final String label;
-  final String value;
-  final Color color;
-}
-
-class _RegistrationSummary extends StatelessWidget {
-  const _RegistrationSummary({
-    required this.motherPigs,
-    required this.piglets,
-    required this.pregnantPigs,
-  });
-
-  final int motherPigs;
-  final int piglets;
-  final int pregnantPigs;
-
-  @override
-  Widget build(BuildContext context) {
-    final summary = <String>[
-      if (motherPigs > 0) '$motherPigs mothers',
-      if (piglets > 0) '$piglets piglets',
-      if (pregnantPigs > 0) '$pregnantPigs pregnant',
-    ].join(' • ');
-    return Container(
-      padding: const EdgeInsets.all(AppDimensions.spacingMedium),
-      decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [AppColors.primaryContainer, AppColors.infoContainer],
-        ),
-        borderRadius: BorderRadius.circular(AppDimensions.radius),
-      ),
-      child: Row(
-        children: [
-          const CircleAvatar(
-            backgroundColor: AppColors.primaryGreen,
-            child: Icon(Icons.auto_awesome, color: AppColors.inverseText),
-          ),
-          const SizedBox(width: AppDimensions.spacingMedium),
-          Expanded(
-            child: Text(
-              'Setup saved: $summary',
-              style: Theme.of(context).textTheme.titleSmall,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }
 
 class _HerdSummary extends StatelessWidget {
