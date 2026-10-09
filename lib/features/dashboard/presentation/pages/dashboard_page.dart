@@ -374,7 +374,11 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                   ),
                 ],
                 const SizedBox(height: AppDimensions.spacingLarge),
-                _SectionHeader(title: l10n.quickActions),
+                _SectionHeader(
+                  title: l10n.quickActions,
+                  actionLabel: 'Clear',
+                  onAction: () => _clearNotifications(notifications),
+                ),
                 const SizedBox(height: AppDimensions.spacingMedium),
                 GridView.count(
                   crossAxisCount: 3,
@@ -382,7 +386,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                   physics: const NeverScrollableScrollPhysics(),
                   mainAxisSpacing: AppDimensions.spacingMedium,
                   crossAxisSpacing: AppDimensions.spacingMedium,
-                  childAspectRatio: 1.05,
+                  childAspectRatio: 0.95,
                   children: [
                     if (allows(AppPermission.manageHerd))
                       _QuickAction(
@@ -432,12 +436,6 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                         color: AppColors.aqua,
                         onTap: () => context.go(AppRoutes.farmManagement),
                       ),
-                    _QuickAction(
-                      icon: Icons.clear_all_rounded,
-                      label: 'Clear',
-                      color: AppColors.danger,
-                      onTap: () => _clearNotifications(notifications),
-                    ),
                   ],
                 ),
               ],
@@ -728,13 +726,29 @@ class _QuickAction extends StatelessWidget {
 }
 
 class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title});
+  const _SectionHeader({required this.title, this.actionLabel, this.onAction});
 
   final String title;
+  final String? actionLabel;
+  final VoidCallback? onAction;
 
   @override
   Widget build(BuildContext context) => Row(
-    children: [Text(title, style: Theme.of(context).textTheme.titleLarge)],
+    children: [
+      Text(title, style: Theme.of(context).textTheme.titleLarge),
+      if (actionLabel != null && onAction != null) ...[
+        const Spacer(),
+        TextButton(
+          onPressed: onAction,
+          style: TextButton.styleFrom(
+            minimumSize: Size.zero,
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
+          child: Text(actionLabel!),
+        ),
+      ],
+    ],
   );
 }
 

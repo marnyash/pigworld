@@ -96,6 +96,19 @@ class FeedScheduleLocalDataSource {
     }
     final entries = stored['entries'];
     if (entries is! List<dynamic>) {
+      final legacyCompleted = stored['completed'];
+      if (legacyCompleted is Map<dynamic, dynamic>) {
+        if (stored['date'] != _today()) return defaults;
+        final completed = Map<String, dynamic>.from(legacyCompleted);
+        return defaults
+            .map(
+              (entry) => entry.copyWith(
+                completed:
+                    completed[_legacyNameFor(entry.id)] as bool? ?? false,
+              ),
+            )
+            .toList(growable: false);
+      }
       throw const FormatException('Stored feeding schedule has no entries.');
     }
     final isToday = stored['date'] == _today();
@@ -136,6 +149,13 @@ class FeedScheduleLocalDataSource {
 
   String _key(String userId, String farmId) =>
       'feed.schedule.${Uri.encodeComponent(userId)}.${Uri.encodeComponent(farmId)}';
+
+  String _legacyNameFor(String id) => switch (id) {
+    'morning' => 'Morning',
+    'midday' => 'Afternoon',
+    'evening' => 'Evening',
+    _ => id,
+  };
 
   String _today() {
     final now = DateTime.now();

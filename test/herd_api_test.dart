@@ -75,6 +75,7 @@ void main() {
         animalId: '102',
         tag: 'PIG-102',
         status: 'active',
+        isPregnant: false,
         imageBytes: imageBytes,
         imageName: 'pig.jpg',
       );
@@ -96,6 +97,12 @@ void main() {
       expect(
         formData?.fields.any(
           (field) => field.key == 'status' && field.value == 'active',
+        ),
+        isTrue,
+      );
+      expect(
+        formData?.fields.any(
+          (field) => field.key == 'is_pregnant' && field.value == '0',
         ),
         isTrue,
       );

@@ -92,6 +92,7 @@ class HerdApi {
               '/farms/$farmId/animals',
               data: FormData.fromMap({
                 ...data,
+                'is_pregnant': isPregnant ? '1' : '0',
                 'image': MultipartFile.fromBytes(
                   imageBytes,
                   filename: imageName ?? 'animal.jpg',
@@ -160,6 +161,8 @@ class HerdApi {
               '/farms/$farmId/animals/$animalId',
               data: FormData.fromMap({
                 ...data,
+                if (isPregnant case final bool pregnant)
+                  'is_pregnant': pregnant ? '1' : '0',
                 '_method': 'PATCH',
                 'image': MultipartFile.fromBytes(
                   imageBytes,
