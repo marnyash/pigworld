@@ -28,6 +28,15 @@ if (isReleaseBuildRequested && keystorePropertiesFile.exists()) {
             "Release signing configuration is incomplete. Missing: ${missingProperties.joinToString()}."
         )
     }
+    val placeholderProperties = requiredProperties.filter {
+        keystoreProperties.getProperty(it).contains("REPLACE_WITH", ignoreCase = true)
+    }
+    if (placeholderProperties.isNotEmpty()) {
+        throw GradleException(
+            "Release signing configuration still contains placeholder values for: " +
+                "${placeholderProperties.joinToString()}. Replace them in android/key.properties with the original keystore credentials."
+        )
+    }
 
     val keystoreFile = rootProject.file(keystoreProperties.getProperty("storeFile"))
     if (!keystoreFile.isFile) {
