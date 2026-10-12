@@ -315,7 +315,7 @@ class FarmManagementPage extends ConsumerWidget {
                                       ),
                                       (
                                         AppPermission.manageBreeding,
-                                        'Breeding',
+                                        'Insemination',
                                       ),
                                       (
                                         AppPermission.manageFeed,

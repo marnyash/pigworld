@@ -51,7 +51,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get inventory => 'Hesabu ya bidhaa';
 
   @override
-  String get breeding => 'Uzazi';
+  String get breeding => 'Uingizaji wa mbegu';
 
   @override
   String get sales => 'Mauzo';

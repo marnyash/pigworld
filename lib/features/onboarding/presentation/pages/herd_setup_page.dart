@@ -112,7 +112,7 @@ class _HerdSetupPageState extends ConsumerState<HerdSetupPage> {
                 ? 'A quick snapshot helps Pig World Smart personalize your dashboard.'
                 : _step == 1
                 ? 'Group piglets by age. You can add these details later.'
-                : 'This optional detail helps keep your breeding picture current.',
+                : 'This optional detail helps keep your insemination picture current.',
           ),
           const SizedBox(height: 28),
           if (_step == 0) ...[
@@ -121,7 +121,7 @@ class _HerdSetupPageState extends ConsumerState<HerdSetupPage> {
               iconColor: AppColors.pigPink,
               iconBackground: AppColors.secondaryContainer,
               title: 'Mother pigs',
-              description: 'Add the breeding females currently in your herd.',
+              description: 'Add the sows currently in your herd.',
               child: TextField(
                 controller: _motherPigs,
                 keyboardType: TextInputType.number,
@@ -158,7 +158,8 @@ class _HerdSetupPageState extends ConsumerState<HerdSetupPage> {
                       subtitle: Text('${group.ageMonths} months old'),
                       trailing: IconButton(
                         tooltip: 'Remove this age group',
-                        onPressed: () => setState(() => _groups.removeAt(index)),
+                        onPressed: () =>
+                            setState(() => _groups.removeAt(index)),
                         icon: const Icon(Icons.close, color: AppColors.danger),
                       ),
                     ),
@@ -171,7 +172,8 @@ class _HerdSetupPageState extends ConsumerState<HerdSetupPage> {
               iconColor: AppColors.warmGold,
               iconBackground: AppColors.warningContainer,
               title: 'Piglet age group',
-              description: 'Add a group whenever the piglets are a different age.',
+              description:
+                  'Add a group whenever the piglets are a different age.',
               child: Column(
                 children: [
                   TextField(
@@ -211,7 +213,8 @@ class _HerdSetupPageState extends ConsumerState<HerdSetupPage> {
               iconColor: AppColors.primaryGreen,
               iconBackground: AppColors.primaryContainer,
               title: 'Pregnancy records',
-              description: 'This is optional and helps you plan upcoming litters.',
+              description:
+                  'This is optional and helps you plan upcoming litters.',
               child: TextField(
                 controller: _pregnantPigs,
                 keyboardType: TextInputType.number,
@@ -274,7 +277,11 @@ class _SetupCard extends StatelessWidget {
       children: [
         Row(
           children: [
-            _IconBadge(icon: icon, color: iconColor, background: iconBackground),
+            _IconBadge(
+              icon: icon,
+              color: iconColor,
+              background: iconBackground,
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -282,7 +289,10 @@ class _SetupCard extends StatelessWidget {
                 children: [
                   Text(title, style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 2),
-                  Text(description, style: Theme.of(context).textTheme.bodySmall),
+                  Text(
+                    description,
+                    style: Theme.of(context).textTheme.bodySmall,
+                  ),
                 ],
               ),
             ),

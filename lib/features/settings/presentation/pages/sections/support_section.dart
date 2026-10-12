@@ -148,7 +148,7 @@ class SupportSection extends StatelessWidget {
                 const SizedBox(height: 12),
                 Text(
                   'Comprehensive pig farm management system for African farmers. '
-                  'Manage herd health, breeding, feed, growth tracking, sales, and more.',
+                  'Manage herd health, insemination, feed, growth tracking, sales, and more.',
                   style: Theme.of(context).textTheme.bodySmall,
                 ),
               ],

@@ -106,7 +106,7 @@ class NotificationSection extends ConsumerWidget {
         'Feeding Reminders',
         'Reminders for feeding times and amounts',
       ),
-      ('breeding', 'Breeding Alerts', 'Alerts for breeding seasons'),
+      ('breeding', 'Insemination Alerts', 'Alerts for insemination events'),
       (
         'lowStock',
         'Low Stock Alerts',

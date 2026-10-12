@@ -51,7 +51,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get inventory => 'Inventory';
 
   @override
-  String get breeding => 'Breeding';
+  String get breeding => 'Insemination';
 
   @override
   String get sales => 'Sales';

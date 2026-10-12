@@ -5,6 +5,7 @@ class Pregnancy {
     required this.matingDate,
     required this.expectedFarrowingDate,
     required this.status,
+    this.semenUsed,
     this.sowTag,
     this.boarId,
     this.boarTag,
@@ -29,6 +30,7 @@ class Pregnancy {
   final DateTime expectedFarrowingDate;
   final DateTime? actualFarrowingDate;
   final String status;
+  final String? semenUsed;
   final int? expectedLitterSize;
   final int? bornAlive;
   final int? stillborn;
@@ -36,6 +38,21 @@ class Pregnancy {
   final int? weaned;
   final String? notes;
   final int? daysUntilFarrowing;
+
+  int get daysPregnant {
+    final today = DateTime.now();
+    final startOfToday = DateTime(today.year, today.month, today.day);
+    final inseminationDay = DateTime(
+      matingDate.year,
+      matingDate.month,
+      matingDate.day,
+    );
+    return startOfToday
+        .difference(inseminationDay)
+        .inDays
+        .clamp(0, 999999)
+        .toInt();
+  }
 
   bool get isOverdue =>
       status != 'farrowed' &&

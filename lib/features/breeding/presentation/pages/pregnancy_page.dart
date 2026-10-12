@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/theme/app_colors.dart';
 import '../../../herd/presentation/providers/herd_provider.dart';
+import '../../domain/entities/pregnancy.dart';
 import '../providers/pregnancy_provider.dart';
 
 class PregnancyPage extends ConsumerWidget {
@@ -16,7 +17,7 @@ class PregnancyPage extends ConsumerWidget {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showAddPregnancy(context, ref),
         icon: const Icon(Icons.add),
-        label: const Text('Add pregnancy'),
+        label: const Text('Record insemination'),
       ),
       body: pregnancies.when(
         loading: () => const Center(child: CircularProgressIndicator()),
@@ -28,7 +29,7 @@ class PregnancyPage extends ConsumerWidget {
           if (items.isEmpty) {
             return const Center(
               child: Text(
-                'No pregnancy records yet. Add a mating record to begin.',
+                'No pregnancy records yet. Add an insemination record to begin.',
               ),
             );
           }
@@ -39,7 +40,7 @@ class PregnancyPage extends ConsumerWidget {
               children: [
                 _Summary(items: items),
                 const SizedBox(height: 16),
-                ...items.map((item) => _PregnancyCard(pregnancy: item)),
+                _PregnancyGrid(items: items),
               ],
             ),
           );
@@ -62,6 +63,7 @@ class PregnancyPage extends ConsumerWidget {
     var sowId = sows.first.id;
     var matingDate = DateTime.now();
     var status = 'suspected';
+    final semenController = TextEditingController();
     final litterController = TextEditingController();
     final notesController = TextEditingController();
     try {
@@ -82,7 +84,7 @@ class PregnancyPage extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
-                    'Record pregnancy',
+                    'Record insemination',
                     style: Theme.of(context).textTheme.titleLarge,
                   ),
                   const SizedBox(height: 16),
@@ -103,7 +105,7 @@ class PregnancyPage extends ConsumerWidget {
                   const SizedBox(height: 12),
                   ListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('Mating date'),
+                    title: const Text('Insemination date'),
                     subtitle: Text(_date(matingDate)),
                     trailing: const Icon(Icons.calendar_month_outlined),
                     onTap: () async {
@@ -117,6 +119,15 @@ class PregnancyPage extends ConsumerWidget {
                         setSheetState(() => matingDate = picked);
                       }
                     },
+                  ),
+                  const SizedBox(height: 8),
+                  TextField(
+                    controller: semenController,
+                    textCapitalization: TextCapitalization.sentences,
+                    decoration: const InputDecoration(
+                      labelText: 'Semen used',
+                      hintText: 'e.g. Large White, batch LW-24',
+                    ),
                   ),
                   DropdownButtonFormField<String>(
                     initialValue: status,
@@ -169,11 +180,13 @@ class PregnancyPage extends ConsumerWidget {
           .create(
             sowId: sowId,
             matingDate: matingDate,
+            semenUsed: semenController.text,
             status: status,
             expectedLitterSize: int.tryParse(litterController.text),
             notes: notesController.text,
           );
     } finally {
+      semenController.dispose();
       litterController.dispose();
       notesController.dispose();
     }
@@ -182,7 +195,7 @@ class PregnancyPage extends ConsumerWidget {
 
 class _Summary extends StatelessWidget {
   const _Summary({required this.items});
-  final List items;
+  final List<Pregnancy> items;
 
   @override
   Widget build(BuildContext context) {
@@ -215,6 +228,25 @@ class _Summary extends StatelessWidget {
   }
 }
 
+class _PregnancyGrid extends StatelessWidget {
+  const _PregnancyGrid({required this.items});
+  final List<Pregnancy> items;
+
+  @override
+  Widget build(BuildContext context) => GridView.builder(
+    shrinkWrap: true,
+    physics: const NeverScrollableScrollPhysics(),
+    itemCount: items.length,
+    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+      crossAxisCount: 2,
+      crossAxisSpacing: 12,
+      mainAxisSpacing: 12,
+      mainAxisExtent: 224,
+    ),
+    itemBuilder: (context, index) => _PregnancyCard(pregnancy: items[index]),
+  );
+}
+
 class _Metric extends StatelessWidget {
   const _Metric({required this.label, required this.value, this.color});
   final String label;
@@ -236,7 +268,7 @@ class _Metric extends StatelessWidget {
 
 class _PregnancyCard extends StatelessWidget {
   const _PregnancyCard({required this.pregnancy});
-  final dynamic pregnancy;
+  final Pregnancy pregnancy;
   @override
   Widget build(BuildContext context) {
     final color = pregnancy.isOverdue
@@ -244,23 +276,86 @@ class _PregnancyCard extends StatelessWidget {
         : pregnancy.isDueSoon
         ? AppColors.warmGold
         : AppColors.primaryGreen;
-    final dueText = pregnancy.isOverdue
-        ? '${-pregnancy.daysUntilFarrowing} days overdue'
-        : '${pregnancy.daysUntilFarrowing} days until farrowing';
     return Card(
-      child: ListTile(
-        leading: CircleAvatar(
-          backgroundColor: color.withValues(alpha: .14),
-          child: Icon(Icons.favorite_outline, color: color),
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 18,
+                  backgroundColor: color.withValues(alpha: .14),
+                  child: Icon(Icons.favorite_outline, color: color, size: 20),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    pregnancy.sowTag ?? 'Sow ${pregnancy.sowId}',
+                    style: Theme.of(context).textTheme.titleSmall,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            _PregnancyDetail(
+              label: 'Days pregnant',
+              value: '${pregnancy.daysPregnant}',
+            ),
+            _PregnancyDetail(
+              label: 'Time remaining',
+              value: pregnancy.status == 'farrowed'
+                  ? 'Farrowed'
+                  : pregnancy.status == 'aborted'
+                  ? 'Aborted'
+                  : pregnancy.isOverdue
+                  ? '${-(pregnancy.daysUntilFarrowing ?? 0)} days overdue'
+                  : '${pregnancy.daysUntilFarrowing ?? 0} days',
+            ),
+            _PregnancyDetail(
+              label: 'Semen used',
+              value: pregnancy.semenUsed?.isNotEmpty == true
+                  ? pregnancy.semenUsed!
+                  : 'Not recorded',
+            ),
+            const Spacer(),
+            Text(
+              'Due ${_date(pregnancy.expectedFarrowingDate)} · ${_statusLabel(pregnancy.status)}',
+              style: Theme.of(context).textTheme.bodySmall,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
         ),
-        title: Text(pregnancy.sowTag ?? 'Sow ${pregnancy.sowId}'),
-        subtitle: Text(
-          'Due ${_date(pregnancy.expectedFarrowingDate)} • $dueText',
-        ),
-        trailing: Text(_statusLabel(pregnancy.status)),
       ),
     );
   }
+}
+
+class _PregnancyDetail extends StatelessWidget {
+  const _PregnancyDetail({required this.label, required this.value});
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.only(bottom: 6),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: Theme.of(context).textTheme.labelSmall),
+        Text(
+          value,
+          style: Theme.of(context).textTheme.bodyMedium,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+        ),
+      ],
+    ),
+  );
 }
 
 class _ErrorState extends StatelessWidget {

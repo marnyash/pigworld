@@ -1,5 +1,8 @@
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -156,6 +159,8 @@ class _PostPigHerdTabState extends ConsumerState<PostPigHerdTab> {
     var currency = 'KES';
     var saving = false;
     String? error;
+    Uint8List? replacementImage;
+    String? replacementImageName;
     try {
       await showDialog<void>(
         context: context,
@@ -168,7 +173,56 @@ class _PostPigHerdTabState extends ConsumerState<PostPigHerdTab> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    _AnimalPhoto(animal: animal, height: 150),
+                    _AnimalPhoto(
+                      animal: animal,
+                      height: 150,
+                      replacementImage: replacementImage,
+                    ),
+                    const SizedBox(height: 8),
+                    OutlinedButton.icon(
+                      onPressed: saving
+                          ? null
+                          : () async {
+                              try {
+                                final picked = await ImagePicker().pickImage(
+                                  source: ImageSource.gallery,
+                                  maxWidth: 1600,
+                                  imageQuality: 85,
+                                );
+                                if (picked == null) return;
+                                final bytes = await picked.readAsBytes();
+                                if (bytes.length > 5 * 1024 * 1024) {
+                                  setDialogState(() {
+                                    error =
+                                        'Pig photos must be 5 MB or smaller.';
+                                  });
+                                  return;
+                                }
+                                setDialogState(() {
+                                  replacementImage = bytes;
+                                  replacementImageName = picked.name;
+                                  error = null;
+                                });
+                              } catch (exception) {
+                                setDialogState(() {
+                                  error =
+                                      'Could not load pig photo: $exception';
+                                });
+                              }
+                            },
+                      icon: const Icon(Icons.add_a_photo_outlined),
+                      label: Text(
+                        replacementImage == null
+                            ? animal.imageUrl == null
+                                  ? 'Choose pig photo'
+                                  : 'Replace Herd photo'
+                            : 'Choose another photo',
+                      ),
+                    ),
+                    const Text(
+                      'A new photo will replace this pig’s saved Herd photo.',
+                      textAlign: TextAlign.center,
+                    ),
                     const SizedBox(height: 12),
                     TextFormField(
                       controller: priceController,
@@ -234,6 +288,15 @@ class _PostPigHerdTabState extends ConsumerState<PostPigHerdTab> {
                           error = null;
                         });
                         try {
+                          if (animal.imageUrl == null &&
+                              replacementImage == null) {
+                            setDialogState(() {
+                              saving = false;
+                              error =
+                                  'Choose a photo for this pig before posting.';
+                            });
+                            return;
+                          }
                           final ageWeeks = animal.birthDate == null
                               ? null
                               : (DateTime.now()
@@ -242,6 +305,15 @@ class _PostPigHerdTabState extends ConsumerState<PostPigHerdTab> {
                                         7)
                                     .clamp(1, 156)
                                     .toInt();
+                          if (replacementImage != null) {
+                            await ref
+                                .read(herdProvider.notifier)
+                                .updateAnimal(
+                                  animalId: animal.id,
+                                  imageBytes: replacementImage,
+                                  imageName: replacementImageName,
+                                );
+                          }
                           await ref
                               .read(pigMarketplaceProvider.notifier)
                               .createListing(
@@ -367,15 +439,22 @@ class _PostPigCard extends StatelessWidget {
 }
 
 class _AnimalPhoto extends StatelessWidget {
-  const _AnimalPhoto({required this.animal, this.height});
+  const _AnimalPhoto({
+    required this.animal,
+    this.height,
+    this.replacementImage,
+  });
 
   final Animal animal;
   final double? height;
+  final Uint8List? replacementImage;
 
   @override
   Widget build(BuildContext context) {
     final url = animal.imageUrl;
-    final image = url == null || url.isEmpty
+    final image = replacementImage != null
+        ? Image.memory(replacementImage!, fit: BoxFit.cover)
+        : url == null || url.isEmpty
         ? const ColoredBox(
             color: Color(0xFFF6DCE4),
             child: Center(child: Icon(Icons.pets_outlined, size: 40)),

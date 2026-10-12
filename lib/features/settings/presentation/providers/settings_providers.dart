@@ -301,7 +301,7 @@ class SettingsHelper {
     return const {
           'vaccinations': 'Vaccination Reminders',
           'feeding': 'Feeding Reminders',
-          'breeding': 'Breeding Alerts',
+          'breeding': 'Insemination Alerts',
           'lowStock': 'Low Stock Alerts',
           'sales': 'Sales Notifications',
           'payments': 'Payment Notifications',

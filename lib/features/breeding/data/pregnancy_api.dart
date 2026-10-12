@@ -31,6 +31,7 @@ class PregnancyApi {
     required String sowId,
     required DateTime matingDate,
     String? boarId,
+    String? semenUsed,
     DateTime? confirmationDate,
     DateTime? expectedFarrowingDate,
     String status = 'suspected',
@@ -43,6 +44,9 @@ class PregnancyApi {
         'mating_date': _date(matingDate),
         'status': status,
       };
+      if (semenUsed != null && semenUsed.trim().isNotEmpty) {
+        data['semen_used'] = semenUsed.trim();
+      }
       if (boarId != null) data['boar_id'] = int.tryParse(boarId) ?? boarId;
       if (confirmationDate != null) {
         data['confirmation_date'] = _date(confirmationDate);

@@ -25,7 +25,7 @@ class _BreedingPageState extends State<BreedingPage> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
-      title: const Text('Breeding calendar'),
+      title: const Text('Insemination calendar'),
       leading: IconButton(
         tooltip: 'Open menu',
         icon: const Icon(Icons.menu),
@@ -41,22 +41,18 @@ class _BreedingPageState extends State<BreedingPage> {
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 96),
       children: [
         Text(
-          'Plan every breeding milestone',
+          'Plan every insemination milestone',
           style: Theme.of(context).textTheme.titleLarge,
         ),
         const SizedBox(height: 4),
         Text(
-          'Set mating, pregnancy-check, and farrowing dates for your herd.',
+          'Set insemination, pregnancy-check, and farrowing dates for your herd.',
           style: Theme.of(
             context,
           ).textTheme.bodyMedium?.copyWith(color: AppColors.mutedText),
         ),
         const SizedBox(height: 18),
-        _BreedingOverviewCard(
-          pregnant: 12,
-          dueSoon: 4,
-          vaccinated: 48,
-        ),
+        _BreedingOverviewCard(pregnant: 12, dueSoon: 4, vaccinated: 48),
         const SizedBox(height: 20),
         _Calendar(
           month: _month,
@@ -119,7 +115,7 @@ class _BreedingPageState extends State<BreedingPage> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Set breeding event',
+                  'Set insemination event',
                   style: Theme.of(context).textTheme.titleLarge,
                 ),
                 const SizedBox(height: 20),
@@ -221,7 +217,10 @@ class _BreedingOverviewCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Breeding overview', style: Theme.of(context).textTheme.titleMedium),
+            Text(
+              'Insemination overview',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
             const SizedBox(height: 12),
             Row(
               children: items
@@ -237,9 +236,15 @@ class _BreedingOverviewCard extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(item.label, style: Theme.of(context).textTheme.bodySmall),
+                            Text(
+                              item.label,
+                              style: Theme.of(context).textTheme.bodySmall,
+                            ),
                             const SizedBox(height: 6),
-                            Text(item.value, style: Theme.of(context).textTheme.headlineSmall),
+                            Text(
+                              item.value,
+                              style: Theme.of(context).textTheme.headlineSmall,
+                            ),
                           ],
                         ),
                       ),
@@ -396,7 +401,7 @@ class _EmptySchedule extends StatelessWidget {
             color: AppColors.primaryGreen,
           ),
           const SizedBox(height: 10),
-          const Text('No breeding events scheduled'),
+          const Text('No insemination events scheduled'),
           TextButton(onPressed: onAdd, child: const Text('Set an event')),
         ],
       ),
@@ -432,7 +437,7 @@ enum _BreedingEventType { mating, pregnancyCheck, farrowing }
 
 extension on _BreedingEventType {
   String get label => switch (this) {
-    _BreedingEventType.mating => 'Mating',
+    _BreedingEventType.mating => 'Insemination',
     _BreedingEventType.pregnancyCheck => 'Pregnancy check',
     _BreedingEventType.farrowing => 'Expected farrowing',
   };

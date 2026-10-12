@@ -185,7 +185,7 @@ abstract class AppLocalizations {
   /// No description provided for @breeding.
   ///
   /// In en, this message translates to:
-  /// **'Breeding'**
+  /// **'Insemination'**
   String get breeding;
 
   /// No description provided for @sales.
