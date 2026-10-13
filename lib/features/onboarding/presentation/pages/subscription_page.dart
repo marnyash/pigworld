@@ -16,6 +16,7 @@ class SubscriptionPage extends ConsumerStatefulWidget {
 
 class _SubscriptionPageState extends ConsumerState<SubscriptionPage> {
   String? _plan;
+  String? _plansError;
   List<Map<String, dynamic>> _plans = [];
   bool _loadingPlans = true;
 
@@ -30,6 +31,12 @@ class _SubscriptionPageState extends ConsumerState<SubscriptionPage> {
   }
 
   Future<void> _loadPlans() async {
+    if (mounted) {
+      setState(() {
+        _loadingPlans = true;
+        _plansError = null;
+      });
+    }
     try {
       final response = await ref.read(dioProvider).get('/subscription-plans');
       final plans = List<Map<String, dynamic>>.from(
@@ -57,10 +64,10 @@ class _SubscriptionPageState extends ConsumerState<SubscriptionPage> {
       }
     } on DioException catch (error) {
       if (mounted) {
-        setState(() => _loadingPlans = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Could not load subscriptions: $error')),
-        );
+        setState(() {
+          _loadingPlans = false;
+          _plansError = 'Could not load subscriptions: $error';
+        });
       }
     }
   }
@@ -92,6 +99,29 @@ class _SubscriptionPageState extends ConsumerState<SubscriptionPage> {
           const SizedBox(height: 24),
           if (_loadingPlans)
             const Center(child: CircularProgressIndicator())
+          else if (_plansError != null)
+            Card(
+              color: Theme.of(context).colorScheme.errorContainer,
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _plansError!,
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.onErrorContainer,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    OutlinedButton(
+                      onPressed: _loadPlans,
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                ),
+              ),
+            )
           else if (_selectedPlan == null)
             Card(
               color: AppColors.surface,

@@ -8,6 +8,7 @@ import 'package:proj/features/auth/domain/entities/user.dart';
 import 'package:proj/features/auth/presentation/providers/auth_provider.dart';
 import 'package:proj/features/auth/presentation/providers/auth_providers.dart';
 import 'package:proj/features/onboarding/presentation/pages/payment_method_page.dart';
+import 'package:proj/features/onboarding/presentation/pages/subscription_page.dart';
 import 'package:proj/security/authorization/roles.dart';
 
 class _TestAuthNotifier extends AuthNotifier {
@@ -20,6 +21,37 @@ class _TestAuthNotifier extends AuthNotifier {
 }
 
 void main() {
+  testWidgets('shows a retryable inline error when plans cannot be loaded', (
+    tester,
+  ) async {
+    final dio = Dio(BaseOptions(baseUrl: 'https://example.com'));
+    dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) {
+          handler.reject(
+            DioException(
+              requestOptions: options,
+              type: DioExceptionType.connectionError,
+              message: 'offline',
+            ),
+          );
+        },
+      ),
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [dioProvider.overrideWithValue(dio)],
+        child: const MaterialApp(home: SubscriptionPage()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('Could not load subscriptions'), findsOneWidget);
+    expect(find.text('Retry'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('shows payment method options for the recommended plan', (
     tester,
   ) async {
