@@ -57,7 +57,7 @@ if (isReleaseBuildRequested && keystorePropertiesFile.exists()) {
     val actualSha1 = MessageDigest.getInstance("SHA-1")
         .digest(certificate.encoded)
         .joinToString(":") { "%02X".format(it.toInt() and 0xFF) }
-    val expectedSha1 = "25:F9:2E:13:25:A1:BC:58:33:01:88:DF:59:D5:F4:E7:07:A3:32:F8"
+    val expectedSha1 = "C4:CB:DE:41:61:71:DA:50:45:68:24:35:43:14:77:C7:C6:8E:C3:1B"
     if (!actualSha1.equals(expectedSha1, ignoreCase = true)) {
         throw GradleException(
             "Wrong release signing certificate. Expected SHA1 $expectedSha1 but found $actualSha1."
@@ -105,7 +105,7 @@ android {
             } else if (isReleaseBuildRequested) {
                 throw GradleException(
                     "Release signing is not configured. Add android/key.properties and the original upload keystore; " +
-                        "the expected upload certificate SHA1 is 25:F9:2E:13:25:A1:BC:58:33:01:88:DF:59:D5:F4:E7:07:A3:32:F8."
+                        "the expected upload certificate SHA1 is C4:CB:DE:41:61:71:DA:50:45:68:24:35:43:14:77:C7:C6:8E:C3:1B."
                 )
             } else {
                 signingConfigs.getByName("debug")
