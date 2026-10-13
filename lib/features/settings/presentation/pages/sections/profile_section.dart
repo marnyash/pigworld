@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
+import 'package:proj/features/settings/data/settings_api.dart';
+import 'package:proj/features/settings/presentation/providers/profile_image_provider.dart';
+import 'package:proj/features/auth/domain/entities/session.dart';
+import 'package:proj/features/auth/domain/entities/user.dart';
+import 'package:proj/features/auth/presentation/providers/auth_providers.dart';
 import 'package:proj/app/theme/app_colors.dart';
 import 'package:proj/app/theme/app_dimensions.dart';
 import 'package:proj/features/auth/presentation/providers/auth_provider.dart';
@@ -18,6 +24,7 @@ class _ProfileSectionState extends ConsumerState<ProfileSection> {
   late TextEditingController _phoneController;
   late TextEditingController _farmNameController;
   late TextEditingController _farmLocationController;
+  bool _saving = false;
 
   @override
   void initState() {
@@ -50,6 +57,73 @@ class _ProfileSectionState extends ConsumerState<ProfileSection> {
     _farmNameController.dispose();
     _farmLocationController.dispose();
     super.dispose();
+  }
+
+  Future<void> _saveProfile() async {
+    final session = ref.read(authProvider).valueOrNull;
+    final name = _nameController.text.trim();
+    if (session == null || name.isEmpty) {
+      _showMessage('Enter your name before saving.', isError: true);
+      return;
+    }
+    setState(() => _saving = true);
+    try {
+      if (name != session.user.name) {
+        await SettingsApi(ref.read(dioProvider)).updateDisplayName(name);
+        final user = session.user;
+        ref
+            .read(authProvider.notifier)
+            .setSession(
+              Session(
+                accessToken: session.accessToken,
+                refreshToken: session.refreshToken,
+                user: User(
+                  id: user.id,
+                  name: name,
+                  email: user.email,
+                  phone: user.phone,
+                  role: user.role,
+                ),
+                farms: session.farms,
+                selectedFarm: session.selectedFarm,
+              ),
+            );
+      }
+      if (mounted) _showMessage('Profile updated.');
+    } catch (error) {
+      if (mounted) {
+        _showMessage('Could not update profile: $error', isError: true);
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _choosePhoto() async {
+    try {
+      final changed = await ref
+          .read(profileImageProvider.notifier)
+          .chooseFromGallery();
+      if (mounted && changed) _showMessage('Profile photo updated.');
+    } catch (error) {
+      if (mounted) {
+        _showMessage('Could not update photo: $error', isError: true);
+      }
+    }
+  }
+
+  Future<void> _copyInviteCode(String inviteCode) async {
+    await Clipboard.setData(ClipboardData(text: inviteCode));
+    if (mounted) _showMessage('Invite code copied.');
+  }
+
+  void _showMessage(String message, {bool isError = false}) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: isError ? AppColors.danger : null,
+      ),
+    );
   }
 
   @override
@@ -92,12 +166,7 @@ class _ProfileSectionState extends ConsumerState<ProfileSection> {
                         child: FloatingActionButton.small(
                           backgroundColor: AppColors.primaryGreen,
                           onPressed: () {
-                            // TODO: Implement photo upload
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('Photo upload coming soon'),
-                              ),
-                            );
+                            _choosePhoto();
                           },
                           child: const Icon(Icons.camera_alt),
                         ),
@@ -132,6 +201,7 @@ class _ProfileSectionState extends ConsumerState<ProfileSection> {
                 const SizedBox(height: AppDimensions.spacingMedium),
                 TextField(
                   controller: _emailController,
+                  readOnly: true,
                   keyboardType: TextInputType.emailAddress,
                   decoration: const InputDecoration(
                     labelText: 'Email',
@@ -141,6 +211,7 @@ class _ProfileSectionState extends ConsumerState<ProfileSection> {
                 const SizedBox(height: AppDimensions.spacingMedium),
                 TextField(
                   controller: _phoneController,
+                  readOnly: true,
                   keyboardType: TextInputType.phone,
                   decoration: const InputDecoration(
                     labelText: 'Phone Number',
@@ -166,6 +237,7 @@ class _ProfileSectionState extends ConsumerState<ProfileSection> {
                 const SizedBox(height: AppDimensions.spacingMedium),
                 TextField(
                   controller: _farmNameController,
+                  readOnly: true,
                   decoration: const InputDecoration(
                     labelText: 'Farm Name',
                     prefixIcon: Icon(Icons.agriculture),
@@ -174,6 +246,7 @@ class _ProfileSectionState extends ConsumerState<ProfileSection> {
                 const SizedBox(height: AppDimensions.spacingMedium),
                 TextField(
                   controller: _farmLocationController,
+                  readOnly: true,
                   decoration: const InputDecoration(
                     labelText: 'Farm Location',
                     prefixIcon: Icon(Icons.location_on),
@@ -210,7 +283,7 @@ class _ProfileSectionState extends ConsumerState<ProfileSection> {
                             ),
                             IconButton(
                               onPressed: () {
-                                // TODO: Copy to clipboard
+                                _copyInviteCode(farm!.inviteCode!);
                               },
                               icon: const Icon(Icons.copy_outlined),
                             ),
@@ -230,13 +303,8 @@ class _ProfileSectionState extends ConsumerState<ProfileSection> {
         ),
         const SizedBox(height: AppDimensions.spacingLarge),
         FilledButton(
-          onPressed: () {
-            // TODO: Save profile changes
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(const SnackBar(content: Text('Profile updated')));
-          },
-          child: const Text('Save Changes'),
+          onPressed: _saving ? null : _saveProfile,
+          child: Text(_saving ? 'Saving...' : 'Save Changes'),
         ),
         const SizedBox(height: AppDimensions.spacingLarge),
       ],

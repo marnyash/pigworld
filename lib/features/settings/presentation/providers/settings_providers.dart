@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:proj/features/onboarding/presentation/providers/onboarding_provider.dart';
 import 'package:proj/features/auth/presentation/providers/auth_providers.dart';
 import 'package:proj/features/settings/data/settings_api.dart';
+import 'package:proj/security/authentication/biometric_auth.dart';
 import '../../data/settings_local_data_source.dart';
 import '../../domain/entities/backup_settings.dart';
 import '../../domain/entities/device_settings.dart';
@@ -121,6 +122,11 @@ class SecuritySettingsNotifier extends AsyncNotifier<SecuritySettings> {
   }
 
   Future<void> updateBiometric(bool enabled) async {
+    if (enabled && !await BiometricAuth().supportsFingerprint()) {
+      throw StateError(
+        'Fingerprint authentication is not available on this device.',
+      );
+    }
     final current = await future;
     final updated = current.copyWith(hasBiometricEnabled: enabled);
     await ref
@@ -177,6 +183,15 @@ class BackupSettingsNotifier extends AsyncNotifier<BackupSettings> {
         .watch(settingsLocalDataSourceProvider)
         .saveBackupSettings(updated);
     ref.invalidateSelf();
+  }
+
+  Future<void> recordBackup(DateTime date) async {
+    final current = await future;
+    final updated = current.copyWith(lastBackupDate: date);
+    await ref
+        .watch(settingsLocalDataSourceProvider)
+        .saveBackupSettings(updated);
+    state = AsyncData(updated);
   }
 }
 
@@ -236,6 +251,13 @@ class PaymentSettingsNotifier extends AsyncNotifier<PaymentSettings> {
         .watch(settingsLocalDataSourceProvider)
         .savePaymentSettings(updated);
     ref.invalidateSelf();
+  }
+
+  Future<void> save(PaymentSettings updated) async {
+    await ref
+        .watch(settingsLocalDataSourceProvider)
+        .savePaymentSettings(updated);
+    state = AsyncData(updated);
   }
 }
 

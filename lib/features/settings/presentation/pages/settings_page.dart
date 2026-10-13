@@ -304,6 +304,63 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
               ],
             ),
           ),
+          const SizedBox(height: AppDimensions.spacingLarge),
+          Text('More settings', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: AppDimensions.spacingMedium),
+          Card(
+            child: Column(
+              children: [
+                _SettingsAction(
+                  icon: Icons.person_outline,
+                  title: 'Profile & preferences',
+                  onTap: () =>
+                      context.push('${AppRoutes.settingsDetails}?tab=profile'),
+                ),
+                const Divider(height: 1),
+                _SettingsAction(
+                  icon: Icons.security_outlined,
+                  title: l10n.securityAndSessions,
+                  onTap: () =>
+                      context.push('${AppRoutes.settingsDetails}?tab=security'),
+                ),
+                const Divider(height: 1),
+                _SettingsAction(
+                  icon: Icons.payment_outlined,
+                  title: 'Payment settings',
+                  onTap: () =>
+                      context.push('${AppRoutes.settingsDetails}?tab=payment'),
+                ),
+                const Divider(height: 1),
+                _SettingsAction(
+                  icon: Icons.backup_outlined,
+                  title: 'Backup & exports',
+                  onTap: () =>
+                      context.push('${AppRoutes.settingsDetails}?tab=backup'),
+                ),
+                const Divider(height: 1),
+                _SettingsAction(
+                  icon: Icons.devices_outlined,
+                  title: 'Device permissions',
+                  onTap: () =>
+                      context.push('${AppRoutes.settingsDetails}?tab=devices'),
+                ),
+                const Divider(height: 1),
+                _SettingsAction(
+                  icon: Icons.support_agent_outlined,
+                  title: 'Support & legal',
+                  onTap: () =>
+                      context.push('${AppRoutes.settingsDetails}?tab=support'),
+                ),
+                const Divider(height: 1),
+                _SettingsAction(
+                  icon: Icons.group_outlined,
+                  title: 'Farm member management',
+                  onTap: () =>
+                      context.push('${AppRoutes.settingsDetails}?tab=team'),
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

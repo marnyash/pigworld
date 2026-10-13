@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:proj/app/theme/app_colors.dart';
 import 'package:proj/app/theme/app_dimensions.dart';
 import 'package:proj/features/inventory/presentation/providers/inventory_providers.dart';
@@ -102,7 +103,14 @@ class SuppliersSection extends ConsumerWidget {
                               Expanded(
                                 child: OutlinedButton.icon(
                                   onPressed: () {
-                                    // TODO: Contact supplier
+                                    _openContact(
+                                      context,
+                                      Uri(
+                                        scheme: 'tel',
+                                        path: supplier.contact,
+                                      ),
+                                      'phone app',
+                                    );
                                   },
                                   icon: const Icon(Icons.phone),
                                   label: const Text('Call'),
@@ -112,7 +120,18 @@ class SuppliersSection extends ConsumerWidget {
                               Expanded(
                                 child: OutlinedButton.icon(
                                   onPressed: () {
-                                    // TODO: Send email
+                                    _openContact(
+                                      context,
+                                      Uri(
+                                        scheme: 'mailto',
+                                        path: supplier.email,
+                                        queryParameters: {
+                                          'subject':
+                                              'Pig World Smart supplier inquiry',
+                                        },
+                                      ),
+                                      'email app',
+                                    );
                                   },
                                   icon: const Icon(Icons.email),
                                   label: const Text('Email'),
@@ -122,10 +141,25 @@ class SuppliersSection extends ConsumerWidget {
                               Expanded(
                                 child: FilledButton.icon(
                                   onPressed: () {
-                                    // TODO: Create purchase order
+                                    _openContact(
+                                      context,
+                                      Uri(
+                                        scheme: 'mailto',
+                                        path: supplier.email,
+                                        queryParameters: {
+                                          'subject': 'Purchase order request',
+                                          'body':
+                                              'Hello ${supplier.name},\n\n'
+                                              'Please send us a quotation for:\n'
+                                              '${supplier.products.map((product) => '- $product').join('\n')}\n\n'
+                                              'Farm: ',
+                                        },
+                                      ),
+                                      'email app',
+                                    );
                                   },
                                   icon: const Icon(Icons.add_shopping_cart),
-                                  label: const Text('PO'),
+                                  label: const Text('Order'),
                                 ),
                               ),
                             ],
@@ -142,6 +176,25 @@ class SuppliersSection extends ConsumerWidget {
       loading: () => const Center(child: CircularProgressIndicator()),
       error: (error, _) => Center(child: Text('Error: $error')),
     );
+  }
+
+  Future<void> _openContact(
+    BuildContext context,
+    Uri uri,
+    String service,
+  ) async {
+    try {
+      final opened = await launchUrl(uri);
+      if (!context.mounted || opened) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not open the $service.')));
+    } on Exception catch (error) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not open the $service: $error')),
+      );
+    }
   }
 }
 

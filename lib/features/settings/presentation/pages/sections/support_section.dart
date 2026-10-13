@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:proj/app/routes/app_routes.dart';
 import 'package:proj/app/theme/app_colors.dart';
 import 'package:proj/app/theme/app_dimensions.dart';
 
@@ -26,27 +29,21 @@ class SupportSection extends StatelessWidget {
                   icon: Icons.help_outline,
                   title: 'Help Center',
                   subtitle: 'Browse FAQs and guides',
-                  onTap: () {
-                    // TODO: Open help center
-                  },
+                  onTap: () => context.go(AppRoutes.about),
                 ),
                 const Divider(),
                 _SupportTile(
                   icon: Icons.chat_outlined,
                   title: 'Contact Support',
                   subtitle: 'Get in touch with our support team',
-                  onTap: () {
-                    // TODO: Open support chat/email
-                  },
+                  onTap: () => context.go(AppRoutes.support),
                 ),
                 const Divider(),
                 _SupportTile(
                   icon: Icons.feedback_outlined,
                   title: 'Send Feedback',
                   subtitle: 'Help us improve PigWorld',
-                  onTap: () {
-                    // TODO: Open feedback form
-                  },
+                  onTap: () => context.go(AppRoutes.support),
                 ),
               ],
             ),
@@ -66,27 +63,32 @@ class SupportSection extends StatelessWidget {
                   icon: Icons.policy_outlined,
                   title: 'Privacy Policy',
                   subtitle: 'How we handle your data',
-                  onTap: () {
-                    // TODO: Open privacy policy
-                  },
+                  onTap: () => _openLink(
+                    context,
+                    Uri.parse('https://pigworldsmart.com/privacy'),
+                    'privacy policy',
+                  ),
                 ),
                 const Divider(),
                 _SupportTile(
                   icon: Icons.description_outlined,
                   title: 'Terms & Conditions',
                   subtitle: 'Our terms of service',
-                  onTap: () {
-                    // TODO: Open terms
-                  },
+                  onTap: () => _openLink(
+                    context,
+                    Uri.parse('https://pigworldsmart.com/terms'),
+                    'terms and conditions',
+                  ),
                 ),
                 const Divider(),
                 _SupportTile(
                   icon: Icons.verified_user_outlined,
                   title: 'License Information',
                   subtitle: 'Open source licenses',
-                  onTap: () {
-                    // TODO: Show licenses
-                  },
+                  onTap: () => showLicensePage(
+                    context: context,
+                    applicationName: 'PigWorld Smart',
+                  ),
                 ),
               ],
             ),
@@ -116,15 +118,14 @@ class SupportSection extends StatelessWidget {
                       width: double.infinity,
                       child: OutlinedButton.icon(
                         onPressed: () {
-                          // TODO: Check for updates
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('You are on the latest version'),
-                            ),
+                          _openLink(
+                            context,
+                            Uri.parse('https://pigworldsmart.com'),
+                            'PigWorld Smart website',
                           );
                         },
                         icon: const Icon(Icons.update),
-                        label: const Text('Check for Updates'),
+                        label: const Text('Visit website for updates'),
                       ),
                     ),
                   ],
@@ -158,6 +159,27 @@ class SupportSection extends StatelessWidget {
         const SizedBox(height: AppDimensions.spacingLarge),
       ],
     );
+  }
+
+  Future<void> _openLink(
+    BuildContext context,
+    Uri uri,
+    String description,
+  ) async {
+    try {
+      final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      if (context.mounted && !opened) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Could not open $description.')));
+      }
+    } on Exception catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not open $description: $error')),
+        );
+      }
+    }
   }
 }
 

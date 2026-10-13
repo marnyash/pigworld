@@ -117,29 +117,9 @@ class SettingsApi {
     }
   }
 
-  // Export data
-  Future<String> exportData({
-    required String farmId,
-    required String format, // 'pdf', 'excel'
-  }) async {
+  Future<void> logoutAllSessions() async {
     try {
-      final response = await _dio.get<Map<String, dynamic>>(
-        '/farms/$farmId/export',
-        queryParameters: {'format': format},
-      );
-      return response.data?['download_url'] as String? ?? '';
-    } on DioException catch (error) {
-      throw ErrorHandler.from(error);
-    }
-  }
-
-  // Restore backup
-  Future<void> restoreBackup({
-    required String farmId,
-    required String backupId,
-  }) async {
-    try {
-      await _dio.post('/farms/$farmId/backups/$backupId/restore');
+      await _dio.post<void>('/auth/logout-all');
     } on DioException catch (error) {
       throw ErrorHandler.from(error);
     }

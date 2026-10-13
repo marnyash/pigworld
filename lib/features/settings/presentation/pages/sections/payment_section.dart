@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:proj/app/theme/app_dimensions.dart';
+import 'package:proj/features/settings/domain/entities/payment_settings.dart';
 import 'package:proj/features/settings/presentation/providers/settings_providers.dart';
 
 class PaymentSection extends ConsumerStatefulWidget {
@@ -17,6 +18,7 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
   late TextEditingController _invoicePrefixController;
   late TextEditingController _taxRateController;
   late TextEditingController _vatController;
+  bool _saving = false;
 
   @override
   void initState() {
@@ -52,6 +54,60 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
     _taxRateController.dispose();
     _vatController.dispose();
     super.dispose();
+  }
+
+  Future<void> _save() async {
+    final taxRate = double.tryParse(_taxRateController.text.trim());
+    final vat = double.tryParse(_vatController.text.trim());
+    if (taxRate == null ||
+        vat == null ||
+        taxRate < 0 ||
+        taxRate > 100 ||
+        vat < 0 ||
+        vat > 100) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Enter tax and VAT rates from 0 to 100.')),
+      );
+      return;
+    }
+    setState(() => _saving = true);
+    try {
+      await ref
+          .read(paymentSettingsProvider.notifier)
+          .save(
+            PaymentSettings(
+              mPesaNumber: _mPesaController.text.trim().isEmpty
+                  ? null
+                  : _mPesaController.text.trim(),
+              bankAccount: _bankAccountController.text.trim().isEmpty
+                  ? null
+                  : _bankAccountController.text.trim(),
+              bankName: _bankNameController.text.trim().isEmpty
+                  ? null
+                  : _bankNameController.text.trim(),
+              invoicePrefix: _invoicePrefixController.text.trim().isEmpty
+                  ? 'INV'
+                  : _invoicePrefixController.text.trim(),
+              taxRate: taxRate,
+              vat: vat,
+            ),
+          );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Payment settings saved on this device.'),
+          ),
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not save payment settings: $error')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
   }
 
   @override
@@ -188,13 +244,8 @@ class _PaymentSectionState extends ConsumerState<PaymentSection> {
           ),
           const SizedBox(height: AppDimensions.spacingLarge),
           FilledButton(
-            onPressed: () {
-              // TODO: Save payment settings
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Payment settings saved')),
-              );
-            },
-            child: const Text('Save Payment Settings'),
+            onPressed: _saving ? null : _save,
+            child: Text(_saving ? 'Saving…' : 'Save Payment Settings'),
           ),
           const SizedBox(height: AppDimensions.spacingLarge),
         ],

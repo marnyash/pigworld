@@ -5,6 +5,8 @@ import '../../../../app/routes/app_routes.dart';
 import '../../../onboarding/presentation/providers/onboarding_provider.dart';
 import '../../domain/entities/session.dart';
 import '../providers/auth_provider.dart';
+import '../../../../security/authentication/pin_auth.dart';
+import '../../../settings/data/settings_local_data_source.dart';
 import '../providers/auth_providers.dart';
 
 class SplashPage extends ConsumerStatefulWidget {
@@ -48,11 +50,27 @@ class _SplashPageState extends ConsumerState<SplashPage>
     }
     if (!mounted) return;
     if (session != null) {
+      bool hasPin;
+      try {
+        final security = await SettingsLocalDataSource().readSecuritySettings();
+        hasPin = await PinAuth().hasPin || security.hasBiometricEnabled;
+      } catch (_) {
+        await _finishSplashTransition();
+        if (!mounted) return;
+        _navigated = true;
+        context.go(AppRoutes.login);
+        return;
+      }
+      if (!mounted) return;
       await _finishSplashTransition();
       if (!mounted) return;
       _navigated = true;
       context.go(
-        session.selectedFarm != null ? AppRoutes.home : AppRoutes.farmSelection,
+        hasPin
+            ? AppRoutes.pinLock
+            : session.selectedFarm != null
+            ? AppRoutes.home
+            : AppRoutes.farmSelection,
       );
       return;
     }

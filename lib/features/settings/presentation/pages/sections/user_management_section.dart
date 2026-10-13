@@ -50,7 +50,35 @@ class UserManagementSection extends ConsumerWidget {
                           _MemberTile(
                             member: member,
                             onTap: () {
-                              // TODO: Show member details
+                              showDialog<void>(
+                                context: context,
+                                builder: (context) => AlertDialog(
+                                  title: Text(member.name),
+                                  content: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text('Email: ${member.email}'),
+                                      Text('Role: ${member.role.name}'),
+                                      if (member.identityNumber.isNotEmpty)
+                                        Text(
+                                          'Identity number: ${member.identityNumber}',
+                                        ),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        'Permissions: ${member.permissions.isEmpty ? 'Default role permissions' : member.permissions.map((permission) => permission.name).join(', ')}',
+                                      ),
+                                    ],
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(context),
+                                      child: const Text('Close'),
+                                    ),
+                                  ],
+                                ),
+                              );
                             },
                           ),
                           if (member != state.members.last) const Divider(),

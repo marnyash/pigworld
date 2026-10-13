@@ -174,9 +174,7 @@ class _SearchCategoriesSectionState
                               ),
                             ],
                           ),
-                          onTap: () {
-                            // TODO: Show item details
-                          },
+                          onTap: () => _showItemDetails(context, item),
                         ),
                       ),
                     ),
@@ -194,5 +192,40 @@ class _SearchCategoriesSectionState
     if (item.isExpiringSoon) return AppColors.warning;
     if (item.isLowStock) return AppColors.warmGold;
     return AppColors.primaryGreen;
+  }
+
+  void _showItemDetails(BuildContext context, InventoryItem item) {
+    showDialog<void>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(item.name),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Category: ${item.category}'),
+              Text('SKU: ${item.sku}'),
+              Text('Quantity: ${item.quantity} ${item.unit}'),
+              Text('Minimum level: ${item.minimumLevel} ${item.unit}'),
+              Text('Cost price: ${item.costPrice}'),
+              if (item.supplier.isNotEmpty) Text('Supplier: ${item.supplier}'),
+              if (item.expiryDate != null)
+                Text('Expiry: ${item.expiryDate!.toString().split(' ')[0]}'),
+              if (item.barcode?.isNotEmpty == true)
+                Text('Barcode: ${item.barcode}'),
+              if (item.storageLocation.isNotEmpty)
+                Text('Storage location: ${item.storageLocation}'),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Close'),
+          ),
+        ],
+      ),
+    );
   }
 }

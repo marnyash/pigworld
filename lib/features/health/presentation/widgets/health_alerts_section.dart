@@ -97,7 +97,37 @@ class _AlertCard extends StatelessWidget {
               ],
             ),
           ),
-          OutlinedButton(onPressed: () {}, child: const Text('View')),
+          OutlinedButton(
+            onPressed: () => showDialog<void>(
+              context: context,
+              builder: (context) => AlertDialog(
+                title: Text('Pig ${alert.pigId}'),
+                content: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (alert.diagnosis != null)
+                        Text('Diagnosis: ${alert.diagnosis}'),
+                      if (alert.symptoms.isNotEmpty)
+                        Text('Symptoms: ${alert.symptoms.join(', ')}'),
+                      if (alert.medication != null)
+                        Text('Medication: ${alert.medication}'),
+                      if (alert.notes != null) Text('Notes: ${alert.notes}'),
+                      Text('Status: ${alert.status}'),
+                    ],
+                  ),
+                ),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: const Text('Close'),
+                  ),
+                ],
+              ),
+            ),
+            child: const Text('View'),
+          ),
         ],
       ),
     ),

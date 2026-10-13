@@ -8,6 +8,7 @@ import '../../security/authorization/roles.dart';
 abstract final class RouteGuard {
   static const publicRoutes = {
     '/splash',
+    '/pin-lock',
     '/login',
     '/forgot-password',
     '/otp-verification',

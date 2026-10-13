@@ -9,6 +9,7 @@ abstract final class AppRoutes {
   static const mortality = '/health/mortality';
   static const breeding = '/breeding';
   static const settings = '/settings';
+  static const settingsDetails = '/settings/details';
   static const feed = '/feed';
   static const tasks = '/tasks';
   static const growth = '/growth';
@@ -24,6 +25,7 @@ abstract final class AppRoutes {
   static const support = '/support';
   static const about = '/about';
   static const splash = '/splash';
+  static const pinLock = '/pin-lock';
   static const login = '/login';
   static const forgotPassword = '/forgot-password';
   static const otpVerification = '/otp-verification';

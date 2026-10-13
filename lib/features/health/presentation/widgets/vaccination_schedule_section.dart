@@ -49,10 +49,41 @@ class VaccinationScheduleSection extends ConsumerWidget {
       );
 }
 
-class _VaccinationCard extends StatelessWidget {
+class _VaccinationCard extends ConsumerStatefulWidget {
   final dynamic record;
 
   const _VaccinationCard({required this.record});
+
+  @override
+  ConsumerState<_VaccinationCard> createState() => _VaccinationCardState();
+}
+
+class _VaccinationCardState extends ConsumerState<_VaccinationCard> {
+  bool _saving = false;
+
+  Future<void> _markDone() async {
+    setState(() => _saving = true);
+    try {
+      await ref.read(healthRecordsProvider.notifier).updateRecord(
+        widget.record.id,
+        {'status': 'healthy'},
+      );
+      ref.invalidate(vaccinationScheduleProvider);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Vaccination marked complete.')),
+        );
+      }
+    } catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not update vaccination: $error')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) => Card(
@@ -71,12 +102,12 @@ class _VaccinationCard extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Pig ${record.pigId}',
+                      'Pig ${widget.record.pigId}',
                       style: Theme.of(context).textTheme.labelLarge,
                     ),
-                    if (record.medication != null)
+                    if (widget.record.medication != null)
                       Text(
-                        record.medication ?? 'Vaccination',
+                        widget.record.medication ?? 'Vaccination',
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                   ],
@@ -92,17 +123,20 @@ class _VaccinationCard extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Due: ${record.nextCheckupDate?.toString().split(' ')[0] ?? 'N/A'}',
+                    'Due: ${widget.record.nextCheckupDate?.toString().split(' ')[0] ?? 'N/A'}',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
-                  if (record.veterinarian != null)
+                  if (widget.record.veterinarian != null)
                     Text(
-                      'Vet: ${record.veterinarian}',
+                      'Vet: ${widget.record.veterinarian}',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                 ],
               ),
-              FilledButton(onPressed: () {}, child: const Text('Mark Done')),
+              FilledButton(
+                onPressed: _saving ? null : _markDone,
+                child: Text(_saving ? 'Saving...' : 'Mark Done'),
+              ),
             ],
           ),
         ],

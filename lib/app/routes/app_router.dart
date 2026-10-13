@@ -22,6 +22,7 @@ import '../../features/reports/presentation/pages/reports_page.dart';
 import '../../features/about/presentation/pages/about_page.dart';
 import '../../features/settings/presentation/pages/profile_page.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
+import '../../features/settings/presentation/pages/settings_details_page.dart';
 import '../../features/settings/presentation/pages/billing_page.dart';
 import '../../features/notifications/presentation/pages/notifications_page.dart';
 import '../../features/support/presentation/pages/support_page.dart';
@@ -29,6 +30,7 @@ import '../../features/crm/presentation/pages/crm_page.dart';
 import '../../features/auth/presentation/pages/forgot_password_page.dart';
 import '../../features/auth/presentation/pages/farm_selection_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
+import '../../features/auth/presentation/pages/pin_lock_page.dart';
 import '../../features/auth/presentation/pages/otp_verification_page.dart';
 import '../../features/auth/presentation/pages/session_expired_page.dart';
 import '../../features/auth/presentation/pages/splash_page.dart';
@@ -63,6 +65,10 @@ abstract final class AppRouter {
       GoRoute(
         path: AppRoutes.splash,
         builder: (context, state) => const SplashPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.pinLock,
+        builder: (context, state) => const PinLockPage(),
       ),
       GoRoute(
         path: AppRoutes.permissions,
@@ -264,6 +270,12 @@ abstract final class AppRouter {
           GoRoute(
             path: AppRoutes.settings,
             builder: (context, state) => const SettingsPage(),
+          ),
+          GoRoute(
+            path: AppRoutes.settingsDetails,
+            builder: (context, state) => SettingsDetailsPage(
+              initialTab: state.uri.queryParameters['tab'] ?? 'profile',
+            ),
           ),
           GoRoute(
             path: AppRoutes.farmManagement,
