@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:proj/app/theme/app_colors.dart';
 import 'package:proj/app/theme/app_dimensions.dart';
 import 'package:proj/features/auth/presentation/providers/auth_provider.dart';
@@ -412,9 +413,15 @@ class _HerdReportsBrowserState extends ConsumerState<HerdReportsBrowser> {
         },
       );
       if (!context.mounted) return;
+      await _shareReport(
+        context,
+        path,
+        '${entry.title} ${_label(category)} report',
+      );
+      if (!context.mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Report exported: $path')));
+      ).showSnackBar(SnackBar(content: Text('Report downloaded: $path')));
     } catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -443,9 +450,11 @@ class _HerdReportsBrowserState extends ConsumerState<HerdReportsBrowser> {
         },
       );
       if (!context.mounted) return;
+      await _shareReport(context, path, '${_label(category)} reports');
+      if (!context.mounted) return;
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Report exported: $path')));
+      ).showSnackBar(SnackBar(content: Text('Report downloaded: $path')));
     } catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -455,6 +464,24 @@ class _HerdReportsBrowserState extends ConsumerState<HerdReportsBrowser> {
         ),
       );
     }
+  }
+
+  Future<void> _shareReport(
+    BuildContext context,
+    String path,
+    String subject,
+  ) async {
+    final renderObject = context.findRenderObject();
+    final box = renderObject is RenderBox ? renderObject : null;
+    await SharePlus.instance.share(
+      ShareParams(
+        files: [XFile(path)],
+        subject: subject,
+        sharePositionOrigin: box == null
+            ? null
+            : box.localToGlobal(Offset.zero) & box.size,
+      ),
+    );
   }
 
   void _retry(WidgetRef ref) {

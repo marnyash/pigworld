@@ -103,8 +103,10 @@ class _SupportPageState extends State<SupportPage> {
     );
   }
 
-  Future<void> callVeterinary() =>
-      _openContact(Uri.parse('tel:+254705030550'), 'the phone app');
+  Future<void> callVeterinary() => _openContact(
+    Uri.parse('tel:+254705030550'),
+    'the emergency veterinary line',
+  );
 
   void _openLiveChat(WidgetRef ref) {
     final farmId = ref.read(authProvider).valueOrNull?.selectedFarm?.id;
@@ -125,14 +127,14 @@ class _SupportPageState extends State<SupportPage> {
           (notification) => notification?.type == 'crm_message',
           orElse: () => null,
         );
-        final customerCareName = crmMessage?.title.trim().isNotEmpty == true
-            ? crmMessage!.title.trim()
-            : 'Customer Care';
+        final farmId = ref.read(authProvider).valueOrNull?.selectedFarm?.id;
+        final presence = farmId == null
+            ? Future<bool>.value(false)
+            : ref.read(notificationsApiProvider).fetchSupportPresence(farmId);
 
         return Scaffold(
           endDrawer: _SupportDrawer(
             onOpenLiveChat: () => _openLiveChat(ref),
-            onOpenContact: _openContact,
             onCall: callVeterinary,
           ),
           appBar: AppBar(
@@ -161,17 +163,25 @@ class _SupportPageState extends State<SupportPage> {
               32,
             ),
             children: [
-              _SupportHeader(
-                customerCareName: customerCareName,
-                onEmergencyCall: callVeterinary,
+              FutureBuilder<bool>(
+                future: presence,
+                builder: (context, snapshot) => _SupportHeader(
+                  customerCareName: 'Customer Care',
+                  supportOnline: snapshot.data ?? false,
+                  onEmergencyCall: callVeterinary,
+                ),
               ),
               const SizedBox(height: AppDimensions.spacingLarge),
               Text('Live chat', style: Theme.of(context).textTheme.titleLarge),
               const SizedBox(height: AppDimensions.spacingMedium),
-              _LiveChatPreview(
-                customerCareName: customerCareName,
-                message: crmMessage?.body,
-                onOpenChat: () => _openLiveChat(ref),
+              FutureBuilder<bool>(
+                future: presence,
+                builder: (context, snapshot) => _LiveChatPreview(
+                  customerCareName: 'Customer Care',
+                  supportOnline: snapshot.data ?? false,
+                  message: crmMessage?.body,
+                  onOpenChat: () => _openLiveChat(ref),
+                ),
               ),
               const SizedBox(height: AppDimensions.spacingLarge),
               Text(
@@ -221,14 +231,9 @@ class _SupportPageState extends State<SupportPage> {
 }
 
 class _SupportDrawer extends StatelessWidget {
-  const _SupportDrawer({
-    required this.onOpenLiveChat,
-    required this.onOpenContact,
-    required this.onCall,
-  });
+  const _SupportDrawer({required this.onOpenLiveChat, required this.onCall});
 
   final VoidCallback onOpenLiveChat;
-  final Future<void> Function(Uri uri, String service) onOpenContact;
   final Future<void> Function() onCall;
 
   @override
@@ -263,17 +268,6 @@ class _SupportDrawer extends StatelessWidget {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.phone_outlined),
-            title: const Text('Call support'),
-            onTap: () async {
-              Navigator.of(context).pop();
-              await onOpenContact(
-                Uri.parse('tel:+254705030550'),
-                'the phone app',
-              );
-            },
-          ),
-          ListTile(
             leading: const Icon(Icons.local_hospital_outlined),
             title: const Text('Vet emergency'),
             onTap: () async {
@@ -301,11 +295,13 @@ class _SupportDrawer extends StatelessWidget {
 class _LiveChatPreview extends StatelessWidget {
   const _LiveChatPreview({
     required this.customerCareName,
+    required this.supportOnline,
     required this.message,
     required this.onOpenChat,
   });
 
   final String customerCareName;
+  final bool supportOnline;
   final String? message;
   final VoidCallback onOpenChat;
 
@@ -335,7 +331,9 @@ class _LiveChatPreview extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      'Customer Care · online',
+                      supportOnline
+                          ? 'Customer Care · online'
+                          : 'Customer Care · offline',
                       style: Theme.of(context).textTheme.bodySmall,
                     ),
                   ],
@@ -408,10 +406,12 @@ class _LiveChatPreview extends StatelessWidget {
 class _SupportHeader extends StatelessWidget {
   const _SupportHeader({
     required this.customerCareName,
+    required this.supportOnline,
     required this.onEmergencyCall,
   });
 
   final String customerCareName;
+  final bool supportOnline;
   final VoidCallback onEmergencyCall;
 
   @override
@@ -460,13 +460,17 @@ class _SupportHeader extends StatelessWidget {
                               width: 8,
                               height: 8,
                               decoration: BoxDecoration(
-                                color: AppColors.success,
+                                color: supportOnline
+                                    ? AppColors.success
+                                    : AppColors.mutedText,
                                 shape: BoxShape.circle,
                               ),
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              'Online',
+                              supportOnline
+                                  ? 'Agents online'
+                                  : 'No agents online',
                               style: Theme.of(context).textTheme.bodySmall
                                   ?.copyWith(color: AppColors.inverseMutedText),
                             ),
@@ -533,14 +537,6 @@ class _ContactOptionsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Column(
     children: [
-      _ContactOptionTile(
-        icon: Icons.phone_outlined,
-        title: 'Call Support',
-        subtitle: '+254705030550',
-        actionLabel: 'Call',
-        onTap: () =>
-            onOpenContact(Uri.parse('tel:+254705030550'), 'the phone app'),
-      ),
       _ContactOptionTile(
         icon: Icons.chat_outlined,
         title: 'WhatsApp',

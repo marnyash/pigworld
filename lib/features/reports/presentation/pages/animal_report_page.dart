@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:share_plus/share_plus.dart';
 import 'package:proj/app/theme/app_dimensions.dart';
 import 'package:proj/features/auth/presentation/providers/auth_provider.dart';
 import 'package:proj/features/herd/domain/entities/animal.dart';
@@ -177,9 +178,21 @@ class _AnimalReportPageState extends ConsumerState<AnimalReportPage> {
         data: report.toExportJson(),
       );
       if (!context.mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Pig report exported: $filePath')));
+      final renderObject = context.findRenderObject();
+      final box = renderObject is RenderBox ? renderObject : null;
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(filePath)],
+          subject: 'Pig ${report.animal.tag} ${widget.reportType} report',
+          sharePositionOrigin: box == null
+              ? null
+              : box.localToGlobal(Offset.zero) & box.size,
+        ),
+      );
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Pig report downloaded: $filePath')),
+      );
     } catch (error) {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

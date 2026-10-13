@@ -62,6 +62,18 @@ class NotificationsApi {
     }
   }
 
+  Future<bool> fetchSupportPresence(String farmId) async {
+    try {
+      final response = await _dio.get<Map<String, dynamic>>(
+        '/farms/$farmId/support-presence',
+      );
+      return response.data?['data']?['online'] as bool? ?? false;
+    } on DioException catch (error) {
+      if (error.response?.statusCode == 404) return false;
+      throw ErrorHandler.from(error);
+    }
+  }
+
   Future<void> markSupportConversationRead(String farmId) async {
     try {
       await _dio.patch<void>('/farms/$farmId/support-conversation/read');

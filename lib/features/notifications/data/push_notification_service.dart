@@ -56,9 +56,9 @@ class PushNotificationService {
           debugPrint('Push-token refresh failed: $error');
         },
       );
-      FirebaseMessaging.onMessageOpenedApp.listen((_) => _openNotifications());
+      FirebaseMessaging.onMessageOpenedApp.listen(_handleOpenedMessage);
       final initialMessage = await messaging.getInitialMessage();
-      if (initialMessage != null) _openNotifications();
+      if (initialMessage != null) _handleOpenedMessage(initialMessage);
     }
 
     final token = await messaging.getToken();
@@ -84,7 +84,10 @@ class PushNotificationService {
     _registeredToken = token;
   }
 
-  void _openNotifications() {
-    AppRouter.router.go(AppRoutes.notifications);
+  void _handleOpenedMessage(RemoteMessage message) {
+    final route = message.data['action_route'];
+    AppRouter.router.go(
+      route == AppRoutes.support ? AppRoutes.support : AppRoutes.notifications,
+    );
   }
 }
