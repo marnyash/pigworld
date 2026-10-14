@@ -68,6 +68,9 @@ abstract final class AppTheme {
       foregroundColor: AppColors.text,
     ),
     iconTheme: const IconThemeData(color: AppColors.primaryGreen),
+    iconButtonTheme: IconButtonThemeData(
+      style: IconButton.styleFrom(foregroundColor: AppColors.primaryGreen),
+    ),
     cardTheme: CardThemeData(
       color: AppColors.surface,
       surfaceTintColor: Colors.transparent,
@@ -187,6 +190,9 @@ abstract final class AppTheme {
       foregroundColor: AppColors.darkText,
     ),
     iconTheme: const IconThemeData(color: AppColors.leaf),
+    iconButtonTheme: IconButtonThemeData(
+      style: IconButton.styleFrom(foregroundColor: AppColors.leaf),
+    ),
     cardTheme: CardThemeData(
       color: AppColors.darkSurface,
       surfaceTintColor: Colors.transparent,

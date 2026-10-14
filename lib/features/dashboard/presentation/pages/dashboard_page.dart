@@ -16,6 +16,8 @@ import '../../../notifications/data/notifications_api.dart';
 import '../../../health/presentation/providers/health_providers.dart';
 import '../../../../shared/components/bottom_navigation.dart';
 import '../../../../shared/widgets/pig_world_icon.dart';
+import '../../../feed/presentation/providers/feed_provider.dart';
+import '../../../herd/presentation/providers/herd_provider.dart';
 import '../../../settings/presentation/providers/farm_access_provider.dart';
 import '../providers/farm_overview_provider.dart';
 
@@ -28,6 +30,7 @@ class DashboardPage extends ConsumerStatefulWidget {
 
 class _DashboardPageState extends ConsumerState<DashboardPage> {
   Timer? _notificationRefreshTimer;
+  bool _isSyncing = false;
 
   @override
   void initState() {
@@ -45,30 +48,58 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     super.dispose();
   }
 
-  Future<void> _clearNotifications(List<FarmNotification> notifications) async {
-    final unread = notifications.where((notification) => !notification.isRead);
-    if (unread.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('No unread notifications.')));
+  Future<void> _syncData({
+    required String? farmId,
+    required bool canViewOverview,
+    required bool canViewHealth,
+    required bool canViewHerd,
+    required bool canViewFeed,
+  }) async {
+    if (_isSyncing) return;
+    if (farmId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Select a farm before syncing data.')),
+      );
       return;
     }
 
+    setState(() => _isSyncing = true);
     try {
-      for (final notification in unread) {
-        await ref
-            .read(notificationsProvider.notifier)
-            .markAsRead(notification.id);
+      final refreshes = <Future<void>>[];
+      ref.invalidate(notificationsProvider);
+      refreshes.add(ref.read(notificationsProvider.future).then<void>((_) {}));
+      if (canViewOverview) {
+        ref.invalidate(farmOverviewProvider(farmId));
+        refreshes.add(
+          ref.read(farmOverviewProvider(farmId).future).then<void>((_) {}),
+        );
       }
+      if (canViewHealth) {
+        ref.invalidate(healthOverviewProvider);
+        refreshes.add(
+          ref.read(healthOverviewProvider.future).then<void>((_) {}),
+        );
+      }
+      if (canViewHerd) {
+        ref.invalidate(herdProvider);
+        refreshes.add(ref.read(herdProvider.future).then<void>((_) {}));
+      }
+      if (canViewFeed) {
+        ref.invalidate(feedProvider);
+        refreshes.add(ref.read(feedProvider.future).then<void>((_) {}));
+      }
+      await Future.wait(refreshes);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Cleared ${unread.length} notifications.')),
+        const SnackBar(content: Text('Data synced successfully.')),
       );
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Could not clear notifications: $error')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Could not sync data: $error')));
+    } finally {
+      if (mounted) setState(() => _isSyncing = false);
     }
   }
 
@@ -148,8 +179,35 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
           color: AppColors.deepGreen,
         ),
     ];
+    final canViewHealth = allows(AppPermission.manageHerd);
+    final canViewHerd = canViewHealth;
+    final canViewFeed = allows(AppPermission.manageFeed);
 
     return Scaffold(
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _isSyncing
+            ? null
+            : () => _syncData(
+                farmId: farmId,
+                canViewOverview: canViewOverview,
+                canViewHealth: canViewHealth,
+                canViewHerd: canViewHerd,
+                canViewFeed: canViewFeed,
+              ),
+        backgroundColor: AppColors.warmGold,
+        foregroundColor: AppColors.text,
+        icon: _isSyncing
+            ? const SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.text,
+                ),
+              )
+            : const Icon(Icons.sync),
+        label: const Text('Sync data'),
+      ),
       appBar: AppBar(
         leading: IconButton(
           tooltip: l10n.openMenu,
@@ -374,71 +432,6 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                     pregnantPigs: session?.selectedFarm?.pregnantPigCount ?? 0,
                   ),
                 ],
-                const SizedBox(height: AppDimensions.spacingLarge),
-                _SectionHeader(
-                  title: l10n.quickActions,
-                  actionLabel: 'Clear',
-                  onAction: () => _clearNotifications(notifications),
-                ),
-                const SizedBox(height: AppDimensions.spacingMedium),
-                GridView.count(
-                  crossAxisCount: 3,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  mainAxisSpacing: AppDimensions.spacingMedium,
-                  crossAxisSpacing: AppDimensions.spacingMedium,
-                  childAspectRatio: 0.95,
-                  children: [
-                    if (allows(AppPermission.manageHerd))
-                      _QuickAction(
-                        icon: const PigWorldIcon('Boar', size: 22),
-                        label: l10n.herd,
-                        color: AppColors.pigPink,
-                        onTap: () => context.go(AppRoutes.herd),
-                      ),
-                    if (allows(AppPermission.manageFeed))
-                      _QuickAction(
-                        icon: const PigWorldIcon('Feed stock', size: 22),
-                        label: l10n.feed,
-                        color: AppColors.leaf,
-                        onTap: () => context.go(AppRoutes.feed),
-                      ),
-                    if (allows(AppPermission.viewTasks))
-                      _QuickAction(
-                        icon: const PigWorldIcon('Task-Due', size: 22),
-                        label: l10n.tasks,
-                        color: AppColors.warmGold,
-                        onTap: () => context.go(AppRoutes.tasks),
-                      ),
-                    if (allows(AppPermission.manageFinance))
-                      _QuickAction(
-                        icon: const PigWorldIcon('finance', size: 22),
-                        label: l10n.finance,
-                        color: AppColors.warmGold,
-                        onTap: () => context.go(AppRoutes.finance),
-                      ),
-                    if (allows(AppPermission.manageSales))
-                      _QuickAction(
-                        icon: const Icon(Icons.groups_outlined, size: 20),
-                        label: l10n.customers,
-                        color: AppColors.info,
-                        onTap: () => context.go(AppRoutes.crm),
-                      ),
-                    _QuickAction(
-                      icon: const PigWorldIcon('customer-support', size: 22),
-                      label: l10n.customerSupport,
-                      color: AppColors.violet,
-                      onTap: () => context.go(AppRoutes.support),
-                    ),
-                    if (allows(AppPermission.manageMembers))
-                      _QuickAction(
-                        icon: const PigWorldIcon('team', size: 22),
-                        label: l10n.teamAndPolicies,
-                        color: AppColors.aqua,
-                        onTap: () => context.go(AppRoutes.farmManagement),
-                      ),
-                  ],
-                ),
               ],
             ),
           ),
@@ -666,91 +659,6 @@ class _HerdStatusMetric {
   final String label;
   final String value;
   final Color color;
-}
-
-class _QuickAction extends StatelessWidget {
-  const _QuickAction({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
-
-  final Widget icon;
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      borderRadius: BorderRadius.circular(AppDimensions.radius),
-      onTap: onTap,
-      child: Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(
-          vertical: AppDimensions.spacingSmall,
-        ),
-        decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.surface,
-          borderRadius: BorderRadius.circular(AppDimensions.radius),
-          border: Border.all(color: color.withValues(alpha: 0.18)),
-          boxShadow: [
-            BoxShadow(
-              color: color.withValues(alpha: 0.07),
-              blurRadius: 12,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-              child: icon,
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.bodyMedium,
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SectionHeader extends StatelessWidget {
-  const _SectionHeader({required this.title, this.actionLabel, this.onAction});
-
-  final String title;
-  final String? actionLabel;
-  final VoidCallback? onAction;
-
-  @override
-  Widget build(BuildContext context) => Row(
-    children: [
-      Text(title, style: Theme.of(context).textTheme.titleLarge),
-      if (actionLabel != null && onAction != null) ...[
-        const Spacer(),
-        TextButton(
-          onPressed: onAction,
-          style: TextButton.styleFrom(
-            minimumSize: Size.zero,
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-          ),
-          child: Text(actionLabel!),
-        ),
-      ],
-    ],
-  );
 }
 
 class _NotificationBanner extends StatelessWidget {
