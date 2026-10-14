@@ -126,7 +126,7 @@ class _SupportPageState extends State<SupportPage> {
               Builder(
                 builder: (context) => IconButton(
                   tooltip: 'Support options',
-                  icon: const Icon(Icons.menu),
+                  icon: const Icon(Icons.menu_rounded),
                   onPressed: () => Scaffold.of(context).openEndDrawer(),
                 ),
               ),

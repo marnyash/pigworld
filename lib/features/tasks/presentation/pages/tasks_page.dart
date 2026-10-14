@@ -54,7 +54,7 @@ class _TasksPageState extends ConsumerState<TasksPage> {
         title: Text(l10n.farmTasks),
         leading: IconButton(
           tooltip: l10n.openMenu,
-          icon: const Icon(Icons.menu),
+          icon: const Icon(Icons.menu_rounded),
           onPressed: () => navigationScaffoldKey.currentState?.openDrawer(),
         ),
       ),

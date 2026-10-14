@@ -61,7 +61,7 @@ class FinancePage extends ConsumerWidget {
           title: Text(title),
           leading: IconButton(
             tooltip: 'Open menu',
-            icon: const Icon(Icons.menu),
+            icon: const Icon(Icons.menu_rounded),
             onPressed: () => navigationScaffoldKey.currentState?.openDrawer(),
           ),
           bottom: const TabBar(

@@ -9,6 +9,7 @@ import 'package:proj/features/reports/presentation/pages/animal_report_page.dart
 import 'package:proj/features/reports/presentation/providers/reports_providers.dart';
 import 'package:proj/features/reports/presentation/widgets/herd_reports_browser.dart';
 import 'package:proj/features/settings/presentation/providers/settings_providers.dart';
+import 'package:proj/shared/components/bottom_navigation.dart';
 import 'package:proj/shared/widgets/pig_world_icon.dart';
 
 class ReportsPage extends ConsumerStatefulWidget {
@@ -36,6 +37,11 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
           ],
         ),
         elevation: 0,
+        leading: IconButton(
+          tooltip: 'Open menu',
+          icon: const Icon(Icons.menu_rounded),
+          onPressed: () => navigationScaffoldKey.currentState?.openDrawer(),
+        ),
       ),
       body: Padding(
         padding: const EdgeInsets.all(AppDimensions.pagePadding),

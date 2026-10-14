@@ -47,7 +47,7 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
         leading: _selectedSection == null
             ? IconButton(
                 tooltip: 'Open menu',
-                icon: const PigWorldIcon('inventory', size: 24),
+                icon: const Icon(Icons.menu_rounded),
                 onPressed: () =>
                     navigationScaffoldKey.currentState?.openDrawer(),
               )

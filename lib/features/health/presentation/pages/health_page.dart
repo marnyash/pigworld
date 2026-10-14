@@ -83,18 +83,11 @@ class _HealthPageState extends ConsumerState<HealthPage>
             }),
           ],
         ),
-        leading: widget.initialTypeFilter == 'medication'
-            ? IconButton(
-                tooltip: 'Open menu',
-                icon: const PigWorldIcon('syringe', size: 24),
-                onPressed: () =>
-                    navigationScaffoldKey.currentState?.openDrawer(),
-              )
-            : IconButton(
-                tooltip: 'Back to home',
-                icon: const Icon(Icons.arrow_back),
-                onPressed: () => context.go(AppRoutes.home),
-              ),
+        leading: IconButton(
+          tooltip: 'Open menu',
+          icon: const Icon(Icons.menu_rounded),
+          onPressed: () => navigationScaffoldKey.currentState?.openDrawer(),
+        ),
         centerTitle: true,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),

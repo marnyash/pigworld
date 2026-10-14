@@ -41,7 +41,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         title: const Text('Profile'),
         leading: IconButton(
           tooltip: 'Open menu',
-          icon: const Icon(Icons.menu),
+          icon: const Icon(Icons.menu_rounded),
           onPressed: () => navigationScaffoldKey.currentState?.openDrawer(),
         ),
         actions: [

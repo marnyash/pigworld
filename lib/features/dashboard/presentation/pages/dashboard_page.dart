@@ -210,7 +210,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       appBar: AppBar(
         leading: IconButton(
           tooltip: l10n.openMenu,
-          icon: const Icon(Icons.menu),
+          icon: const Icon(Icons.menu_rounded),
           onPressed: () => navigationScaffoldKey.currentState?.openDrawer(),
         ),
         title: Text(farmName, maxLines: 1, overflow: TextOverflow.ellipsis),

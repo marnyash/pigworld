@@ -50,7 +50,7 @@ class _GrowthPageState extends ConsumerState<GrowthPage>
         ),
         leading: IconButton(
           tooltip: 'Open menu',
-          icon: const PigWorldIcon('Growth', size: 24),
+          icon: const Icon(Icons.menu_rounded),
           onPressed: () => navigationScaffoldKey.currentState?.openDrawer(),
         ),
         backgroundColor: AppColors.primaryGreen,

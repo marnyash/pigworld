@@ -31,7 +31,7 @@ class _BreedingPageState extends ConsumerState<BreedingPage> {
       title: const Text('Insemination calendar'),
       leading: IconButton(
         tooltip: 'Open menu',
-        icon: const Icon(Icons.menu),
+        icon: const Icon(Icons.menu_rounded),
         onPressed: () => navigationScaffoldKey.currentState?.openDrawer(),
       ),
     ),
