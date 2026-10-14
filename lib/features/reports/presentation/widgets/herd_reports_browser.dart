@@ -216,7 +216,16 @@ class _HerdReportsBrowserState extends ConsumerState<HerdReportsBrowser> {
         ),
         const SizedBox(height: AppDimensions.spacingLarge),
         if (_category == null && _query.isEmpty) ...[
-          Text('Herd reports', style: Theme.of(context).textTheme.titleLarge),
+          Row(
+            children: [
+              const Icon(Icons.pets_outlined, color: AppColors.primaryGreen),
+              const SizedBox(width: AppDimensions.spacingSmall),
+              Text(
+                'Herd reports',
+                style: Theme.of(context).textTheme.titleLarge,
+              ),
+            ],
+          ),
           const SizedBox(height: AppDimensions.spacingMedium),
           LayoutBuilder(
             builder: (context, constraints) => GridView.count(
@@ -566,6 +575,12 @@ class _RecordCard extends StatelessWidget {
         children: [
           Row(
             children: [
+              Icon(
+                _categoryIcon(category),
+                color: AppColors.primaryGreen,
+                size: 22,
+              ),
+              const SizedBox(width: AppDimensions.spacingSmall),
               Expanded(
                 child: Text(
                   entry.title,
@@ -610,6 +625,13 @@ String _label(_ReportCategory category) => switch (category) {
   _ReportCategory.pregnant => 'Pregnancy',
   _ReportCategory.health => 'Health',
   _ReportCategory.feed => 'Feed',
+};
+
+IconData _categoryIcon(String category) => switch (category) {
+  'Pregnancy' => Icons.favorite_outline,
+  'Health' => Icons.health_and_safety_outlined,
+  'Feed' => Icons.grass_outlined,
+  _ => Icons.pets_outlined,
 };
 
 bool _categoryLoading(
