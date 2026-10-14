@@ -434,7 +434,7 @@ class _AppDrawer extends ConsumerWidget {
                   _DrawerSectionLabel(l10n.farmManagement),
                   _ListTile(
                     assetName: 'farm',
-                    title: l10n.dashboard,
+                    title: l10n.home,
                     route: AppRoutes.home,
                   ),
                   if (allows(AppPermission.manageHerd)) ...[

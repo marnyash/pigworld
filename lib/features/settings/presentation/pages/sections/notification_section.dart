@@ -95,6 +95,7 @@ class NotificationSection extends ConsumerWidget {
                         _updateChannel(context, ref, 'sms', enabled),
                   ),
                   SwitchListTile(
+                    secondary: const Icon(Icons.email_outlined),
                     title: const Text('Email Notifications'),
                     value: prefs.notificationChannels['email'] ?? true,
                     onChanged: (enabled) =>

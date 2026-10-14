@@ -150,7 +150,10 @@ class _FeedPageState extends ConsumerState<FeedPage> {
                   controller: nameController,
                   autofocus: true,
                   textCapitalization: TextCapitalization.sentences,
-                  decoration: const InputDecoration(labelText: 'Feeding name'),
+                  decoration: const InputDecoration(
+                    labelText: 'Feeding name',
+                    prefixIcon: Icon(Icons.restaurant_rounded),
+                  ),
                   maxLength: 40,
                 ),
                 const SizedBox(height: 8),
@@ -244,7 +247,10 @@ class _FeedPageState extends ConsumerState<FeedPage> {
             children: [
               DropdownButtonFormField<String>(
                 initialValue: stockId,
-                decoration: const InputDecoration(labelText: 'Feed type'),
+                decoration: const InputDecoration(
+                  labelText: 'Feed type',
+                  prefixIcon: Icon(Icons.grass_rounded),
+                ),
                 items: [
                   for (final item in snapshot.stock)
                     DropdownMenuItem(value: item.id, child: Text(item.name)),
@@ -257,7 +263,10 @@ class _FeedPageState extends ConsumerState<FeedPage> {
                 keyboardType: const TextInputType.numberWithOptions(
                   decimal: true,
                 ),
-                decoration: const InputDecoration(labelText: 'Amount fed'),
+                decoration: const InputDecoration(
+                  labelText: 'Amount fed',
+                  prefixIcon: Icon(Icons.straighten_rounded),
+                ),
               ),
             ],
           ),
