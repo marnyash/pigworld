@@ -9,6 +9,7 @@ import 'package:proj/features/reports/presentation/pages/animal_report_page.dart
 import 'package:proj/features/reports/presentation/providers/reports_providers.dart';
 import 'package:proj/features/reports/presentation/widgets/herd_reports_browser.dart';
 import 'package:proj/features/settings/presentation/providers/settings_providers.dart';
+import 'package:proj/shared/widgets/pig_world_icon.dart';
 
 class ReportsPage extends ConsumerStatefulWidget {
   const ReportsPage({super.key});
@@ -29,7 +30,7 @@ class _ReportsPageState extends ConsumerState<ReportsPage> {
       appBar: AppBar(
         title: const Row(
           children: [
-            Icon(Icons.analytics_outlined),
+            PigWorldIcon('report', size: 24),
             SizedBox(width: AppDimensions.spacingSmall),
             Text('Reports & Analytics'),
           ],

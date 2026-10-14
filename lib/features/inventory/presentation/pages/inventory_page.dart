@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../shared/widgets/pig_world_icon.dart';
 import 'package:proj/features/inventory/presentation/pages/sections/inventory_overview_section.dart';
 import 'package:proj/features/inventory/presentation/pages/sections/search_categories_section.dart';
 import 'package:proj/features/inventory/presentation/pages/sections/stock_items_section.dart';
@@ -36,7 +37,14 @@ class _InventoryPageState extends ConsumerState<InventoryPage>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Inventory'),
+        title: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            PigWorldIcon('inventory', size: 24),
+            SizedBox(width: 8),
+            Text('Inventory'),
+          ],
+        ),
         elevation: 0,
         bottom: TabBar(
           controller: _tabController,

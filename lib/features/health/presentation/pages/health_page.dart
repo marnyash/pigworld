@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
+import '../../../../shared/widgets/pig_world_icon.dart';
 import '../../../../security/authorization/roles.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../domain/entities/health_record.dart';
@@ -63,12 +64,24 @@ class _HealthPageState extends ConsumerState<HealthPage>
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(switch (widget.initialTypeFilter) {
-          'medication' => 'Medication Records',
-          'deworming' => 'Deworming Records',
-          'mortality' => 'Mortality Records',
-          _ => 'Health Management',
-        }),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            PigWorldIcon(switch (widget.initialTypeFilter) {
+              'medication' => 'syringe',
+              'deworming' => 'syringe',
+              'mortality' => 'sick-pig',
+              _ => 'health',
+            }, size: 24),
+            const SizedBox(width: 8),
+            Text(switch (widget.initialTypeFilter) {
+              'medication' => 'Medication Records',
+              'deworming' => 'Deworming Records',
+              'mortality' => 'Mortality Records',
+              _ => 'Health Management',
+            }),
+          ],
+        ),
         leading: IconButton(
           tooltip: 'Back to home',
           icon: const Icon(Icons.arrow_back),

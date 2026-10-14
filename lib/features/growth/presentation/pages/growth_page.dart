@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../../shared/widgets/pig_world_icon.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../domain/entities/growth_record.dart';
 import '../providers/growth_providers.dart';
@@ -38,7 +39,14 @@ class _GrowthPageState extends ConsumerState<GrowthPage>
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Growth Tracking'),
+        title: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            PigWorldIcon('Growth', size: 24),
+            SizedBox(width: 8),
+            Text('Growth Tracking'),
+          ],
+        ),
         backgroundColor: AppColors.primaryGreen,
         foregroundColor: AppColors.inverseText,
         elevation: 0,
