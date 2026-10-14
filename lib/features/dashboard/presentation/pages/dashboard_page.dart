@@ -91,7 +91,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
       await Future.wait(refreshes);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Data synced successfully.')),
+        const SnackBar(content: Text('Latest available farm data refreshed.')),
       );
     } catch (error) {
       if (!mounted) return;

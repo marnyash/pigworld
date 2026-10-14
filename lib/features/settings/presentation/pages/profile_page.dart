@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../../../app/routes/app_routes.dart';
 import '../../../../app/theme/app_colors.dart';
@@ -13,11 +14,19 @@ import '../../../../shared/widgets/pig_world_icon.dart';
 import '../providers/farm_access_provider.dart';
 import '../providers/profile_image_provider.dart';
 
-class ProfilePage extends ConsumerWidget {
+class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ProfilePage> createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends ConsumerState<ProfilePage> {
+  bool _emailVisible = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final ref = this.ref;
     final session = ref.watch(authProvider).valueOrNull;
     final user = session?.user;
     final farm = session?.selectedFarm ?? session?.farms.firstOrNull;
@@ -68,7 +77,7 @@ class ProfilePage extends ConsumerWidget {
                           tooltip: 'Change profile photo',
                           icon: const Icon(Icons.photo_camera_outlined),
                           iconSize: 17,
-                          onPressed: () => _chooseProfileImage(context, ref),
+                          onPressed: () => _chooseProfileImage(context),
                         ),
                       ),
                     ],
@@ -84,9 +93,27 @@ class ProfilePage extends ConsumerWidget {
                               ?.copyWith(color: AppColors.inverseText),
                         ),
                         const SizedBox(height: 4),
-                        Text(
-                          user?.email ?? 'Sign in to view your account',
-                          style: TextStyle(color: AppColors.inverseMutedText),
+                        Row(
+                          children: [
+                            const Icon(
+                              Icons.email_outlined,
+                              size: 16,
+                              color: AppColors.inverseMutedText,
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                _emailText(
+                                  user?.email,
+                                  'Sign in to view your account',
+                                ),
+                                style: const TextStyle(
+                                  color: AppColors.inverseMutedText,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 8),
                         Container(
@@ -113,7 +140,10 @@ class ProfilePage extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: AppDimensions.spacingLarge),
-          Text('Account details', style: Theme.of(context).textTheme.titleLarge),
+          Text(
+            'Account details',
+            style: Theme.of(context).textTheme.titleLarge,
+          ),
           const SizedBox(height: AppDimensions.spacingMedium),
           Card(
             child: Column(
@@ -128,7 +158,18 @@ class ProfilePage extends ConsumerWidget {
                 _ProfileDetailTile(
                   icon: Icons.email_outlined,
                   label: 'Email',
-                  value: user?.email ?? 'Not available',
+                  value: _emailText(user?.email, 'Not available'),
+                  trailing: IconButton(
+                    tooltip: _emailVisible ? 'Hide email' : 'Show email',
+                    icon: Icon(
+                      _emailVisible
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                    ),
+                    onPressed: () {
+                      setState(() => _emailVisible = !_emailVisible);
+                    },
+                  ),
                 ),
               ],
             ),
@@ -209,11 +250,39 @@ class ProfilePage extends ConsumerWidget {
     );
   }
 
-  Future<void> _chooseProfileImage(BuildContext context, WidgetRef ref) async {
+  String _emailText(String? email, String fallback) =>
+      email == null || email.isEmpty
+      ? fallback
+      : _emailVisible
+      ? email
+      : '••••••••';
+
+  Future<void> _chooseProfileImage(BuildContext context) async {
+    final source = await showModalBottomSheet<ImageSource>(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_camera_outlined),
+              title: const Text('Take a photo'),
+              onTap: () => Navigator.pop(context, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('Choose from gallery'),
+              onTap: () => Navigator.pop(context, ImageSource.gallery),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (source == null || !context.mounted) return;
     try {
       final selected = await ref
           .read(profileImageProvider.notifier)
-          .chooseFromGallery();
+          .chooseImage(source: source);
       if (context.mounted && !selected) return;
       if (context.mounted) {
         ScaffoldMessenger.of(
@@ -243,12 +312,14 @@ class _ProfileDetailTile extends StatelessWidget {
     required this.label,
     required this.value,
     this.assetName,
+    this.trailing,
   });
 
   final IconData icon;
   final String label;
   final String value;
   final String? assetName;
+  final Widget? trailing;
 
   @override
   Widget build(BuildContext context) => ListTile(
@@ -257,5 +328,6 @@ class _ProfileDetailTile extends StatelessWidget {
         : PigWorldIcon(assetName!, size: 24),
     title: Text(label, style: Theme.of(context).textTheme.bodySmall),
     subtitle: Text(value, maxLines: 2, overflow: TextOverflow.ellipsis),
+    trailing: trailing,
   );
 }

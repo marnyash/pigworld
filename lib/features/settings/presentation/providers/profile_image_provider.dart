@@ -17,9 +17,9 @@ class ProfileImageNotifier extends AsyncNotifier<String?> {
   @override
   Future<String?> build() => _storage.read(key: _storageKey);
 
-  Future<bool> chooseFromGallery() async {
+  Future<bool> chooseImage({required ImageSource source}) async {
     final image = await ImagePicker().pickImage(
-      source: ImageSource.gallery,
+      source: source,
       maxWidth: 512,
       imageQuality: 85,
     );
@@ -32,4 +32,6 @@ class ProfileImageNotifier extends AsyncNotifier<String?> {
     state = AsyncData(savedImage.path);
     return true;
   }
+
+  Future<bool> chooseFromGallery() => chooseImage(source: ImageSource.gallery);
 }

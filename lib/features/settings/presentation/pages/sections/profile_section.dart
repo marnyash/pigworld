@@ -205,7 +205,7 @@ class _ProfileSectionState extends ConsumerState<ProfileSection> {
                   keyboardType: TextInputType.emailAddress,
                   decoration: const InputDecoration(
                     labelText: 'Email',
-                    prefixIcon: Icon(Icons.email),
+                    prefixIcon: Icon(Icons.email_outlined),
                   ),
                 ),
                 const SizedBox(height: AppDimensions.spacingMedium),

@@ -27,7 +27,14 @@ class _FeedPageState extends ConsumerState<FeedPage> {
         ref.watch(userPreferencesProvider).valueOrNull?.currency ?? 'KES';
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Feed Management'),
+        title: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.restaurant_menu_rounded),
+            SizedBox(width: 8),
+            Text('Feed Management'),
+          ],
+        ),
         leading: IconButton(
           tooltip: 'Open menu',
           icon: const Icon(Icons.menu_rounded),
