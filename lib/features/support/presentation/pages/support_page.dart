@@ -7,7 +7,6 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import 'support_chat_page.dart';
-import '../../../notifications/data/notifications_api.dart';
 import '../../../notifications/presentation/providers/notifications_provider.dart';
 
 class SupportPage extends StatefulWidget {
@@ -22,6 +21,7 @@ class _SupportPageState extends State<SupportPage> {
   final descriptionController = TextEditingController();
   String selectedCategory = 'General';
   bool _submittingTicket = false;
+  _SupportSection _selectedSection = _SupportSection.liveChat;
 
   @override
   void dispose() {
@@ -108,29 +108,11 @@ class _SupportPageState extends State<SupportPage> {
     'the emergency veterinary line',
   );
 
-  void _openLiveChat(WidgetRef ref) {
-    final farmId = ref.read(authProvider).valueOrNull?.selectedFarm?.id;
-    if (farmId == null) return;
-    Navigator.of(context).push<void>(
-      MaterialPageRoute<void>(builder: (_) => SupportChatPage(farmId: farmId)),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Consumer(
       builder: (context, ref, child) {
-        final notifications =
-            ref.watch(notificationsProvider).valueOrNull ??
-            const <FarmNotification>[];
-        final crmMessage = notifications.cast<FarmNotification?>().firstWhere(
-          (notification) => notification?.type == 'crm_message',
-          orElse: () => null,
-        );
         final farmId = ref.read(authProvider).valueOrNull?.selectedFarm?.id;
-        final presence = farmId == null
-            ? Future<bool>.value(false)
-            : ref.read(notificationsApiProvider).fetchSupportPresence(farmId);
 
         return Scaffold(
           appBar: AppBar(
@@ -140,187 +122,123 @@ class _SupportPageState extends State<SupportPage> {
               icon: const Icon(Icons.arrow_back),
               onPressed: () => context.go(AppRoutes.home),
             ),
-            centerTitle: true,
-          ),
-          body: ListView(
-            padding: const EdgeInsets.fromLTRB(
-              AppDimensions.pagePadding,
-              AppDimensions.pagePadding,
-              AppDimensions.pagePadding,
-              32,
-            ),
-            children: [
-              Text('Live chat', style: Theme.of(context).textTheme.titleLarge),
-              const SizedBox(height: AppDimensions.spacingMedium),
-              FutureBuilder<bool>(
-                future: presence,
-                builder: (context, snapshot) => _LiveChatPreview(
-                  customerCareName: 'Customer Care',
-                  supportOnline: snapshot.data ?? false,
-                  message: crmMessage?.body,
-                  onOpenChat: () => _openLiveChat(ref),
+            actions: [
+              Builder(
+                builder: (context) => IconButton(
+                  tooltip: 'Support options',
+                  icon: const Icon(Icons.menu),
+                  onPressed: () => Scaffold.of(context).openEndDrawer(),
                 ),
               ),
-              const SizedBox(height: AppDimensions.spacingLarge),
-              Text(
-                'Contact Options',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: AppDimensions.spacingMedium),
-              _ContactOptionsSection(onOpenContact: _openContact),
-              const SizedBox(height: AppDimensions.spacingMedium),
-              _EmergencyVeterinaryCard(onCall: callVeterinary),
-              const SizedBox(height: AppDimensions.spacingLarge),
-              Text(
-                'FAQ, User Guide & Tutorials',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: AppDimensions.spacingSmall),
-              Text(
-                'Frequently Asked Questions',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: AppDimensions.spacingMedium),
-              _FAQSection(),
-              const SizedBox(height: AppDimensions.spacingMedium),
-              Text(
-                'User Guide & Tutorials',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-              const SizedBox(height: AppDimensions.spacingMedium),
-              _UserGuideSection(),
-              const SizedBox(height: AppDimensions.spacingLarge),
-              Text(
-                'Submit a Ticket',
-                style: Theme.of(context).textTheme.titleLarge,
-              ),
-              const SizedBox(height: AppDimensions.spacingMedium),
-              _TicketSubmissionForm(
-                subjectController: subjectController,
-                descriptionController: descriptionController,
-                selectedCategory: selectedCategory,
-                submitting: _submittingTicket,
-                onCategoryChanged: (value) {
-                  setState(() => selectedCategory = value ?? 'General');
-                },
-                onSubmit: () => submitTicket(ref),
-              ),
             ],
+            centerTitle: true,
           ),
+          endDrawer: Drawer(
+            child: SafeArea(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 20),
+                    child: Text(
+                      'Support options',
+                      style: Theme.of(context).textTheme.titleLarge,
+                    ),
+                  ),
+                  for (final section in _SupportSection.values)
+                    ListTile(
+                      leading: Icon(section.icon),
+                      title: Text(section.label),
+                      selected: _selectedSection == section,
+                      onTap: () {
+                        setState(() => _selectedSection = section);
+                        Navigator.of(context).pop();
+                      },
+                    ),
+                ],
+              ),
+            ),
+          ),
+          body: switch (_selectedSection) {
+            _SupportSection.liveChat =>
+              farmId == null
+                  ? const Center(
+                      child: Text('Select a farm to start live chat.'),
+                    )
+                  : SupportChatPage(farmId: farmId, showAppBar: false),
+            _SupportSection.contactOptions => ListView(
+              padding: const EdgeInsets.all(AppDimensions.pagePadding),
+              children: [
+                Text(
+                  'Contact Options',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: AppDimensions.spacingMedium),
+                _ContactOptionsSection(onOpenContact: _openContact),
+                const SizedBox(height: AppDimensions.spacingMedium),
+                _EmergencyVeterinaryCard(onCall: callVeterinary),
+              ],
+            ),
+            _SupportSection.faqAndGuides => ListView(
+              padding: const EdgeInsets.all(AppDimensions.pagePadding),
+              children: [
+                Text(
+                  'FAQ, User Guide & Tutorials',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: AppDimensions.spacingSmall),
+                Text(
+                  'Frequently Asked Questions',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: AppDimensions.spacingMedium),
+                _FAQSection(),
+                const SizedBox(height: AppDimensions.spacingMedium),
+                Text(
+                  'User Guide & Tutorials',
+                  style: Theme.of(context).textTheme.titleMedium,
+                ),
+                const SizedBox(height: AppDimensions.spacingMedium),
+                _UserGuideSection(),
+              ],
+            ),
+            _SupportSection.submitTicket => ListView(
+              padding: const EdgeInsets.all(AppDimensions.pagePadding),
+              children: [
+                Text(
+                  'Submit a Ticket',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
+                const SizedBox(height: AppDimensions.spacingMedium),
+                _TicketSubmissionForm(
+                  subjectController: subjectController,
+                  descriptionController: descriptionController,
+                  selectedCategory: selectedCategory,
+                  submitting: _submittingTicket,
+                  onCategoryChanged: (value) {
+                    setState(() => selectedCategory = value ?? 'General');
+                  },
+                  onSubmit: () => submitTicket(ref),
+                ),
+              ],
+            ),
+          },
         );
       },
     );
   }
 }
 
-class _LiveChatPreview extends StatelessWidget {
-  const _LiveChatPreview({
-    required this.customerCareName,
-    required this.supportOnline,
-    required this.message,
-    required this.onOpenChat,
-  });
+enum _SupportSection {
+  liveChat('Live chat', Icons.chat_bubble_outline),
+  contactOptions('Contact options', Icons.contact_support_outlined),
+  faqAndGuides('FAQ, User Guide & Tutorials', Icons.menu_book_outlined),
+  submitTicket('Submit a ticket', Icons.assignment_outlined);
 
-  final String customerCareName;
-  final bool supportOnline;
-  final String? message;
-  final VoidCallback onOpenChat;
+  const _SupportSection(this.label, this.icon);
 
-  @override
-  Widget build(BuildContext context) => Card(
-    clipBehavior: Clip.antiAlias,
-    child: Column(
-      children: [
-        Container(
-          color: const Color(0xFFE7F6EC),
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-          child: Row(
-            children: [
-              const CircleAvatar(
-                backgroundColor: AppColors.primaryGreen,
-                child: Icon(Icons.support_agent, color: Colors.white),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      customerCareName,
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    Text(
-                      supportOnline
-                          ? 'Customer Care · online'
-                          : 'Customer Care · offline',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(Icons.verified, color: AppColors.primaryGreen),
-            ],
-          ),
-        ),
-        Container(
-          color: const Color(0xFFF3FBF5),
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Align(
-                alignment: Alignment.centerLeft,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 10,
-                  ),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(4),
-                      topRight: Radius.circular(16),
-                      bottomRight: Radius.circular(16),
-                      bottomLeft: Radius.circular(16),
-                    ),
-                  ),
-                  child: Text('Hi there! We\'re here to help with your farm.'),
-                ),
-              ),
-              if (message != null && message!.trim().isNotEmpty) ...[
-                const SizedBox(height: 8),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 10,
-                    ),
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.all(Radius.circular(16)),
-                    ),
-                    child: Text(message!),
-                  ),
-                ),
-              ],
-              const SizedBox(height: 14),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: onOpenChat,
-                  icon: const Icon(Icons.chat_bubble_outline),
-                  label: const Text('Continue live chat'),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    ),
-  );
+  final String label;
+  final IconData icon;
 }
 
 // Contact Options Section

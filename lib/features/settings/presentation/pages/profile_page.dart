@@ -75,7 +75,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                         bottom: -4,
                         child: IconButton.filled(
                           tooltip: 'Change profile photo',
-                          icon: const Icon(Icons.photo_camera_outlined),
+                          icon: const Icon(Icons.camera_alt),
                           iconSize: 17,
                           onPressed: () => _chooseProfileImage(context),
                         ),
@@ -96,7 +96,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                         Row(
                           children: [
                             const Icon(
-                              Icons.email_outlined,
+                              Icons.email,
                               size: 16,
                               color: AppColors.inverseMutedText,
                             ),
@@ -156,7 +156,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                 ),
                 const Divider(height: 1, indent: 56),
                 _ProfileDetailTile(
-                  icon: Icons.email_outlined,
+                  icon: Icons.email,
                   label: 'Email',
                   value: _emailText(user?.email, 'Not available'),
                   trailing: IconButton(

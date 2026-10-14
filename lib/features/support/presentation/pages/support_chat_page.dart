@@ -7,9 +7,14 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../notifications/presentation/providers/notifications_provider.dart';
 
 class SupportChatPage extends ConsumerStatefulWidget {
-  const SupportChatPage({required this.farmId, super.key});
+  const SupportChatPage({
+    required this.farmId,
+    this.showAppBar = true,
+    super.key,
+  });
 
   final String farmId;
+  final bool showAppBar;
 
   @override
   ConsumerState<SupportChatPage> createState() => _SupportChatPageState();
@@ -102,27 +107,34 @@ class _SupportChatPageState extends ConsumerState<SupportChatPage> {
     final agent = _conversation?['assigned_agent'] as Map<String, dynamic>?;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Row(
-          children: [
-            CircleAvatar(
-              radius: 16,
-              backgroundColor: AppColors.primaryGreen,
-              child: Icon(Icons.support_agent, color: Colors.white, size: 19),
-            ),
-            SizedBox(width: 10),
-            Text('Customer Care'),
-          ],
-        ),
-        actions: [
-          IconButton(
-            tooltip: 'Refresh conversation',
-            onPressed: _loading ? null : _loadConversation,
-            icon: const Icon(Icons.refresh),
-          ),
-        ],
-      ),
+      appBar: widget.showAppBar
+          ? AppBar(
+              title: const Row(
+                children: [
+                  CircleAvatar(
+                    radius: 16,
+                    backgroundColor: AppColors.primaryGreen,
+                    child: Icon(
+                      Icons.support_agent,
+                      color: Colors.white,
+                      size: 19,
+                    ),
+                  ),
+                  SizedBox(width: 10),
+                  Text('Customer Care'),
+                ],
+              ),
+              actions: [
+                IconButton(
+                  tooltip: 'Refresh conversation',
+                  onPressed: _loading ? null : _loadConversation,
+                  icon: const Icon(Icons.refresh),
+                ),
+              ],
+            )
+          : null,
       body: SafeArea(
+        top: widget.showAppBar,
         child: Column(
           children: [
             if (agent != null)
