@@ -9,6 +9,7 @@ import '../../../../features/auth/presentation/providers/auth_provider.dart';
 import '../../../../security/authorization/roles.dart';
 import '../../../../shared/components/bottom_navigation.dart';
 import '../../../../shared/widgets/profile_avatar.dart';
+import '../../../../shared/widgets/pig_world_icon.dart';
 import '../providers/farm_access_provider.dart';
 import '../providers/profile_image_provider.dart';
 
@@ -37,7 +38,7 @@ class ProfilePage extends ConsumerWidget {
         actions: [
           IconButton(
             tooltip: 'Settings',
-            icon: const Icon(Icons.settings_outlined),
+            icon: const PigWorldIcon('settings'),
             onPressed: () => context.go(AppRoutes.settings),
           ),
         ],
@@ -119,6 +120,7 @@ class ProfilePage extends ConsumerWidget {
               children: [
                 _ProfileDetailTile(
                   icon: Icons.person_outline,
+                  assetName: 'profile',
                   label: 'Name',
                   value: user?.name ?? 'Not available',
                 ),
@@ -138,10 +140,7 @@ class ProfilePage extends ConsumerWidget {
             child: Column(
               children: [
                 ListTile(
-                  leading: const Icon(
-                    Icons.agriculture_outlined,
-                    color: AppColors.primaryGreen,
-                  ),
+                  leading: const PigWorldIcon('farm'),
                   title: const Text('Farms'),
                   subtitle: Text(
                     farm?.name ?? 'Complete setup to connect a farm',
@@ -166,10 +165,7 @@ class ProfilePage extends ConsumerWidget {
                 if (isFarmOwner) ...[
                   const Divider(height: 1, indent: 56),
                   ListTile(
-                    leading: const Icon(
-                      Icons.workspace_premium_outlined,
-                      color: AppColors.primaryGreen,
-                    ),
+                    leading: const PigWorldIcon('subscribtion'),
                     title: const Text('Subscription'),
                     subtitle: Text(
                       farm?.subscriptionPlan ?? 'No active subscription',
@@ -180,10 +176,7 @@ class ProfilePage extends ConsumerWidget {
                   const Divider(height: 1, indent: 56),
                   farmAccess!.when(
                     loading: () => const ListTile(
-                      leading: Icon(
-                        Icons.groups_outlined,
-                        color: AppColors.primaryGreen,
-                      ),
+                      leading: PigWorldIcon('farmmembers'),
                       title: Text('Farm members'),
                       trailing: SizedBox(
                         width: 20,
@@ -192,19 +185,13 @@ class ProfilePage extends ConsumerWidget {
                       ),
                     ),
                     error: (error, _) => ListTile(
-                      leading: const Icon(
-                        Icons.groups_outlined,
-                        color: AppColors.primaryGreen,
-                      ),
+                      leading: const PigWorldIcon('farmmembers'),
                       title: const Text('Farm members'),
                       subtitle: Text('Could not load member count: $error'),
                       trailing: const Icon(Icons.error_outline),
                     ),
                     data: (state) => ListTile(
-                      leading: const Icon(
-                        Icons.groups_outlined,
-                        color: AppColors.primaryGreen,
-                      ),
+                      leading: const PigWorldIcon('farmmembers'),
                       title: const Text('Farm members'),
                       subtitle: Text(
                         '${state.members.length} member${state.members.length == 1 ? '' : 's'} have access',
@@ -255,15 +242,19 @@ class _ProfileDetailTile extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.value,
+    this.assetName,
   });
 
   final IconData icon;
   final String label;
   final String value;
+  final String? assetName;
 
   @override
   Widget build(BuildContext context) => ListTile(
-    leading: Icon(icon, color: AppColors.primaryGreen),
+    leading: assetName == null
+        ? Icon(icon, color: AppColors.primaryGreen)
+        : PigWorldIcon(assetName!, size: 24),
     title: Text(label, style: Theme.of(context).textTheme.bodySmall),
     subtitle: Text(value, maxLines: 2, overflow: TextOverflow.ellipsis),
   );

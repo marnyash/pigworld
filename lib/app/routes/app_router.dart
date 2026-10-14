@@ -512,7 +512,7 @@ class _AppDrawer extends ConsumerWidget {
                     route: AppRoutes.settings,
                   ),
                   _ListTile(
-                    icon: Icons.info_outline,
+                    assetName: 'about',
                     title: l10n.about,
                     route: AppRoutes.about,
                   ),

@@ -217,7 +217,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         actions: [
           IconButton(
             tooltip: l10n.openNotifications,
-            icon: const Icon(Icons.notifications_outlined),
+            icon: const PigWorldIcon('notification'),
             onPressed: () => context.go(AppRoutes.notifications),
           ),
         ],
