@@ -60,27 +60,27 @@ class FarmManagementPage extends ConsumerWidget {
                     ),
                   ],
                 ),
-                child: Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: 54,
-                      height: 54,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.16),
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: const Icon(
-                        Icons.groups_2_outlined,
-                        color: Colors.white,
-                        size: 30,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
+                    Row(
+                      children: [
+                        Container(
+                          width: 54,
+                          height: 54,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.16),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: const Icon(
+                            Icons.groups_2_outlined,
+                            color: Colors.white,
+                            size: 30,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Text(
                             session?.selectedFarm?.name ?? 'Your farm team',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
@@ -90,41 +90,91 @@ class FarmManagementPage extends ConsumerWidget {
                                   fontWeight: FontWeight.w800,
                                 ),
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'People, access, and join requests in one place',
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(color: Colors.white70),
-                          ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(height: 12),
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 12,
-                        vertical: 8,
+                        vertical: 10,
                       ),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.16),
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            '${access.valueOrNull?.members.length ?? 0}',
-                            style: Theme.of(context).textTheme.titleMedium
-                                ?.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w800,
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.people_alt_outlined,
+                                color: Colors.white70,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                access.when(
+                                  data: (state) =>
+                                      '${state.members.length} members',
+                                  loading: () => 'Loading members',
+                                  error: (_, _) => 'Members unavailable',
                                 ),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const Spacer(),
+                              const Text(
+                                'Join code',
+                                style: TextStyle(color: Colors.white70),
+                              ),
+                            ],
                           ),
-                          const Text(
-                            'members',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 10,
-                            ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: session?.selectedFarm?.inviteCode == null
+                                    ? const Text(
+                                        'Unavailable',
+                                        style: TextStyle(color: Colors.white70),
+                                      )
+                                    : SelectableText(
+                                        session!.selectedFarm!.inviteCode!,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w800,
+                                          letterSpacing: 1,
+                                        ),
+                                      ),
+                              ),
+                              if (session?.selectedFarm?.inviteCode != null)
+                                IconButton(
+                                  tooltip: 'Copy invite code',
+                                  visualDensity: VisualDensity.compact,
+                                  color: Colors.white,
+                                  icon: const Icon(
+                                    Icons.copy_outlined,
+                                    size: 18,
+                                  ),
+                                  onPressed: () {
+                                    Clipboard.setData(
+                                      ClipboardData(
+                                        text:
+                                            session!.selectedFarm!.inviteCode!,
+                                      ),
+                                    );
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Invite code copied.'),
+                                      ),
+                                    );
+                                  },
+                                ),
+                            ],
                           ),
                         ],
                       ),
@@ -134,22 +184,16 @@ class FarmManagementPage extends ConsumerWidget {
               ),
               const SizedBox(height: 18),
             ],
-            Text(
-              isOwner
-                  ? (session?.selectedFarm?.name ?? 'Your farms')
-                  : canViewMembers
-                  ? 'People with access'
-                  : 'Find a farm to work with',
-              style: Theme.of(context).textTheme.headlineSmall,
-            ),
-            const SizedBox(height: 6),
-            Text(
-              isOwner
-                  ? 'Manage members, review join requests, and create additional farms.'
-                  : canViewMembers
-                  ? 'View the people who have access to this farm.'
-                  : 'Send a request to a farm owner. You can join after they approve it.',
-            ),
+            if (!canViewMembers) ...[
+              Text(
+                'Send a join request',
+                style: Theme.of(context).textTheme.headlineSmall,
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'Send a request to a farm owner. You can join after they approve it.',
+              ),
+            ],
             if (!canViewMembers) ...[
               const SizedBox(height: 20),
               _JoinFarmCard(ref: ref),
@@ -180,58 +224,6 @@ class FarmManagementPage extends ConsumerWidget {
                   ),
                 ],
               ),
-              if (isOwner && session?.selectedFarm?.inviteCode != null) ...[
-                const SizedBox(height: 20),
-                Card(
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Row(
-                          children: [
-                            Icon(Icons.person_add_alt_1_outlined),
-                            SizedBox(width: 10),
-                            Text('Register a manager or worker'),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        const Text(
-                          'Share this code. They choose Farm manager or Farm worker during account creation and enter it to join your farm.',
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: SelectableText(
-                                session!.selectedFarm!.inviteCode!,
-                                style: Theme.of(context).textTheme.titleLarge
-                                    ?.copyWith(fontWeight: FontWeight.w700),
-                              ),
-                            ),
-                            IconButton(
-                              tooltip: 'Copy invite code',
-                              icon: const Icon(Icons.copy_outlined),
-                              onPressed: () {
-                                Clipboard.setData(
-                                  ClipboardData(
-                                    text: session.selectedFarm!.inviteCode!,
-                                  ),
-                                );
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Invite code copied.'),
-                                  ),
-                                );
-                              },
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
               const SizedBox(height: 20),
               Text(
                 'Join requests',
