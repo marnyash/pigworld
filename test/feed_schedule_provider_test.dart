@@ -1,10 +1,12 @@
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dio/dio.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:proj/features/auth/domain/entities/farm.dart';
 import 'package:proj/features/auth/domain/entities/session.dart';
 import 'package:proj/features/auth/domain/entities/user.dart';
 import 'package:proj/features/auth/presentation/providers/auth_provider.dart';
+import 'package:proj/features/feed/data/feed_api.dart';
 import 'package:proj/features/feed/data/feed_reminder_service.dart';
 import 'package:proj/features/feed/data/feed_schedule_local_data_source.dart';
 import 'package:proj/features/feed/presentation/providers/feed_provider.dart';
@@ -25,6 +27,11 @@ void main() {
           feedReminderServiceProvider.overrideWithValue(
             _FakeFeedReminderService()..failInitialization = true,
           ),
+          feedApiProvider.overrideWithValue(_FakeFeedApi()),
+          feedReminderTimezoneProvider.overrideWith(
+            (ref) async => 'Africa/Nairobi',
+          ),
+          userPreferencesProvider.overrideWith(_TestPreferencesNotifier.new),
         ],
       );
       addTearDown(container.dispose);
@@ -41,11 +48,16 @@ void main() {
     () async {
       final storage = _MemoryFeedScheduleStorage();
       final reminders = _FakeFeedReminderService()..failSync = true;
+      final api = _FakeFeedApi();
       final container = ProviderContainer(
         overrides: [
           authProvider.overrideWith(_TestAuthNotifier.new),
           feedScheduleStorageProvider.overrideWithValue(storage),
           feedReminderServiceProvider.overrideWithValue(reminders),
+          feedApiProvider.overrideWithValue(api),
+          feedReminderTimezoneProvider.overrideWith(
+            (ref) async => 'Africa/Nairobi',
+          ),
           userPreferencesProvider.overrideWith(_TestPreferencesNotifier.new),
         ],
       );
@@ -65,6 +77,7 @@ void main() {
         ),
       );
       expect(storage.entries[1].remindersEnabled, isTrue);
+      expect(api.syncedEntries.last[1].remindersEnabled, isTrue);
       expect(
         container.read(feedScheduleProvider).valueOrNull?[1].remindersEnabled,
         isTrue,
@@ -77,11 +90,16 @@ void main() {
     () async {
       final storage = _MemoryFeedScheduleStorage();
       final reminders = _FakeFeedReminderService();
+      final api = _FakeFeedApi();
       final container = ProviderContainer(
         overrides: [
           authProvider.overrideWith(_TestAuthNotifier.new),
           feedScheduleStorageProvider.overrideWithValue(storage),
           feedReminderServiceProvider.overrideWithValue(reminders),
+          feedApiProvider.overrideWithValue(api),
+          feedReminderTimezoneProvider.overrideWith(
+            (ref) async => 'Africa/Nairobi',
+          ),
           userPreferencesProvider.overrideWith(_TestPreferencesNotifier.new),
         ],
       );
@@ -102,6 +120,10 @@ void main() {
       expect(reminders.syncedEntries.last[1].remindersEnabled, isTrue);
       expect(reminders.syncedSounds.last, 'default');
       expect(reminders.syncedEnabled.last, isTrue);
+      expect(api.syncedFarmIds.last, 'farm-1');
+      expect(api.syncedEntries.last[1].remindersEnabled, isTrue);
+      expect(api.syncedEnabled.last, isTrue);
+      expect(api.syncedTimezones.last, 'Africa/Nairobi');
 
       reminders.permissionGranted = false;
       await expectLater(
@@ -149,6 +171,28 @@ class _MemoryFeedScheduleStorage extends FeedScheduleLocalDataSource {
     required List<FeedScheduleEntry> entries,
   }) async {
     this.entries = List.of(entries);
+  }
+}
+
+class _FakeFeedApi extends FeedApi {
+  _FakeFeedApi() : super(Dio());
+
+  final syncedFarmIds = <String>[];
+  final syncedEntries = <List<FeedScheduleEntry>>[];
+  final syncedEnabled = <bool>[];
+  final syncedTimezones = <String>[];
+
+  @override
+  Future<void> syncReminders({
+    required String farmId,
+    required List<FeedScheduleEntry> entries,
+    required bool enabled,
+    required String timezone,
+  }) async {
+    syncedFarmIds.add(farmId);
+    syncedEntries.add(List.of(entries));
+    syncedEnabled.add(enabled);
+    syncedTimezones.add(timezone);
   }
 }
 

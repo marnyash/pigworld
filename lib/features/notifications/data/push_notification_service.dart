@@ -4,6 +4,7 @@ import 'package:dio/dio.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 
 import '../../../app/routes/app_router.dart';
 import '../../../app/routes/app_routes.dart';
@@ -12,6 +13,8 @@ class PushNotificationService {
   PushNotificationService(this._dio);
 
   final Dio _dio;
+  final FlutterLocalNotificationsPlugin _localNotifications =
+      FlutterLocalNotificationsPlugin();
   bool _started = false;
   bool _authenticated = false;
   String? _registeredToken;
@@ -39,6 +42,30 @@ class PushNotificationService {
       badge: true,
       sound: true,
     );
+    await _localNotifications.initialize(
+      settings: const InitializationSettings(
+        android: AndroidInitializationSettings('@mipmap/ic_launcher'),
+        iOS: DarwinInitializationSettings(
+          requestAlertPermission: false,
+          requestBadgePermission: false,
+          requestSoundPermission: false,
+        ),
+      ),
+      onDidReceiveNotificationResponse: _handleLocalNotificationOpened,
+    );
+    await _localNotifications
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.createNotificationChannel(
+          const AndroidNotificationChannel(
+            'farm_push_notifications',
+            'Farm notifications',
+            description: 'Updates and reminders for your farm.',
+            importance: Importance.high,
+            playSound: true,
+          ),
+        );
 
     if (!_started) {
       _started = true;
@@ -56,6 +83,15 @@ class PushNotificationService {
           debugPrint('Push-token refresh failed: $error');
         },
       );
+      FirebaseMessaging.onMessage.listen((message) {
+        if (defaultTargetPlatform == TargetPlatform.android) {
+          unawaited(
+            _showForegroundMessage(message).catchError((Object error) {
+              debugPrint('Foreground push display failed: $error');
+            }),
+          );
+        }
+      });
       FirebaseMessaging.onMessageOpenedApp.listen(_handleOpenedMessage);
       final initialMessage = await messaging.getInitialMessage();
       if (initialMessage != null) _handleOpenedMessage(initialMessage);
@@ -84,10 +120,43 @@ class PushNotificationService {
     _registeredToken = token;
   }
 
-  void _handleOpenedMessage(RemoteMessage message) {
-    final route = message.data['action_route'];
-    AppRouter.router.go(
-      route == AppRoutes.support ? AppRoutes.support : AppRoutes.notifications,
+  Future<void> _showForegroundMessage(RemoteMessage message) async {
+    final notification = message.notification;
+    if (notification == null) return;
+    await _localNotifications.show(
+      id:
+          (message.messageId?.hashCode ??
+              DateTime.now().millisecondsSinceEpoch) &
+          0x7fffffff,
+      title: notification.title,
+      body: notification.body,
+      notificationDetails: const NotificationDetails(
+        android: AndroidNotificationDetails(
+          'farm_push_notifications',
+          'Farm notifications',
+          channelDescription: 'Updates and reminders for your farm.',
+          importance: Importance.high,
+          priority: Priority.high,
+          playSound: true,
+        ),
+      ),
+      payload: message.data['action_route'] as String?,
     );
+  }
+
+  void _handleOpenedMessage(RemoteMessage message) {
+    _openRoute(message.data['action_route']);
+  }
+
+  void _handleLocalNotificationOpened(NotificationResponse response) {
+    _openRoute(response.payload);
+  }
+
+  void _openRoute(Object? route) {
+    AppRouter.router.go(switch (route) {
+      AppRoutes.support => AppRoutes.support,
+      AppRoutes.feed => AppRoutes.feed,
+      _ => AppRoutes.notifications,
+    });
   }
 }

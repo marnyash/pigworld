@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:proj/features/onboarding/presentation/providers/onboarding_provider.dart';
 import 'package:proj/features/auth/presentation/providers/auth_providers.dart';
+import 'package:proj/features/feed/data/feed_api.dart';
 import 'package:proj/features/settings/data/settings_api.dart';
 import 'package:proj/security/authentication/biometric_auth.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -88,6 +90,7 @@ class UserPreferencesNotifier extends AsyncNotifier<UserPreferences> {
     final updated = current.copyWith(notificationChannels: channels);
     await ref.watch(settingsLocalDataSourceProvider).savePreferences(updated);
     state = AsyncData(updated);
+    if (channel == 'push') await _syncFeedReminders(updated);
   }
 
   Future<void> updateNotificationSound(String sound) async {
@@ -114,11 +117,39 @@ class UserPreferencesNotifier extends AsyncNotifier<UserPreferences> {
       userId: user.id,
       farmId: farm.id,
     );
-    await FeedReminderService().sync(
-      entries,
-      sound: preferences.notificationSound,
-      enabled: preferences.notifications['feeding'] ?? true,
-    );
+    final enabled = preferences.notifications['feeding'] ?? true;
+    Object? localError;
+    StackTrace? localStackTrace;
+    try {
+      await FeedReminderService().sync(
+        entries,
+        sound: preferences.notificationSound,
+        enabled: enabled,
+      );
+    } catch (error, stackTrace) {
+      localError = error;
+      localStackTrace = stackTrace;
+    }
+
+    Object? pushError;
+    StackTrace? pushStackTrace;
+    try {
+      final timezone = await FlutterTimezone.getLocalTimezone();
+      await FeedApi(ref.read(dioProvider)).syncReminders(
+        farmId: farm.id,
+        entries: entries,
+        enabled: enabled && (preferences.notificationChannels['push'] ?? true),
+        timezone: timezone.identifier,
+      );
+    } catch (error, stackTrace) {
+      pushError = error;
+      pushStackTrace = stackTrace;
+    }
+    if (localError != null) {
+      Error.throwWithStackTrace(localError, localStackTrace!);
+    }
+    if (pushError != null)
+      Error.throwWithStackTrace(pushError, pushStackTrace!);
   }
 }
 

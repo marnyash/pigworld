@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 
 import '../../../core/errors/error_handler.dart';
+import 'feed_schedule_local_data_source.dart';
 
 class FeedStock {
   const FeedStock({
@@ -74,6 +75,34 @@ class FeedSnapshot {
 class FeedApi {
   FeedApi(this._dio);
   final Dio _dio;
+
+  Future<void> syncReminders({
+    required String farmId,
+    required List<FeedScheduleEntry> entries,
+    required bool enabled,
+    required String timezone,
+  }) async {
+    try {
+      await _dio.put<void>(
+        '/farms/$farmId/feed/reminders',
+        data: {
+          'enabled': enabled,
+          'timezone': timezone,
+          'entries': [
+            for (final entry in entries)
+              {
+                'id': entry.id,
+                'name': entry.name,
+                'minutes_after_midnight': entry.minutesAfterMidnight,
+                'reminders_enabled': entry.remindersEnabled,
+              },
+          ],
+        },
+      );
+    } on DioException catch (error) {
+      throw ErrorHandler.from(error);
+    }
+  }
 
   Future<FeedSnapshot> fetch(String farmId) async {
     try {

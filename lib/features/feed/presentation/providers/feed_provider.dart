@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_timezone/flutter_timezone.dart';
 
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -21,6 +23,11 @@ final feedReminderServiceProvider = Provider<FeedReminderService>(
   (_) => FeedReminderService(),
 );
 
+final feedReminderTimezoneProvider = Provider<Future<String>>((_) async {
+  final timezone = await FlutterTimezone.getLocalTimezone();
+  return timezone.identifier;
+});
+
 class FeedScheduleNotifier extends AsyncNotifier<List<FeedScheduleEntry>> {
   @override
   Future<List<FeedScheduleEntry>> build() async {
@@ -30,9 +37,28 @@ class FeedScheduleNotifier extends AsyncNotifier<List<FeedScheduleEntry>> {
     if (farm == null || user == null) {
       return FeedScheduleLocalDataSource.defaults;
     }
-    return ref
+    final entries = await ref
         .watch(feedScheduleStorageProvider)
         .read(userId: user.id, farmId: farm.id);
+    try {
+      final preferences = await ref.read(userPreferencesProvider.future);
+      final timezone = await ref.read(feedReminderTimezoneProvider);
+      await ref
+          .read(feedApiProvider)
+          .syncReminders(
+            farmId: farm.id,
+            entries: entries,
+            enabled:
+                (preferences.notifications['feeding'] ?? true) &&
+                (preferences.notificationChannels['push'] ?? true),
+            timezone: timezone,
+          );
+    } catch (error, stackTrace) {
+      debugPrint(
+        'Could not synchronize saved feed reminders: $error\n$stackTrace',
+      );
+    }
+    return entries;
   }
 
   Future<void> saveEntries(List<FeedScheduleEntry> entries) async {
@@ -52,9 +78,10 @@ class FeedScheduleNotifier extends AsyncNotifier<List<FeedScheduleEntry>> {
         .read(feedScheduleStorageProvider)
         .write(userId: user.id, farmId: farm.id, entries: entries);
     state = AsyncData(entries);
+    final preferences = await ref.read(userPreferencesProvider.future);
+    Object? localReminderError;
     if (previous.any((entry) => entry.remindersEnabled) ||
         entries.any((entry) => entry.remindersEnabled)) {
-      final preferences = await ref.read(userPreferencesProvider.future);
       try {
         await ref
             .read(feedReminderServiceProvider)
@@ -64,12 +91,32 @@ class FeedScheduleNotifier extends AsyncNotifier<List<FeedScheduleEntry>> {
               enabled: preferences.notifications['feeding'] ?? true,
             );
       } on PlatformException catch (error) {
-        throw FeedReminderPlatformException(
+        localReminderError = FeedReminderPlatformException(
           code: error.code,
           scheduleSaved: true,
         );
+      } catch (error) {
+        localReminderError = error;
       }
     }
+    Object? pushSyncError;
+    try {
+      final timezone = await ref.read(feedReminderTimezoneProvider);
+      await ref
+          .read(feedApiProvider)
+          .syncReminders(
+            farmId: farm.id,
+            entries: entries,
+            enabled:
+                (preferences.notifications['feeding'] ?? true) &&
+                (preferences.notificationChannels['push'] ?? true),
+            timezone: timezone,
+          );
+    } catch (error) {
+      pushSyncError = error;
+    }
+    if (localReminderError != null) throw localReminderError;
+    if (pushSyncError != null) throw pushSyncError;
   }
 
   Future<void> setCompleted(String id, bool completed) async {
