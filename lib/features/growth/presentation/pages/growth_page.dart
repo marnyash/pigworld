@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/app_colors.dart';
+import '../../../../shared/components/bottom_navigation.dart';
 import '../../../../shared/widgets/pig_world_icon.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../domain/entities/growth_record.dart';
@@ -46,6 +47,11 @@ class _GrowthPageState extends ConsumerState<GrowthPage>
             SizedBox(width: 8),
             Text('Growth Tracking'),
           ],
+        ),
+        leading: IconButton(
+          tooltip: 'Open menu',
+          icon: const PigWorldIcon('Growth', size: 24),
+          onPressed: () => navigationScaffoldKey.currentState?.openDrawer(),
         ),
         backgroundColor: AppColors.primaryGreen,
         foregroundColor: AppColors.inverseText,

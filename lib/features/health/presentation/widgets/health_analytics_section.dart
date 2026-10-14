@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
+import '../../../../shared/widgets/pig_world_icon.dart';
 import '../../domain/entities/health_record.dart';
 import '../providers/health_providers.dart';
 
@@ -86,7 +87,16 @@ class HealthAnalyticsSection extends ConsumerWidget {
         100,
       ),
       children: [
-        Text('Health Overview', style: Theme.of(context).textTheme.titleLarge),
+        Row(
+          children: [
+            const PigWorldIcon('health', size: 24),
+            const SizedBox(width: AppDimensions.spacingSmall),
+            Text(
+              'Health Overview',
+              style: Theme.of(context).textTheme.titleLarge,
+            ),
+          ],
+        ),
         const SizedBox(height: AppDimensions.spacingMedium),
         GridView.count(
           crossAxisCount: 2,
@@ -100,24 +110,28 @@ class HealthAnalyticsSection extends ConsumerWidget {
               value: healthy.toString(),
               color: AppColors.success,
               icon: Icons.favorite,
+              assetName: 'health',
             ),
             _AnalyticsCard(
               label: 'Sick pigs recorded',
               value: sick.toString(),
               color: AppColors.warning,
               icon: Icons.local_hospital,
+              assetName: 'sick-pig',
             ),
             _AnalyticsCard(
               label: 'Vaccinations due',
               value: dueVaccinations.toString(),
               color: AppColors.info,
               icon: Icons.vaccines,
+              assetName: 'syringe1',
             ),
             _AnalyticsCard(
               label: 'Under treatment',
               value: underTreatment.toString(),
               color: AppColors.violet,
               icon: Icons.medical_services_outlined,
+              assetName: 'under-treatment',
             ),
           ],
         ),
@@ -159,6 +173,7 @@ class HealthAnalyticsSection extends ConsumerWidget {
           value: recentDeaths.toString(),
           color: AppColors.danger,
           icon: Icons.warning_amber_rounded,
+          assetName: 'sick-pig',
         ),
         const SizedBox(height: AppDimensions.spacingLarge),
         Text(
@@ -189,12 +204,14 @@ class _AnalyticsCard extends StatelessWidget {
     required this.value,
     required this.color,
     required this.icon,
+    this.assetName,
   });
 
   final String label;
   final String value;
   final Color color;
   final IconData icon;
+  final String? assetName;
 
   @override
   Widget build(BuildContext context) => Card(
@@ -203,7 +220,9 @@ class _AnalyticsCard extends StatelessWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: color, size: 28),
+          assetName == null
+              ? Icon(icon, color: color, size: 28)
+              : PigWorldIcon(assetName!, size: 28),
           const SizedBox(height: 8),
           Text(
             value,

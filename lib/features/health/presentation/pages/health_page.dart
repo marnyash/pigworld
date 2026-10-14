@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
+import '../../../../shared/components/bottom_navigation.dart';
 import '../../../../shared/widgets/pig_world_icon.dart';
 import '../../../../security/authorization/roles.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -82,11 +83,18 @@ class _HealthPageState extends ConsumerState<HealthPage>
             }),
           ],
         ),
-        leading: IconButton(
-          tooltip: 'Back to home',
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go(AppRoutes.home),
-        ),
+        leading: widget.initialTypeFilter == 'medication'
+            ? IconButton(
+                tooltip: 'Open menu',
+                icon: const PigWorldIcon('syringe', size: 24),
+                onPressed: () =>
+                    navigationScaffoldKey.currentState?.openDrawer(),
+              )
+            : IconButton(
+                tooltip: 'Back to home',
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => context.go(AppRoutes.home),
+              ),
         centerTitle: true,
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
@@ -370,30 +378,35 @@ class _HealthPageState extends ConsumerState<HealthPage>
                 label: 'Healthy Pigs',
                 value: stats['healthy']?.toString() ?? '0',
                 icon: Icons.favorite,
+                assetName: 'health',
                 color: AppColors.success,
               ),
               HealthOverviewCard(
                 label: 'Sick Pigs',
                 value: stats['sick']?.toString() ?? '0',
                 icon: Icons.local_hospital,
+                assetName: 'sick-pig',
                 color: AppColors.warning,
               ),
               HealthOverviewCard(
                 label: 'Vaccinated',
                 value: stats['vaccinated']?.toString() ?? '0',
                 icon: Icons.vaccines,
+                assetName: 'syringe1',
                 color: AppColors.info,
               ),
               HealthOverviewCard(
                 label: 'Vaccinations Due',
                 value: stats['vaccinations_due']?.toString() ?? '0',
                 icon: Icons.notifications_active,
+                assetName: 'Task-Due',
                 color: AppColors.aqua,
               ),
               HealthOverviewCard(
                 label: 'Under Treatment',
                 value: stats['under_treatment']?.toString() ?? '0',
                 icon: Icons.medical_services_outlined,
+                assetName: 'under-treatment',
                 color: AppColors.violet,
               ),
             ],

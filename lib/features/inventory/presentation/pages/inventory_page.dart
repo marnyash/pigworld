@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../../shared/components/bottom_navigation.dart';
+import '../../../../shared/components/bottom_navigation.dart';
 import '../../../../shared/widgets/pig_world_icon.dart';
 import 'package:proj/features/inventory/presentation/pages/sections/inventory_overview_section.dart';
 import 'package:proj/features/inventory/presentation/pages/sections/search_categories_section.dart';
@@ -17,21 +19,18 @@ class InventoryPage extends ConsumerStatefulWidget {
   ConsumerState<InventoryPage> createState() => _InventoryPageState();
 }
 
-class _InventoryPageState extends ConsumerState<InventoryPage>
-    with TickerProviderStateMixin {
-  late final TabController _tabController;
+class _InventoryPageState extends ConsumerState<InventoryPage> {
+  _InventorySection? _selectedSection;
 
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 7, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
+  Widget _sectionContent() => switch (_selectedSection!) {
+    _InventorySection.overview => const InventoryOverviewSection(),
+    _InventorySection.search => const SearchCategoriesSection(),
+    _InventorySection.stockItems => const StockItemsSection(),
+    _InventorySection.suppliers => const SuppliersSection(),
+    _InventorySection.movements => const StockMovementsSection(),
+    _InventorySection.alerts => const AlertsSection(),
+    _InventorySection.feedStock => const FeedStockSection(),
+  };
 
   @override
   Widget build(BuildContext context) {
@@ -46,32 +45,30 @@ class _InventoryPageState extends ConsumerState<InventoryPage>
           ],
         ),
         elevation: 0,
-        bottom: TabBar(
-          controller: _tabController,
-          isScrollable: true,
-          tabs: const [
-            Tab(text: 'Overview', icon: Icon(Icons.dashboard_outlined)),
-            Tab(text: 'Search', icon: Icon(Icons.search)),
-            Tab(text: 'Stock Items', icon: Icon(Icons.inventory_2_outlined)),
-            Tab(text: 'Suppliers', icon: Icon(Icons.local_shipping_outlined)),
-            Tab(text: 'Movements', icon: Icon(Icons.swap_horiz)),
-            Tab(text: 'Alerts', icon: Icon(Icons.notifications_outlined)),
-            Tab(text: 'Feed Stock', icon: Icon(Icons.grass_outlined)),
-          ],
+        leading: IconButton(
+          tooltip: 'Open menu',
+          icon: const PigWorldIcon('inventory', size: 24),
+          onPressed: () => navigationScaffoldKey.currentState?.openDrawer(),
         ),
+        leading: _selectedSection == null
+            ? IconButton(
+                tooltip: 'Open menu',
+                icon: const Icon(Icons.menu_rounded),
+                onPressed: () =>
+                    navigationScaffoldKey.currentState?.openDrawer(),
+              )
+            : IconButton(
+                tooltip: 'Inventory sections',
+                icon: const Icon(Icons.arrow_back),
+                onPressed: () => setState(() => _selectedSection = null),
+              ),
       ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          const InventoryOverviewSection(),
-          const SearchCategoriesSection(),
-          const StockItemsSection(),
-          const SuppliersSection(),
-          const StockMovementsSection(),
-          const AlertsSection(),
-          const FeedStockSection(),
-        ],
-      ),
+      body: _selectedSection == null
+          ? _InventorySectionCards(
+              onSelected: (section) =>
+                  setState(() => _selectedSection = section),
+            )
+          : _sectionContent(),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _showAddItemDialog(context),
         icon: const Icon(Icons.add),
@@ -342,4 +339,102 @@ class _InventoryPageState extends ConsumerState<InventoryPage>
 
   String? _optionalValue(String value) =>
       value.trim().isEmpty ? null : value.trim();
+}
+
+enum _InventorySection {
+  overview(
+    'Overview',
+    'Inventory summary and alerts',
+    Icons.dashboard_outlined,
+  ),
+  search('Search', 'Find items by name, SKU, or barcode', Icons.search),
+  stockItems(
+    'Stock Items',
+    'Manage inventory quantities',
+    Icons.inventory_2_outlined,
+  ),
+  suppliers(
+    'Suppliers',
+    'Supplier contacts and orders',
+    Icons.local_shipping_outlined,
+  ),
+  movements('Movements', 'Review stock changes', Icons.swap_horiz),
+  alerts(
+    'Alerts',
+    'Review stock and expiry alerts',
+    Icons.notifications_outlined,
+  ),
+  feedStock('Feed Stock', 'Manage feed inventory', Icons.grass_outlined);
+
+  const _InventorySection(this.title, this.description, this.icon);
+
+  final String title;
+  final String description;
+  final IconData icon;
+}
+
+class _InventorySectionCards extends StatelessWidget {
+  const _InventorySectionCards({required this.onSelected});
+
+  final ValueChanged<_InventorySection> onSelected;
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) => GridView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: _InventorySection.values.length,
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: constraints.maxWidth >= 700
+            ? 3
+            : constraints.maxWidth >= 420
+            ? 2
+            : 1,
+        mainAxisExtent: 116,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+      ),
+      itemBuilder: (context, index) {
+        final section = _InventorySection.values[index];
+        return Card(
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: () => onSelected(section),
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                children: [
+                  Icon(
+                    section.icon,
+                    size: 28,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          section.title,
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          section.description,
+                          style: Theme.of(context).textTheme.bodySmall,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ],
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    ),
+  );
 }

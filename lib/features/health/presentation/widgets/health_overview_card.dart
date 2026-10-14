@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../../../app/theme/app_dimensions.dart';
+import '../../../../shared/widgets/pig_world_icon.dart';
 
 class HealthOverviewCard extends StatelessWidget {
   final String label;
   final String value;
   final IconData icon;
+  final String? assetName;
   final Color color;
 
   const HealthOverviewCard({
@@ -12,6 +14,7 @@ class HealthOverviewCard extends StatelessWidget {
     required this.label,
     required this.value,
     required this.icon,
+    this.assetName,
     required this.color,
   });
 
@@ -29,7 +32,9 @@ class HealthOverviewCard extends StatelessWidget {
               color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(AppDimensions.radius),
             ),
-            child: Icon(icon, color: color, size: 32),
+            child: assetName == null
+                ? Icon(icon, color: color, size: 32)
+                : PigWorldIcon(assetName!, size: 32),
           ),
           const SizedBox(height: AppDimensions.spacingMedium),
           Text(
