@@ -49,6 +49,7 @@ import '../../features/auth/presentation/providers/auth_providers.dart';
 import '../../features/dashboard/presentation/pages/dashboard_page.dart';
 import '../../shared/components/bottom_navigation.dart';
 import '../../shared/widgets/profile_avatar.dart';
+import '../../shared/widgets/pig_world_icon.dart';
 import '../../app/theme/app_colors.dart';
 import 'app_routes.dart';
 import 'route_guard.dart';
@@ -432,23 +433,23 @@ class _AppDrawer extends ConsumerWidget {
                 children: [
                   _DrawerSectionLabel(l10n.farmManagement),
                   _ListTile(
-                    icon: Icons.home_outlined,
+                    assetName: 'farm',
                     title: l10n.dashboard,
                     route: AppRoutes.home,
                   ),
                   if (allows(AppPermission.manageHerd)) ...[
                     _ListTile(
-                      icon: Icons.pets_outlined,
+                      assetName: 'Boar',
                       title: l10n.herd,
                       route: AppRoutes.herd,
                     ),
                     _ListTile(
-                      icon: Icons.health_and_safety_outlined,
+                      assetName: 'health',
                       title: l10n.health,
                       route: AppRoutes.health,
                     ),
                     _ListTile(
-                      icon: Icons.medication_outlined,
+                      assetName: 'syringe',
                       title: 'Medication',
                       route: AppRoutes.medication,
                     ),
@@ -460,12 +461,12 @@ class _AppDrawer extends ConsumerWidget {
                   ],
                   if (allows(AppPermission.manageFeed)) ...[
                     _ListTile(
-                      icon: Icons.restaurant_outlined,
+                      assetName: 'Feed stock',
                       title: l10n.feed,
                       route: AppRoutes.feed,
                     ),
                     _ListTile(
-                      icon: Icons.inventory_2_outlined,
+                      assetName: 'Feed stock',
                       title: l10n.inventory,
                       route: AppRoutes.inventory,
                     ),
@@ -478,7 +479,7 @@ class _AppDrawer extends ConsumerWidget {
                     ),
                   if (allows(AppPermission.viewSales))
                     _ListTile(
-                      icon: Icons.point_of_sale_outlined,
+                      assetName: 'sales',
                       title: l10n.sales,
                       route: AppRoutes.salesAndExpenses,
                     ),
@@ -490,18 +491,18 @@ class _AppDrawer extends ConsumerWidget {
                       route: AppRoutes.reports,
                     ),
                   _ListTile(
-                    icon: Icons.notifications_outlined,
+                    assetName: 'notification',
                     title: l10n.notifications,
                     route: AppRoutes.notifications,
                   ),
                   _ListTile(
-                    icon: Icons.support_agent_outlined,
+                    assetName: 'customer-support',
                     title: l10n.customerSupport,
                     route: AppRoutes.support,
                   ),
                   if (allows(AppPermission.manageMembers))
                     _ListTile(
-                      icon: Icons.manage_accounts_outlined,
+                      assetName: 'team',
                       title: l10n.myTeam,
                       route: AppRoutes.farmManagement,
                     ),
@@ -570,12 +571,14 @@ class _AppDrawer extends ConsumerWidget {
 
 class _ListTile extends StatelessWidget {
   const _ListTile({
-    required this.icon,
+    this.icon,
+    this.assetName,
     required this.title,
     required this.route,
-  });
+  }) : assert((icon == null) != (assetName == null));
 
-  final IconData icon;
+  final IconData? icon;
+  final String? assetName;
   final String title;
   final String route;
 
@@ -590,11 +593,13 @@ class _ListTile extends StatelessWidget {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         selected: selected,
         selectedTileColor: AppColors.primaryGreen.withValues(alpha: 0.11),
-        leading: Icon(
-          icon,
-          color: selected ? AppColors.deepGreen : AppColors.mutedText,
-          size: 22,
-        ),
+        leading: assetName == null
+            ? Icon(
+                icon,
+                color: selected ? AppColors.deepGreen : AppColors.mutedText,
+                size: 22,
+              )
+            : PigWorldIcon(assetName!, size: 22),
         title: Text(
           title,
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(

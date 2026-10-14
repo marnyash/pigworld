@@ -98,9 +98,6 @@ class HerdPage extends ConsumerWidget {
                 return matchesSearch &&
                     (statusFilter == 'all' || animal.status == statusFilter);
               }).toList();
-              final displayedHerdCount = animals.length > registeredHerdCount
-                  ? animals.length
-                  : registeredHerdCount;
               final reservedTags = animals
                   .map((animal) => animal.tag.toUpperCase())
                   .toSet();
@@ -176,13 +173,6 @@ class HerdPage extends ConsumerWidget {
                       ),
                     ),
                     const SizedBox(height: AppDimensions.spacingMedium),
-                    _HerdSummary(
-                      label: l10n.registeredHerd,
-                      value: '$displayedHerdCount',
-                      icon: Icons.pets_outlined,
-                      color: AppColors.primaryGreen,
-                    ),
-                    const SizedBox(height: AppDimensions.spacingMedium),
                     if (registrationSlots.isNotEmpty) ...[
                       const SizedBox(height: AppDimensions.spacingMedium),
                       _RegistrationSlotsGrid(
@@ -196,20 +186,6 @@ class HerdPage extends ConsumerWidget {
                       ),
                     ],
                     const SizedBox(height: AppDimensions.spacingLarge),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          l10n.yourAnimals,
-                          style: Theme.of(context).textTheme.titleLarge,
-                        ),
-                        Text(
-                          '${filteredAnimals.length} ${l10n.shown}',
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppDimensions.spacingMedium),
                     if (filteredAnimals.isEmpty)
                       Card(
                         child: Padding(
@@ -864,42 +840,6 @@ class _AnimalPregnancyReport extends ConsumerWidget {
       .join(' ');
 }
 
-class _HerdSummary extends StatelessWidget {
-  const _HerdSummary({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.color,
-  });
-  final String label;
-  final String value;
-  final IconData icon;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) => Card(
-    child: Padding(
-      padding: const EdgeInsets.all(AppDimensions.spacingMedium),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(9),
-            decoration: BoxDecoration(
-              color: color.withValues(alpha: 0.14),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: color),
-          ),
-          const SizedBox(height: 12),
-          Text(value, style: Theme.of(context).textTheme.headlineMedium),
-          Text(label, style: Theme.of(context).textTheme.bodySmall),
-        ],
-      ),
-    ),
-  );
-}
-
 class _RegistrationSlot {
   const _RegistrationSlot({
     required this.type,
@@ -1125,12 +1065,15 @@ class _AnimalCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final active = animal.status == 'active';
+    final imageUrl = animal.imageUrl?.trim();
+    final hasPhoto = imageUrl?.isNotEmpty == true;
+    final photoTag = 'animal-photo-${animal.id}';
     return Card(
       clipBehavior: Clip.antiAlias,
       child: LayoutBuilder(
         builder: (context, constraints) {
           final horizontal = constraints.maxWidth > 280;
-          final photo = animal.imageUrl == null
+          final photo = !hasPhoto
               ? const ColoredBox(
                   color: AppColors.pigPink,
                   child: Center(
@@ -1142,8 +1085,8 @@ class _AnimalCard extends StatelessWidget {
                   ),
                 )
               : Image.network(
-                  animal.imageUrl!,
-                  key: ValueKey(animal.imageUrl),
+                  imageUrl!,
+                  key: ValueKey(imageUrl),
                   fit: BoxFit.cover,
                   errorBuilder: (_, _, _) => const ColoredBox(
                     color: AppColors.pigPink,
@@ -1155,6 +1098,19 @@ class _AnimalCard extends StatelessWidget {
                     ),
                   ),
                 );
+          final tappablePhoto = hasPhoto
+              ? Hero(
+                  tag: photoTag,
+                  child: Material(
+                    color: AppColors.pigPink,
+                    child: InkWell(
+                      onTap: () =>
+                          _showAnimalPhoto(context, imageUrl!, photoTag),
+                      child: photo,
+                    ),
+                  ),
+                )
+              : photo;
           final details = Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -1182,7 +1138,11 @@ class _AnimalCard extends StatelessWidget {
           if (horizontal) {
             return Row(
               children: [
-                SizedBox(width: 112, height: double.infinity, child: photo),
+                SizedBox(
+                  width: 112,
+                  height: double.infinity,
+                  child: tappablePhoto,
+                ),
                 Expanded(
                   child: Padding(
                     padding: const EdgeInsets.all(12),
@@ -1196,7 +1156,7 @@ class _AnimalCard extends StatelessWidget {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Expanded(child: photo),
+              Expanded(child: tappablePhoto),
               Padding(
                 padding: const EdgeInsets.fromLTRB(12, 10, 4, 10),
                 child: Row(
@@ -1213,6 +1173,68 @@ class _AnimalCard extends StatelessWidget {
       ),
     );
   }
+}
+
+void _showAnimalPhoto(BuildContext context, String imageUrl, String photoTag) {
+  Navigator.of(context).push<void>(
+    PageRouteBuilder<void>(
+      opaque: false,
+      transitionDuration: const Duration(milliseconds: 320),
+      reverseTransitionDuration: const Duration(milliseconds: 240),
+      pageBuilder: (context, animation, secondaryAnimation) =>
+          _AnimalPhotoViewer(imageUrl: imageUrl, photoTag: photoTag),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) =>
+          SlideTransition(
+            position: Tween<Offset>(begin: const Offset(1, 0), end: Offset.zero)
+                .animate(
+                  CurvedAnimation(
+                    parent: animation,
+                    curve: Curves.easeOutCubic,
+                  ),
+                ),
+            child: child,
+          ),
+    ),
+  );
+}
+
+class _AnimalPhotoViewer extends StatelessWidget {
+  const _AnimalPhotoViewer({required this.imageUrl, required this.photoTag});
+
+  final String imageUrl;
+  final String photoTag;
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    backgroundColor: Colors.black,
+    appBar: AppBar(
+      backgroundColor: Colors.black,
+      foregroundColor: Colors.white,
+      leading: IconButton(
+        tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+        icon: const Icon(Icons.close),
+        onPressed: () => Navigator.of(context).pop(),
+      ),
+    ),
+    body: Center(
+      child: Hero(
+        tag: photoTag,
+        child: InteractiveViewer(
+          minScale: 0.8,
+          maxScale: 4,
+          child: Image.network(
+            imageUrl,
+            fit: BoxFit.contain,
+            errorBuilder: (_, _, _) => const Icon(
+              Icons.broken_image_outlined,
+              color: Colors.white,
+              size: 48,
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
 }
 
 class _AnimalActions extends StatelessWidget {

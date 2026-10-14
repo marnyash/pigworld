@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../l10n/generated/app_localizations.dart';
+import '../widgets/pig_world_icon.dart';
 
 final navigationScaffoldKey = GlobalKey<ScaffoldState>();
 
@@ -23,24 +24,24 @@ class AppBottomNavigation extends StatelessWidget {
     onDestinationSelected: onSelected,
     destinations: [
       NavigationDestination(
-        icon: const Icon(Icons.dashboard_outlined),
-        selectedIcon: const Icon(Icons.dashboard),
-        label: AppLocalizations.of(context)!.home,
+        icon: const PigWorldIcon('farm'),
+        selectedIcon: const PigWorldIcon('farm', size: 26),
+        label: AppLocalizations.of(context).home,
       ),
       if (showHerd)
         NavigationDestination(
-          icon: const Icon(Icons.pets_outlined),
-          label: AppLocalizations.of(context)!.herd,
+          icon: const PigWorldIcon('Boar'),
+          label: AppLocalizations.of(context).herd,
         ),
       if (showFeed)
         NavigationDestination(
-          icon: const Icon(Icons.grass_outlined),
-          label: AppLocalizations.of(context)!.feed,
+          icon: const PigWorldIcon('Feed stock'),
+          label: AppLocalizations.of(context).feed,
         ),
       NavigationDestination(
         icon: const Icon(Icons.person_outline),
         selectedIcon: const Icon(Icons.person),
-        label: AppLocalizations.of(context)!.profile,
+        label: AppLocalizations.of(context).profile,
       ),
     ],
   );

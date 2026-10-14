@@ -116,9 +116,15 @@ class _FeedPageState extends ConsumerState<FeedPage> {
 
   void _showScheduleError(Object error) {
     if (!mounted) return;
-    final message = error is FeedReminderPermissionDenied
-        ? 'Allow notifications in system settings to enable feeding reminders.'
-        : 'Could not update feeding schedule: $error';
+    final message = switch (error) {
+      FeedReminderPermissionDenied() =>
+        'Allow notifications in system settings to enable feeding reminders.',
+      FeedReminderPlatformException(:final code, :final scheduleSaved) =>
+        scheduleSaved
+            ? 'Schedule saved, but device reminders could not be updated ($code).'
+            : 'Device reminders are unavailable ($code). Check notification permissions and try again.',
+      _ => 'Could not update feeding schedule: $error',
+    };
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));

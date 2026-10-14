@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 
 import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -23,24 +24,15 @@ final feedReminderServiceProvider = Provider<FeedReminderService>(
 class FeedScheduleNotifier extends AsyncNotifier<List<FeedScheduleEntry>> {
   @override
   Future<List<FeedScheduleEntry>> build() async {
-    final reminders = ref.watch(feedReminderServiceProvider);
-    await reminders.initialize();
-    final preferences = await ref.watch(userPreferencesProvider.future);
     final session = ref.watch(authProvider).valueOrNull;
     final farm = session?.selectedFarm;
     final user = session?.user;
     if (farm == null || user == null) {
       return FeedScheduleLocalDataSource.defaults;
     }
-    final entries = await ref
+    return ref
         .watch(feedScheduleStorageProvider)
         .read(userId: user.id, farmId: farm.id);
-    await reminders.sync(
-      entries,
-      sound: preferences.notificationSound,
-      enabled: preferences.notifications['feeding'] ?? true,
-    );
-    return entries;
   }
 
   Future<void> saveEntries(List<FeedScheduleEntry> entries) async {
@@ -56,32 +48,27 @@ class FeedScheduleNotifier extends AsyncNotifier<List<FeedScheduleEntry>> {
       );
     }
     final previous = state.valueOrNull ?? FeedScheduleLocalDataSource.defaults;
-    try {
-      await ref
-          .read(feedScheduleStorageProvider)
-          .write(userId: user.id, farmId: farm.id, entries: entries);
+    await ref
+        .read(feedScheduleStorageProvider)
+        .write(userId: user.id, farmId: farm.id, entries: entries);
+    state = AsyncData(entries);
+    if (previous.any((entry) => entry.remindersEnabled) ||
+        entries.any((entry) => entry.remindersEnabled)) {
       final preferences = await ref.read(userPreferencesProvider.future);
-      await ref
-          .read(feedReminderServiceProvider)
-          .sync(
-            entries,
-            sound: preferences.notificationSound,
-            enabled: preferences.notifications['feeding'] ?? true,
-          );
-      state = AsyncData(entries);
-    } on Object {
-      await ref
-          .read(feedScheduleStorageProvider)
-          .write(userId: user.id, farmId: farm.id, entries: previous);
-      final preferences = await ref.read(userPreferencesProvider.future);
-      await ref
-          .read(feedReminderServiceProvider)
-          .sync(
-            previous,
-            sound: preferences.notificationSound,
-            enabled: preferences.notifications['feeding'] ?? true,
-          );
-      rethrow;
+      try {
+        await ref
+            .read(feedReminderServiceProvider)
+            .sync(
+              entries,
+              sound: preferences.notificationSound,
+              enabled: preferences.notifications['feeding'] ?? true,
+            );
+      } on PlatformException catch (error) {
+        throw FeedReminderPlatformException(
+          code: error.code,
+          scheduleSaved: true,
+        );
+      }
     }
   }
 
@@ -98,9 +85,17 @@ class FeedScheduleNotifier extends AsyncNotifier<List<FeedScheduleEntry>> {
     final entries = state.valueOrNull ?? FeedScheduleLocalDataSource.defaults;
     final index = entries.indexWhere((entry) => entry.id == id);
     if (index < 0) throw ArgumentError.value(id, 'id', 'Unknown feeding time');
-    if (enabled &&
-        !await ref.read(feedReminderServiceProvider).requestPermission()) {
-      throw const FeedReminderPermissionDenied();
+    if (enabled) {
+      try {
+        if (!await ref.read(feedReminderServiceProvider).requestPermission()) {
+          throw const FeedReminderPermissionDenied();
+        }
+      } on PlatformException catch (error) {
+        throw FeedReminderPlatformException(
+          code: error.code,
+          scheduleSaved: false,
+        );
+      }
     }
     final updated = [...entries];
     updated[index] = updated[index].copyWith(remindersEnabled: enabled);

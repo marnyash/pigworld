@@ -15,6 +15,7 @@ import '../../../notifications/presentation/providers/notifications_provider.dar
 import '../../../notifications/data/notifications_api.dart';
 import '../../../health/presentation/providers/health_providers.dart';
 import '../../../../shared/components/bottom_navigation.dart';
+import '../../../../shared/widgets/pig_world_icon.dart';
 import '../../../settings/presentation/providers/farm_access_provider.dart';
 import '../providers/farm_overview_provider.dart';
 
@@ -120,28 +121,28 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     final statCards = <Widget>[
       if (allows(AppPermission.manageHerd))
         _StatCard(
-          icon: Icons.pets_outlined,
+          icon: const PigWorldIcon('Boar', size: 24),
           label: l10n.herdSize,
           value: '$herdCount',
           color: AppColors.primaryGreen,
         ),
       if (allows(AppPermission.manageFeed))
         _StatCard(
-          icon: Icons.grass_outlined,
+          icon: const PigWorldIcon('Feed stock', size: 24),
           label: l10n.feedStock,
           value: overview.valueOrNull?['feed_stock']?.toString() ?? '—',
           color: AppColors.warning,
         ),
       if (allows(AppPermission.viewTasks))
         _StatCard(
-          icon: Icons.checklist_outlined,
+          icon: const PigWorldIcon('Task-Due', size: 24),
           label: l10n.tasksDue,
           value: overview.valueOrNull?['tasks_due']?.toString() ?? '—',
           color: AppColors.danger,
         ),
       if (allows(AppPermission.viewSales))
         _StatCard(
-          icon: Icons.point_of_sale_outlined,
+          icon: const PigWorldIcon('sales', size: 24),
           label: l10n.salesThisWeek,
           value: overview.valueOrNull?['sales_this_week']?.toString() ?? '—',
           color: AppColors.deepGreen,
@@ -390,48 +391,48 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                   children: [
                     if (allows(AppPermission.manageHerd))
                       _QuickAction(
-                        icon: Icons.pets_outlined,
+                        icon: const PigWorldIcon('Boar', size: 22),
                         label: l10n.herd,
                         color: AppColors.pigPink,
                         onTap: () => context.go(AppRoutes.herd),
                       ),
                     if (allows(AppPermission.manageFeed))
                       _QuickAction(
-                        icon: Icons.grass_outlined,
+                        icon: const PigWorldIcon('Feed stock', size: 22),
                         label: l10n.feed,
                         color: AppColors.leaf,
                         onTap: () => context.go(AppRoutes.feed),
                       ),
                     if (allows(AppPermission.viewTasks))
                       _QuickAction(
-                        icon: Icons.check_circle_outline,
+                        icon: const PigWorldIcon('Task-Due', size: 22),
                         label: l10n.tasks,
                         color: AppColors.warmGold,
                         onTap: () => context.go(AppRoutes.tasks),
                       ),
                     if (allows(AppPermission.manageFinance))
                       _QuickAction(
-                        icon: Icons.account_balance_wallet_outlined,
+                        icon: const PigWorldIcon('finance', size: 22),
                         label: l10n.finance,
                         color: AppColors.warmGold,
                         onTap: () => context.go(AppRoutes.finance),
                       ),
                     if (allows(AppPermission.manageSales))
                       _QuickAction(
-                        icon: Icons.groups_outlined,
+                        icon: const Icon(Icons.groups_outlined, size: 20),
                         label: l10n.customers,
                         color: AppColors.info,
                         onTap: () => context.go(AppRoutes.crm),
                       ),
                     _QuickAction(
-                      icon: Icons.support_agent_outlined,
+                      icon: const PigWorldIcon('customer-support', size: 22),
                       label: l10n.customerSupport,
                       color: AppColors.violet,
                       onTap: () => context.go(AppRoutes.support),
                     ),
                     if (allows(AppPermission.manageMembers))
                       _QuickAction(
-                        icon: Icons.group_outlined,
+                        icon: const PigWorldIcon('team', size: 22),
                         label: l10n.teamAndPolicies,
                         color: AppColors.aqua,
                         onTap: () => context.go(AppRoutes.farmManagement),
@@ -479,7 +480,7 @@ class _RegisteredHerdBanner extends StatelessWidget {
               color: AppColors.pigPink,
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.pets, color: AppColors.inverseText),
+            child: const PigWorldIcon('Boar', size: 24),
           ),
           const SizedBox(width: AppDimensions.spacingMedium),
           Expanded(
@@ -513,7 +514,7 @@ class _StatCard extends StatelessWidget {
     required this.color,
   });
 
-  final IconData icon;
+  final Widget icon;
   final String label;
   final String value;
   final Color color;
@@ -543,7 +544,7 @@ class _StatCard extends StatelessWidget {
                     color: color.withValues(alpha: 0.14),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(icon, color: color, size: 21),
+                  child: icon,
                 ),
                 const Spacer(),
                 Container(
@@ -675,7 +676,7 @@ class _QuickAction extends StatelessWidget {
     required this.onTap,
   });
 
-  final IconData icon;
+  final Widget icon;
   final String label;
   final Color color;
   final VoidCallback onTap;
@@ -708,7 +709,7 @@ class _QuickAction extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(6),
               decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-              child: Icon(icon, color: AppColors.inverseText, size: 20),
+              child: icon,
             ),
             const SizedBox(height: 4),
             Text(
@@ -769,7 +770,7 @@ class _NotificationBanner extends StatelessWidget {
     return Card(
       color: color.withValues(alpha: 0.12),
       child: ListTile(
-        leading: Icon(Icons.notifications_active_outlined, color: color),
+        leading: const PigWorldIcon('notification', size: 24),
         title: Text(notification.title),
         subtitle: Text(
           notification.body,

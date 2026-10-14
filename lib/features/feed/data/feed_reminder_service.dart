@@ -13,6 +13,19 @@ class FeedReminderPermissionDenied implements Exception {
   String toString() => 'Notification permission was not granted.';
 }
 
+class FeedReminderPlatformException implements Exception {
+  const FeedReminderPlatformException({
+    required this.code,
+    required this.scheduleSaved,
+  });
+
+  final String code;
+  final bool scheduleSaved;
+
+  @override
+  String toString() => 'Notification service unavailable ($code).';
+}
+
 class FeedReminderService {
   FeedReminderService({FlutterLocalNotificationsPlugin? notifications})
     : _notifications = notifications ?? FlutterLocalNotificationsPlugin();
