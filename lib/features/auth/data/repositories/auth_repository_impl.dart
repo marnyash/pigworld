@@ -61,6 +61,15 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<Session> loginWithApple(String idToken) async {
+    final session = await _withPreferredFarm(
+      (await remote.loginWithApple(idToken)).toEntity(),
+    );
+    await local.saveSession(session);
+    return session;
+  }
+
+  @override
   Future<Session> register({
     required String name,
     required String email,

@@ -349,7 +349,7 @@ class AppLocalizationsSw extends AppLocalizations {
   String get addPig => 'Ongeza nguruwe';
 
   @override
-  String get searchAnimals => 'Tafuta kitambulisho, aina, zizi au RFID';
+  String get searchAnimals => 'Tafuta kitambulisho, aina au zizi';
 
   @override
   String get allPigs => 'Nguruwe wote';

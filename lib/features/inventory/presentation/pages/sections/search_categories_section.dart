@@ -45,7 +45,6 @@ class _SearchCategoriesSectionState
     'Medicines',
     'Vaccines',
     'Equipment',
-    'RFID Tags',
     'Cleaning Supplies',
   ];
 

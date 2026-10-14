@@ -3,7 +3,7 @@ class InventoryItem {
   const InventoryItem({
     required this.id,
     required this.name,
-    required this.category, // 'Feed', 'Medicines', 'Vaccines', 'Equipment', 'RFID Tags', 'Cleaning Supplies'
+    required this.category,
     required this.sku,
     required this.quantity,
     required this.unit, // 'kg', 'bottles', 'pieces', 'liters', etc.

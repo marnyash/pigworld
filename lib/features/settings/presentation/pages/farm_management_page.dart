@@ -489,7 +489,7 @@ class FarmManagementPage extends ConsumerWidget {
     UserRole.farmOwner => 'Farm owner',
     UserRole.farmManager => 'Farm manager',
     UserRole.farmWorker => 'Farm worker',
-    _ => role.name,
+    _ => role.value,
   };
 }
 

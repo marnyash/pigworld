@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:proj/app/theme/app_dimensions.dart';
+import 'package:proj/features/settings/domain/entities/user_preferences.dart';
 import 'package:proj/features/settings/presentation/providers/settings_providers.dart';
+import 'package:proj/l10n/generated/app_localizations.dart';
 
 class NotificationSection extends ConsumerWidget {
   const NotificationSection({super.key});
@@ -9,6 +11,8 @@ class NotificationSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final preferences = ref.watch(userPreferencesProvider);
+    final l10n = AppLocalizations.of(context);
+    final notificationLabel = l10n?.notificationSound ?? 'Notification sound';
 
     return preferences.when(
       data: (prefs) => ListView(
@@ -23,6 +27,42 @@ class NotificationSection extends ConsumerWidget {
                   Text(
                     'Notification Preferences',
                     style: Theme.of(context).textTheme.titleLarge,
+                  ),
+                  const SizedBox(height: AppDimensions.spacingMedium),
+                  DropdownButtonFormField<String>(
+                    initialValue:
+                        {
+                          'default',
+                          'chime',
+                          'alert',
+                          'silent',
+                        }.contains(prefs.notificationSound)
+                        ? prefs.notificationSound
+                        : 'default',
+                    decoration: InputDecoration(
+                      labelText: notificationLabel,
+                    ),
+                    items: [
+                      DropdownMenuItem(
+                        value: 'default',
+                        child: Text(l10n?.phoneDefault ?? 'Phone default'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'chime',
+                        child: Text(l10n?.chime ?? 'Chime'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'alert',
+                        child: Text(l10n?.alert ?? 'Alert'),
+                      ),
+                      DropdownMenuItem(
+                        value: 'silent',
+                        child: Text(l10n?.silent ?? 'Silent'),
+                      ),
+                    ],
+                    onChanged: (sound) {
+                      if (sound != null) _updateSound(context, ref, sound);
+                    },
                   ),
                   const SizedBox(height: AppDimensions.spacingLarge),
                   ..._buildNotificationTiles(context, ref, prefs),
@@ -72,6 +112,27 @@ class NotificationSection extends ConsumerWidget {
     );
   }
 
+  Future<void> _updateSound(
+    BuildContext context,
+    WidgetRef ref,
+    String sound,
+  ) async {
+    try {
+      await ref
+          .read(userPreferencesProvider.notifier)
+          .updateNotificationSound(sound);
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'The setting was saved, but feeding reminders could not be updated.',
+          ),
+        ),
+      );
+    }
+  }
+
   Future<void> _updateChannel(
     BuildContext context,
     WidgetRef ref,
@@ -93,7 +154,7 @@ class NotificationSection extends ConsumerWidget {
   List<Widget> _buildNotificationTiles(
     BuildContext context,
     WidgetRef ref,
-    prefs,
+    UserPreferences prefs,
   ) {
     final notifications = [
       (

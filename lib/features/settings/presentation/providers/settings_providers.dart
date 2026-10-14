@@ -4,6 +4,9 @@ import 'package:proj/features/onboarding/presentation/providers/onboarding_provi
 import 'package:proj/features/auth/presentation/providers/auth_providers.dart';
 import 'package:proj/features/settings/data/settings_api.dart';
 import 'package:proj/security/authentication/biometric_auth.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../feed/data/feed_reminder_service.dart';
+import '../../../feed/data/feed_schedule_local_data_source.dart';
 import '../../data/settings_local_data_source.dart';
 import '../../domain/entities/backup_settings.dart';
 import '../../domain/entities/device_settings.dart';
@@ -71,7 +74,8 @@ class UserPreferencesNotifier extends AsyncNotifier<UserPreferences> {
     notifications[notificationType] = enabled;
     final updated = current.copyWith(notifications: notifications);
     await ref.watch(settingsLocalDataSourceProvider).savePreferences(updated);
-    ref.invalidateSelf();
+    state = AsyncData(updated);
+    if (notificationType == 'feeding') await _syncFeedReminders(updated);
   }
 
   Future<void> updateNotificationChannel(String channel, bool enabled) async {
@@ -87,10 +91,34 @@ class UserPreferencesNotifier extends AsyncNotifier<UserPreferences> {
   }
 
   Future<void> updateNotificationSound(String sound) async {
+    if (!FeedReminderService.supportedSounds.contains(sound)) {
+      throw ArgumentError.value(
+        sound,
+        'sound',
+        'Unsupported notification sound',
+      );
+    }
     final current = await future;
     final updated = current.copyWith(notificationSound: sound);
     await ref.watch(settingsLocalDataSourceProvider).savePreferences(updated);
-    ref.invalidateSelf();
+    state = AsyncData(updated);
+    await _syncFeedReminders(updated);
+  }
+
+  Future<void> _syncFeedReminders(UserPreferences preferences) async {
+    final session = ref.read(authProvider).valueOrNull;
+    final farm = session?.selectedFarm;
+    final user = session?.user;
+    if (farm == null || user == null) return;
+    final entries = await FeedScheduleLocalDataSource().read(
+      userId: user.id,
+      farmId: farm.id,
+    );
+    await FeedReminderService().sync(
+      entries,
+      sound: preferences.notificationSound,
+      enabled: preferences.notifications['feeding'] ?? true,
+    );
   }
 }
 
@@ -266,10 +294,22 @@ final paymentSettingsProvider =
       PaymentSettingsNotifier.new,
     );
 
-// Device Settings Provider
+class DeviceSettingsNotifier extends AsyncNotifier<DeviceSettings> {
+  @override
+  Future<DeviceSettings> build() =>
+      ref.watch(settingsLocalDataSourceProvider).readDeviceSettings();
+
+  Future<void> save(DeviceSettings updated) async {
+    await ref
+        .watch(settingsLocalDataSourceProvider)
+        .saveDeviceSettings(updated);
+    state = AsyncData(updated);
+  }
+}
+
 final deviceSettingsProvider =
-    AsyncNotifierProvider<AsyncNotifier<DeviceSettings>, DeviceSettings>(
-      () => throw UnimplementedError(),
+    AsyncNotifierProvider<DeviceSettingsNotifier, DeviceSettings>(
+      DeviceSettingsNotifier.new,
     );
 
 // Theme Provider (for theme switching at app level)
@@ -342,7 +382,6 @@ class SettingsHelper {
 
   static String getDeviceTypeName(String type) {
     return const {
-          'rfidScanner': 'RFID Scanner',
           'weighingScale': 'Weighing Scale',
           'gpsTracker': 'GPS Tracker',
           'camera': 'Camera',
@@ -352,7 +391,6 @@ class SettingsHelper {
 
   static IconData getDeviceTypeIcon(String type) {
     return const {
-          'rfidScanner': Icons.nfc,
           'weighingScale': Icons.scale,
           'gpsTracker': Icons.location_on,
           'camera': Icons.camera_alt,

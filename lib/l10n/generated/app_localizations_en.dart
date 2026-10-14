@@ -342,7 +342,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addPig => 'Add Pig';
 
   @override
-  String get searchAnimals => 'Search Pig ID, breed, pen, or RFID';
+  String get searchAnimals => 'Search Pig ID, breed, or pen';
 
   @override
   String get allPigs => 'All pigs';

@@ -88,10 +88,7 @@ class FarmTeamApi {
           .toList();
 
   FarmJoinRequest _fromJson(Map<String, dynamic> json) {
-    final role = UserRole.values.firstWhere(
-      (value) => value.name == json['requestedRole'],
-      orElse: () => UserRole.viewer,
-    );
+    final role = parseUserRole(json['requestedRole']);
     return FarmJoinRequest(
       id: '${json['id']}',
       farmId: '${json['farmId']}',

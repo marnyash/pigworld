@@ -7,6 +7,8 @@ import 'package:proj/features/auth/presentation/providers/auth_provider.dart';
 import 'package:proj/features/feed/data/feed_reminder_service.dart';
 import 'package:proj/features/feed/data/feed_schedule_local_data_source.dart';
 import 'package:proj/features/feed/presentation/providers/feed_provider.dart';
+import 'package:proj/features/settings/domain/entities/user_preferences.dart';
+import 'package:proj/features/settings/presentation/providers/settings_providers.dart';
 import 'package:proj/security/authorization/roles.dart';
 
 void main() {
@@ -20,6 +22,7 @@ void main() {
           authProvider.overrideWith(_TestAuthNotifier.new),
           feedScheduleStorageProvider.overrideWithValue(storage),
           feedReminderServiceProvider.overrideWithValue(reminders),
+          userPreferencesProvider.overrideWith(_TestPreferencesNotifier.new),
         ],
       );
       addTearDown(container.dispose);
@@ -37,6 +40,8 @@ void main() {
           .setReminder('midday', true);
       expect(storage.entries[1].remindersEnabled, isTrue);
       expect(reminders.syncedEntries.last[1].remindersEnabled, isTrue);
+      expect(reminders.syncedSounds.last, 'default');
+      expect(reminders.syncedEnabled.last, isTrue);
 
       reminders.permissionGranted = false;
       await expectLater(
@@ -90,6 +95,8 @@ class _MemoryFeedScheduleStorage extends FeedScheduleLocalDataSource {
 class _FakeFeedReminderService extends FeedReminderService {
   bool permissionGranted = true;
   final syncedEntries = <List<FeedScheduleEntry>>[];
+  final syncedSounds = <String>[];
+  final syncedEnabled = <bool>[];
 
   @override
   Future<void> initialize() async {}
@@ -98,7 +105,18 @@ class _FakeFeedReminderService extends FeedReminderService {
   Future<bool> requestPermission() async => permissionGranted;
 
   @override
-  Future<void> sync(List<FeedScheduleEntry> entries) async {
+  Future<void> sync(
+    List<FeedScheduleEntry> entries, {
+    String sound = 'default',
+    bool enabled = true,
+  }) async {
     syncedEntries.add(List.of(entries));
+    syncedSounds.add(sound);
+    syncedEnabled.add(enabled);
   }
+}
+
+class _TestPreferencesNotifier extends UserPreferencesNotifier {
+  @override
+  Future<UserPreferences> build() async => UserPreferences.defaults();
 }

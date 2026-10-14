@@ -9,6 +9,7 @@ import 'package:proj/features/auth/domain/entities/user.dart';
 import 'package:proj/features/auth/presentation/providers/auth_provider.dart';
 import 'package:proj/features/settings/domain/entities/farm_member.dart';
 import 'package:proj/features/settings/presentation/pages/farm_management_page.dart';
+import 'package:proj/features/settings/presentation/pages/sections/user_management_section.dart';
 import 'package:proj/features/settings/presentation/providers/farm_access_provider.dart';
 import 'package:proj/features/settings/presentation/providers/farm_team_provider.dart';
 import 'package:proj/security/authorization/permissions.dart';
@@ -60,6 +61,30 @@ void main() {
     },
   );
 
+  test('removes a member after the farm-owner API request succeeds', () async {
+    final member = FarmMember(
+      id: 'worker-1',
+      name: 'Test Worker',
+      email: 'worker@example.com',
+      role: UserRole.farmWorker,
+      identityNumber: 'worker-1',
+    );
+    final api = _FakeFarmMembersApi(member);
+    final container = ProviderContainer(
+      overrides: [
+        authProvider.overrideWith(() => _TestAuthNotifier(_ownerSession())),
+        farmMembersApiProvider.overrideWithValue(api),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await container.read(farmAccessProvider.future);
+    await container.read(farmAccessProvider.notifier).removeMember('worker-1');
+
+    expect(api.removedMemberId, 'worker-1');
+    expect(container.read(farmAccessProvider).requireValue.members, isEmpty);
+  });
+
   testWidgets('shows a member policy list only after expanding that member', (
     tester,
   ) async {
@@ -86,6 +111,41 @@ void main() {
     await tester.tap(memberName);
     await tester.pumpAndSettle();
     expect(find.text('Finances'), findsOneWidget);
+  });
+
+  testWidgets('owner can confirm member removal from the actions menu', (
+    tester,
+  ) async {
+    final member = FarmMember(
+      id: 'worker-1',
+      name: 'Test Worker',
+      email: 'worker@example.com',
+      role: UserRole.farmWorker,
+      identityNumber: 'worker-1',
+    );
+    final api = _FakeFarmMembersApi(member);
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authProvider.overrideWith(() => _TestAuthNotifier(_ownerSession())),
+          farmMembersApiProvider.overrideWithValue(api),
+        ],
+        child: const MaterialApp(
+          home: Scaffold(body: UserManagementSection()),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.more_vert));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Remove Member'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, 'Remove'));
+    await tester.pumpAndSettle();
+
+    expect(api.removedMemberId, 'worker-1');
+    expect(find.text('Test Worker'), findsNothing);
   });
 }
 
@@ -116,6 +176,7 @@ class _FakeFarmMembersApi extends FarmMembersApi {
 
   final FarmMember member;
   Set<AppPermission>? savedPermissions;
+  String? removedMemberId;
 
   @override
   Future<List<FarmMember>> fetchMembers(String farmId) async => [member];
@@ -128,6 +189,11 @@ class _FakeFarmMembersApi extends FarmMembersApi {
   ) async {
     savedPermissions = permissions;
     return member.copyWith(permissions: permissions);
+  }
+
+  @override
+  Future<void> removeMember(String farmId, String userId) async {
+    removedMemberId = userId;
   }
 }
 

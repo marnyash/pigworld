@@ -749,7 +749,7 @@ abstract class AppLocalizations {
   /// No description provided for @searchAnimals.
   ///
   /// In en, this message translates to:
-  /// **'Search Pig ID, breed, pen, or RFID'**
+  /// **'Search Pig ID, breed, or pen'**
   String get searchAnimals;
 
   /// No description provided for @allPigs.

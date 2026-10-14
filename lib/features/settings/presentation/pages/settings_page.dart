@@ -14,6 +14,7 @@ import 'package:proj/features/settings/data/settings_api.dart';
 import 'package:proj/features/settings/presentation/providers/settings_providers.dart';
 import 'package:proj/l10n/generated/app_localizations.dart';
 import 'package:proj/features/settings/presentation/widgets/farm_location_picker_dialog.dart';
+import 'package:proj/security/authorization/roles.dart';
 
 class SettingsPage extends ConsumerStatefulWidget {
   const SettingsPage({super.key});
@@ -297,7 +298,7 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   icon: Icons.credit_card_outlined,
                   title: l10n.currentPlan,
                   subtitle: farm?.subscriptionPlan ?? l10n.starterPlan,
-                  onTap: session?.user.role.name == 'farmOwner'
+                  onTap: session?.user.role.value == 'farmOwner'
                       ? () => context.go(AppRoutes.billing)
                       : null,
                 ),
@@ -343,6 +344,14 @@ class _SettingsPageState extends ConsumerState<SettingsPage> {
                   title: 'Device permissions',
                   onTap: () =>
                       context.push('${AppRoutes.settingsDetails}?tab=devices'),
+                ),
+                const Divider(height: 1),
+                _SettingsAction(
+                  icon: Icons.notifications_outlined,
+                  title: 'Notification settings',
+                  onTap: () => context.push(
+                    '${AppRoutes.settingsDetails}?tab=notifications',
+                  ),
                 ),
                 const Divider(height: 1),
                 _SettingsAction(

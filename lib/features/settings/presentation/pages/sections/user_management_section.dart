@@ -5,6 +5,9 @@ import 'package:proj/app/theme/app_colors.dart';
 import 'package:proj/app/theme/app_dimensions.dart';
 import 'package:proj/app/routes/app_routes.dart';
 import 'package:proj/features/settings/presentation/providers/farm_access_provider.dart';
+import 'package:proj/features/settings/domain/entities/farm_member.dart';
+import 'package:proj/features/auth/presentation/providers/auth_provider.dart';
+import 'package:proj/security/authorization/roles.dart';
 
 class UserManagementSection extends ConsumerWidget {
   const UserManagementSection({super.key});
@@ -12,6 +15,8 @@ class UserManagementSection extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final farmMembers = ref.watch(farmAccessProvider);
+    final isFarmOwner =
+        ref.watch(authProvider).valueOrNull?.user.role == UserRole.farmOwner;
 
     return farmMembers.when(
       data: (state) => ListView(
@@ -49,6 +54,7 @@ class UserManagementSection extends ConsumerWidget {
                         children: [
                           _MemberTile(
                             member: member,
+                            canRemove: isFarmOwner,
                             onTap: () {
                               showDialog<void>(
                                 context: context,
@@ -60,7 +66,7 @@ class UserManagementSection extends ConsumerWidget {
                                         CrossAxisAlignment.start,
                                     children: [
                                       Text('Email: ${member.email}'),
-                                      Text('Role: ${member.role.name}'),
+                                      Text('Role: ${member.role.value}'),
                                       if (member.identityNumber.isNotEmpty)
                                         Text(
                                           'Identity number: ${member.identityNumber}',
@@ -80,6 +86,7 @@ class UserManagementSection extends ConsumerWidget {
                                 ),
                               );
                             },
+                            onRemove: () => _removeMember(context, ref, member),
                           ),
                           if (member != state.members.last) const Divider(),
                         ],
@@ -162,13 +169,63 @@ class UserManagementSection extends ConsumerWidget {
       ),
     );
   }
+
+  Future<void> _removeMember(
+    BuildContext context,
+    WidgetRef ref,
+    FarmMember member,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Remove farm member?'),
+        content: Text(
+          'Remove ${member.name} from this farm? They will lose access to its records.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: const Text('Remove'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    try {
+      await ref.read(farmAccessProvider.notifier).removeMember(member.id);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${member.name} was removed from the farm.')),
+        );
+      }
+    } on Object catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not remove farm member: $error')),
+        );
+      }
+    }
+  }
 }
 
-class _MemberTile extends StatelessWidget {
-  const _MemberTile({required this.member, required this.onTap});
+enum _MemberAction { viewPermissions, remove }
 
-  final dynamic member;
+class _MemberTile extends StatelessWidget {
+  const _MemberTile({
+    required this.member,
+    required this.onTap,
+    required this.onRemove,
+    required this.canRemove,
+  });
+
+  final FarmMember member;
   final VoidCallback onTap;
+  final VoidCallback onRemove;
+  final bool canRemove;
 
   @override
   Widget build(BuildContext context) => ListTile(
@@ -181,7 +238,7 @@ class _MemberTile extends StatelessWidget {
       ),
       child: Center(
         child: Text(
-          member.name[0].toUpperCase(),
+          member.name.isEmpty ? '?' : member.name[0].toUpperCase(),
           style: TextStyle(
             fontWeight: FontWeight.bold,
             color: AppColors.primaryGreen,
@@ -190,11 +247,26 @@ class _MemberTile extends StatelessWidget {
       ),
     ),
     title: Text(member.name),
-    subtitle: Text('${member.role.name} • ${member.email}'),
-    trailing: PopupMenuButton(
+    subtitle: Text('${member.role.value} • ${member.email}'),
+    trailing: PopupMenuButton<_MemberAction>(
+      onSelected: (action) {
+        switch (action) {
+          case _MemberAction.viewPermissions:
+            onTap();
+          case _MemberAction.remove:
+            onRemove();
+        }
+      },
       itemBuilder: (context) => [
-        const PopupMenuItem(child: Text('View Permissions')),
-        const PopupMenuItem(child: Text('Remove Member')),
+        const PopupMenuItem(
+          value: _MemberAction.viewPermissions,
+          child: Text('View Permissions'),
+        ),
+        if (canRemove)
+          const PopupMenuItem(
+            value: _MemberAction.remove,
+            child: Text('Remove Member'),
+          ),
       ],
     ),
     onTap: onTap,

@@ -87,7 +87,6 @@ final filteredGrowthRecordsProvider = FutureProvider<List<GrowthRecord>>((
 
   return records.where((record) {
     return record.animalId.toLowerCase().contains(searchQuery) ||
-        (record.rfid?.toLowerCase().contains(searchQuery) ?? false) ||
         (record.recordedBy?.toLowerCase().contains(searchQuery) ?? false);
   }).toList();
 });

@@ -46,11 +46,16 @@ class FarmMembersApi {
     }
   }
 
+  Future<void> removeMember(String farmId, String userId) async {
+    try {
+      await _dio.delete<void>('/farms/$farmId/members/$userId');
+    } on DioException catch (error) {
+      throw ErrorHandler.from(error);
+    }
+  }
+
   FarmMember _fromJson(Map<String, dynamic> json) {
-    final role = UserRole.values.firstWhere(
-      (role) => role.name == json['role'],
-      orElse: () => UserRole.viewer,
-    );
+    final role = parseUserRole(json['role']);
     final overrides = json['permissions'] as List<dynamic>?;
     final permissions = overrides == null
         ? RolePermissions.all[role] ?? const <AppPermission>{}

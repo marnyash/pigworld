@@ -25,7 +25,6 @@ class AddHealthRecordPage extends ConsumerStatefulWidget {
 }
 
 class _AddHealthRecordPageState extends ConsumerState<AddHealthRecordPage> {
-  late TextEditingController rfidController;
   late TextEditingController diagnosisController;
   late TextEditingController medicationController;
   late TextEditingController dosageController;
@@ -69,13 +68,11 @@ class _AddHealthRecordPageState extends ConsumerState<AddHealthRecordPage> {
     final record = widget.initialRecord;
     selectedType = record?.type ?? widget.initialType;
     selectedStatus = record?.status ?? selectedStatus;
-    rfidController = TextEditingController();
     diagnosisController = TextEditingController();
     medicationController = TextEditingController();
     dosageController = TextEditingController();
     veterinarianController = TextEditingController();
     notesController = TextEditingController();
-    rfidController.text = record?.rfid ?? '';
     diagnosisController.text = record?.diagnosis ?? '';
     medicationController.text = record?.medication ?? '';
     dosageController.text = record?.dosage ?? '';
@@ -88,7 +85,6 @@ class _AddHealthRecordPageState extends ConsumerState<AddHealthRecordPage> {
 
   @override
   void dispose() {
-    rfidController.dispose();
     diagnosisController.dispose();
     medicationController.dispose();
     dosageController.dispose();
@@ -108,7 +104,6 @@ class _AddHealthRecordPageState extends ConsumerState<AddHealthRecordPage> {
 
     final data = {
       'animal_id': animal.id,
-      'rfid': rfidController.text.trim(),
       'type': selectedType,
       'status': selectedStatus,
       'symptoms': symptoms,
@@ -244,15 +239,6 @@ class _AddHealthRecordPageState extends ConsumerState<AddHealthRecordPage> {
                       ).textTheme.bodySmall?.copyWith(color: AppColors.danger),
                     ),
                   ],
-                  const SizedBox(height: AppDimensions.spacingMedium),
-                  TextField(
-                    controller: rfidController,
-                    decoration: const InputDecoration(
-                      labelText: 'RFID Tag',
-                      hintText: 'e.g., RFID000104',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
                   const SizedBox(height: AppDimensions.spacingMedium),
                   // Record Type
                   Text(

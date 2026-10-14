@@ -6,6 +6,7 @@ import 'package:proj/features/settings/presentation/pages/sections/profile_secti
 import 'package:proj/features/settings/presentation/pages/sections/security_section.dart';
 import 'package:proj/features/settings/presentation/pages/sections/support_section.dart';
 import 'package:proj/features/settings/presentation/pages/sections/user_management_section.dart';
+import 'package:proj/features/settings/presentation/pages/sections/notification_section.dart';
 import 'package:proj/app/routes/permission_route.dart';
 import 'package:proj/security/authorization/permissions.dart';
 
@@ -22,6 +23,7 @@ class SettingsDetailsPage extends StatelessWidget {
     'devices': 4,
     'support': 5,
     'team': 6,
+    'notifications': 7,
   };
 
   @override
@@ -41,6 +43,7 @@ class SettingsDetailsPage extends StatelessWidget {
             Tab(text: 'Devices'),
             Tab(text: 'Support'),
             Tab(text: 'Members'),
+            Tab(text: 'Notifications'),
           ],
         ),
       ),
@@ -56,6 +59,7 @@ class SettingsDetailsPage extends StatelessWidget {
             permission: AppPermission.manageMembers,
             child: UserManagementSection(),
           ),
+          NotificationSection(),
         ],
       ),
     ),

@@ -2,7 +2,6 @@ class HealthRecord {
   final String id;
   final String farmId;
   final String pigId;
-  final String rfid;
   final String type; // 'vaccination', 'treatment', 'deworming', 'mortality'
   final String status; // 'healthy', 'recovering', 'critical', 'deceased'
   final List<String> symptoms;
@@ -21,7 +20,6 @@ class HealthRecord {
     required this.id,
     required this.farmId,
     required this.pigId,
-    required this.rfid,
     required this.type,
     required this.status,
     required this.symptoms,
@@ -42,7 +40,6 @@ class HealthRecord {
       id: json['id']?.toString() ?? '',
       farmId: json['farm_id']?.toString() ?? '',
       pigId: json['pig_id']?.toString() ?? '',
-      rfid: json['rfid']?.toString() ?? '',
       type: json['type'] as String? ?? 'treatment',
       status: json['status'] as String? ?? 'healthy',
       symptoms: List<String>.from((json['symptoms'] as List<dynamic>?) ?? []),
@@ -73,7 +70,6 @@ class HealthRecord {
     'id': id,
     'farm_id': farmId,
     'pig_id': pigId,
-    'rfid': rfid,
     'type': type,
     'status': status,
     'symptoms': symptoms,

@@ -162,7 +162,7 @@ class _GrowthPageState extends ConsumerState<GrowthPage>
                 ref.read(growthSearchProvider.notifier).state = value;
               },
               decoration: InputDecoration(
-                hintText: 'Search by Pig ID or RFID',
+                hintText: 'Search by Pig ID',
                 prefixIcon: const Icon(Icons.search),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppDimensions.radius),
@@ -313,14 +313,6 @@ class _GrowthRecordCard extends StatelessWidget {
                           fontSize: 16,
                         ),
                       ),
-                      if (record.rfid != null)
-                        Text(
-                          'RFID: ${record.rfid}',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.mutedText,
-                          ),
-                        ),
                     ],
                   ),
                 ),

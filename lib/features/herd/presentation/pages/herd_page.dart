@@ -9,6 +9,7 @@ import '../../../../app/theme/app_dimensions.dart';
 import '../../../../l10n/generated/app_localizations.dart';
 import '../../../../shared/components/bottom_navigation.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../breeding/presentation/providers/pregnancy_provider.dart';
 import '../../domain/entities/animal.dart';
 import '../providers/herd_provider.dart';
 
@@ -741,6 +742,10 @@ class _EditAnimalPageState extends ConsumerState<_EditAnimalPage> {
                 ? 'Notes must be 2,000 characters or less.'
                 : null,
           ),
+          if (!isCreating && _sex == 'female') ...[
+            const SizedBox(height: AppDimensions.spacingLarge),
+            _AnimalPregnancyReport(animalId: animal!.id),
+          ],
         ],
       ),
     ),
@@ -757,6 +762,106 @@ class _EditAnimalPageState extends ConsumerState<_EditAnimalPage> {
       ),
     ),
   );
+}
+
+class _AnimalPregnancyReport extends ConsumerWidget {
+  const _AnimalPregnancyReport({required this.animalId});
+
+  final String animalId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final pregnancies = ref.watch(pregnancyProvider);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(AppDimensions.spacingMedium),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    'Pregnancy report',
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+                IconButton(
+                  tooltip: 'Refresh pregnancy report',
+                  onPressed: () => ref.invalidate(pregnancyProvider),
+                  icon: const Icon(Icons.refresh),
+                ),
+              ],
+            ),
+            pregnancies.when(
+              loading: () => const LinearProgressIndicator(),
+              error: (error, _) => Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Could not load pregnancy history: $error'),
+                  TextButton(
+                    onPressed: () => ref.invalidate(pregnancyProvider),
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+              data: (items) {
+                final records = items
+                    .where((item) => item.sowId == animalId)
+                    .toList();
+                if (records.isEmpty) {
+                  return const Text('No pregnancy records for this pig yet.');
+                }
+                return Column(
+                  children: [
+                    for (final pregnancy in records)
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(Icons.favorite_outline),
+                        title: Text(
+                          '${_titleCase(pregnancy.status)} · inseminated ${_formatDate(pregnancy.matingDate)}',
+                        ),
+                        subtitle: Text(
+                          [
+                            'Expected farrowing ${_formatDate(pregnancy.expectedFarrowingDate)}',
+                            if (pregnancy.actualFarrowingDate != null)
+                              'Farrowed ${_formatDate(pregnancy.actualFarrowingDate!)}',
+                            if (pregnancy.expectedLitterSize != null)
+                              'Expected litter ${pregnancy.expectedLitterSize}',
+                            if (pregnancy.bornAlive != null)
+                              'Born alive ${pregnancy.bornAlive}',
+                            if (pregnancy.stillborn != null)
+                              'Stillborn ${pregnancy.stillborn}',
+                            if (pregnancy.mummified != null)
+                              'Mummified ${pregnancy.mummified}',
+                            if (pregnancy.weaned != null)
+                              'Weaned ${pregnancy.weaned}',
+                            if (pregnancy.notes?.trim().isNotEmpty == true)
+                              pregnancy.notes!.trim(),
+                          ].join(' · '),
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _formatDate(DateTime value) =>
+      '${value.day}/${value.month}/${value.year}';
+
+  String _titleCase(String value) => value
+      .replaceAll('_', ' ')
+      .split(' ')
+      .map((part) {
+        if (part.isEmpty) return part;
+        return '${part[0].toUpperCase()}${part.substring(1)}';
+      })
+      .join(' ');
 }
 
 class _HerdSummary extends StatelessWidget {
@@ -1069,7 +1174,6 @@ class _AnimalCard extends StatelessWidget {
                 runSpacing: 4,
                 children: [
                   _DetailChip(label: active ? 'Healthy' : animal.status),
-                  const _DetailChip(label: 'RFID not set'),
                   const _DetailChip(label: 'Pen not set'),
                 ],
               ),

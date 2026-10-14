@@ -2,7 +2,6 @@ class GrowthRecord {
   final String id;
   final String farmId;
   final String animalId;
-  final String? rfid;
   final double currentWeight;
   final double? previousWeight;
   final double? weightGain;
@@ -20,7 +19,6 @@ class GrowthRecord {
     required this.id,
     required this.farmId,
     required this.animalId,
-    this.rfid,
     required this.currentWeight,
     this.previousWeight,
     this.weightGain,
@@ -40,7 +38,6 @@ class GrowthRecord {
       id: (json['id'] ?? '').toString(),
       farmId: (json['farm_id'] ?? '').toString(),
       animalId: (json['animal_id'] ?? json['pig_id'] ?? '').toString(),
-      rfid: json['rfid'] as String?,
       currentWeight: _parseDouble(json['current_weight']) ?? 0,
       previousWeight: _parseDouble(json['previous_weight']),
       weightGain: _parseDouble(json['weight_gain']),
@@ -62,7 +59,6 @@ class GrowthRecord {
     'farm_id': farmId,
     'animal_id': animalId,
     'pig_id': animalId,
-    'rfid': rfid,
     'current_weight': currentWeight,
     'previous_weight': previousWeight,
     'weight_gain': weightGain,

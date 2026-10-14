@@ -15,6 +15,7 @@ import '../../domain/repositories/auth_repository.dart';
 import '../../domain/usecases/forgot_password.dart';
 import '../../domain/usecases/login.dart';
 import '../../domain/usecases/login_with_google.dart';
+import '../../domain/usecases/login_with_apple.dart';
 import '../../domain/usecases/logout.dart';
 import '../../domain/usecases/refresh_session.dart';
 import '../../domain/usecases/register.dart';
@@ -75,6 +76,9 @@ final verifyLoginOtpUseCaseProvider = Provider(
 );
 final loginWithGoogleUseCaseProvider = Provider(
   (ref) => LoginWithGoogle(ref.watch(authRepositoryProvider)),
+);
+final loginWithAppleUseCaseProvider = Provider(
+  (ref) => LoginWithApple(ref.watch(authRepositoryProvider)),
 );
 final registerUseCaseProvider = Provider(
   (ref) => Register(ref.watch(authRepositoryProvider)),

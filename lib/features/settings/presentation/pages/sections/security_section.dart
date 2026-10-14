@@ -277,16 +277,6 @@ class SecuritySection extends ConsumerWidget {
                       }
                     },
                   ),
-                  SwitchListTile(
-                    title: const Text('Face ID Login'),
-                    subtitle: const Text(
-                      'Use face recognition to unlock the app',
-                    ),
-                    value: settings.biometricTypes.contains('face'),
-                    onChanged: (value) {
-                      // TODO: Handle face ID
-                    },
-                  ),
                 ],
               ),
             ),

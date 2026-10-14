@@ -140,7 +140,6 @@ final filteredHealthRecordsProvider = FutureProvider<List<HealthRecord>>((ref) {
             .where(
               (r) =>
                   r.pigId.toLowerCase().contains(query) ||
-                  r.rfid.toLowerCase().contains(query) ||
                   (r.diagnosis?.toLowerCase().contains(query) ?? false),
             )
             .toList();

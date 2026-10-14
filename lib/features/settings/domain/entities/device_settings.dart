@@ -9,7 +9,7 @@ class ConnectedDevice {
 
   final String id;
   final String name;
-  final String type; // 'rfidScanner', 'weighingScale', 'gpsTracker', 'camera'
+  final String type;
   final bool isConnected;
   final DateTime? lastConnectedAt;
 

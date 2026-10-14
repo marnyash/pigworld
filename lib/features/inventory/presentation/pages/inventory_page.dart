@@ -125,7 +125,6 @@ class _InventoryPageState extends ConsumerState<InventoryPage>
                                 'Vaccines',
                                 'Equipment',
                                 'Cleaning',
-                                'RFID',
                                 'Other',
                               ]
                               .map(

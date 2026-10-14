@@ -118,14 +118,6 @@ class _TimelineItem extends StatelessWidget {
                                   fontSize: 14,
                                 ),
                               ),
-                              if (record.rfid != null)
-                                Text(
-                                  'RFID: ${record.rfid}',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: AppColors.mutedText,
-                                  ),
-                                ),
                             ],
                           ),
                         ),

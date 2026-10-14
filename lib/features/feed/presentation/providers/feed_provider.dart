@@ -5,6 +5,7 @@ import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../data/feed_api.dart';
 import '../../data/feed_schedule_local_data_source.dart';
 import '../../data/feed_reminder_service.dart';
+import '../../../settings/presentation/providers/settings_providers.dart';
 
 final feedScheduleStorageProvider = Provider<FeedScheduleLocalDataSource>(
   (_) => FeedScheduleLocalDataSource(),
@@ -24,6 +25,7 @@ class FeedScheduleNotifier extends AsyncNotifier<List<FeedScheduleEntry>> {
   Future<List<FeedScheduleEntry>> build() async {
     final reminders = ref.watch(feedReminderServiceProvider);
     await reminders.initialize();
+    final preferences = await ref.watch(userPreferencesProvider.future);
     final session = ref.watch(authProvider).valueOrNull;
     final farm = session?.selectedFarm;
     final user = session?.user;
@@ -33,7 +35,11 @@ class FeedScheduleNotifier extends AsyncNotifier<List<FeedScheduleEntry>> {
     final entries = await ref
         .watch(feedScheduleStorageProvider)
         .read(userId: user.id, farmId: farm.id);
-    await reminders.sync(entries);
+    await reminders.sync(
+      entries,
+      sound: preferences.notificationSound,
+      enabled: preferences.notifications['feeding'] ?? true,
+    );
     return entries;
   }
 
@@ -54,13 +60,27 @@ class FeedScheduleNotifier extends AsyncNotifier<List<FeedScheduleEntry>> {
       await ref
           .read(feedScheduleStorageProvider)
           .write(userId: user.id, farmId: farm.id, entries: entries);
-      await ref.read(feedReminderServiceProvider).sync(entries);
+      final preferences = await ref.read(userPreferencesProvider.future);
+      await ref
+          .read(feedReminderServiceProvider)
+          .sync(
+            entries,
+            sound: preferences.notificationSound,
+            enabled: preferences.notifications['feeding'] ?? true,
+          );
       state = AsyncData(entries);
     } on Object {
       await ref
           .read(feedScheduleStorageProvider)
           .write(userId: user.id, farmId: farm.id, entries: previous);
-      await ref.read(feedReminderServiceProvider).sync(previous);
+      final preferences = await ref.read(userPreferencesProvider.future);
+      await ref
+          .read(feedReminderServiceProvider)
+          .sync(
+            previous,
+            sound: preferences.notificationSound,
+            enabled: preferences.notifications['feeding'] ?? true,
+          );
       rethrow;
     }
   }

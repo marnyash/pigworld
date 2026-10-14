@@ -13,7 +13,6 @@ class AddWeightDialog extends StatefulWidget {
 
 class _AddWeightDialogState extends State<AddWeightDialog> {
   late TextEditingController pigIdController;
-  late TextEditingController rfidController;
   late TextEditingController currentWeightController;
   late TextEditingController previousWeightController;
   late TextEditingController targetWeightController;
@@ -26,7 +25,6 @@ class _AddWeightDialogState extends State<AddWeightDialog> {
   void initState() {
     super.initState();
     pigIdController = TextEditingController();
-    rfidController = TextEditingController();
     currentWeightController = TextEditingController();
     previousWeightController = TextEditingController();
     targetWeightController = TextEditingController();
@@ -37,7 +35,6 @@ class _AddWeightDialogState extends State<AddWeightDialog> {
   @override
   void dispose() {
     pigIdController.dispose();
-    rfidController.dispose();
     currentWeightController.dispose();
     previousWeightController.dispose();
     targetWeightController.dispose();
@@ -66,7 +63,6 @@ class _AddWeightDialogState extends State<AddWeightDialog> {
 
     widget.onSubmit({
       'animal_id': pigIdController.text,
-      'rfid': rfidController.text.isNotEmpty ? rfidController.text : null,
       'current_weight': currentWeight,
       'previous_weight': previousWeight,
       'target_weight': targetWeight,
@@ -91,17 +87,6 @@ class _AddWeightDialogState extends State<AddWeightDialog> {
               decoration: InputDecoration(
                 labelText: 'Pig ID *',
                 hintText: 'e.g., PG-104',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(AppDimensions.radius),
-                ),
-              ),
-            ),
-            const SizedBox(height: AppDimensions.spacingMedium),
-            TextField(
-              controller: rfidController,
-              decoration: InputDecoration(
-                labelText: 'RFID (Optional)',
-                hintText: 'e.g., RFID000104',
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(AppDimensions.radius),
                 ),

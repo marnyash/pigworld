@@ -15,10 +15,7 @@ class UserModel extends User {
     name: '${json['name'] ?? ''}',
     email: '${json['email'] ?? ''}',
     phone: json['phone'] as String?,
-    role: UserRole.values.firstWhere(
-      (role) => role.name == json['role'],
-      orElse: () => UserRole.viewer,
-    ),
+    role: parseUserRole(json['role']),
   );
 
   Map<String, dynamic> toJson() => {
@@ -26,6 +23,6 @@ class UserModel extends User {
     'name': name,
     'email': email,
     'phone': phone,
-    'role': role.name,
+    'role': role.value,
   };
 }

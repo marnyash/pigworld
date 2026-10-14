@@ -17,6 +17,8 @@ class FeedReminderService {
   FeedReminderService({FlutterLocalNotificationsPlugin? notifications})
     : _notifications = notifications ?? FlutterLocalNotificationsPlugin();
 
+  static const supportedSounds = {'default', 'chime', 'alert', 'silent'};
+
   final FlutterLocalNotificationsPlugin _notifications;
   bool _initialized = false;
 
@@ -41,12 +43,17 @@ class FeedReminderService {
   Future<bool> requestPermission() async {
     await initialize();
     if (defaultTargetPlatform == TargetPlatform.android) {
-      return await _notifications
-              .resolvePlatformSpecificImplementation<
-                AndroidFlutterLocalNotificationsPlugin
-              >()
-              ?.requestNotificationsPermission() ??
-          false;
+      final android = _notifications
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+      if (android == null ||
+          await android.requestNotificationsPermission() != true) {
+        return false;
+      }
+      if (await android.canScheduleExactNotifications() == true) return true;
+      await android.requestExactAlarmsPermission();
+      return await android.canScheduleExactNotifications() == true;
     }
     if (defaultTargetPlatform == TargetPlatform.iOS) {
       return await _notifications
@@ -59,7 +66,18 @@ class FeedReminderService {
     return false;
   }
 
-  Future<void> sync(List<FeedScheduleEntry> entries) async {
+  Future<void> sync(
+    List<FeedScheduleEntry> entries, {
+    String sound = 'default',
+    bool enabled = true,
+  }) async {
+    if (!supportedSounds.contains(sound)) {
+      throw ArgumentError.value(
+        sound,
+        'sound',
+        'Unsupported notification sound',
+      );
+    }
     await initialize();
     final pending = await _notifications.pendingNotificationRequests();
     for (final notification in pending.where(
@@ -69,7 +87,7 @@ class FeedReminderService {
     }
 
     final active = entries
-        .where((entry) => entry.remindersEnabled)
+        .where((entry) => enabled && entry.remindersEnabled)
         .toList(growable: false);
     if (active.length > 20) {
       throw StateError('A maximum of 20 feeding reminders can be enabled.');
@@ -100,19 +118,8 @@ class FeedReminderService {
         title: 'Feeding reminder',
         body: '${entry.name} is scheduled now.',
         scheduledDate: firstTime,
-        notificationDetails: const NotificationDetails(
-          android: AndroidNotificationDetails(
-            'feed_schedule_reminders',
-            'Feeding schedule',
-            channelDescription: 'Reminders for your scheduled feeding times.',
-            importance: Importance.high,
-            priority: Priority.high,
-            playSound: true,
-            enableVibration: true,
-          ),
-          iOS: DarwinNotificationDetails(presentSound: true),
-        ),
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        notificationDetails: notificationDetailsForSound(sound),
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         matchDateTimeComponents: DateTimeComponents.time,
         payload: 'feed-reminder:${entry.id}',
       );
@@ -127,5 +134,43 @@ class FeedReminderService {
     )) {
       await _notifications.cancel(id: notification.id);
     }
+  }
+
+  @visibleForTesting
+  static NotificationDetails notificationDetailsForSound(String sound) {
+    if (!supportedSounds.contains(sound)) {
+      throw ArgumentError.value(
+        sound,
+        'sound',
+        'Unsupported notification sound',
+      );
+    }
+    final AndroidNotificationSound? androidSound = switch (sound) {
+      'chime' => const RawResourceAndroidNotificationSound('feed_chime'),
+      'alert' => const RawResourceAndroidNotificationSound('feed_alert'),
+      _ => null,
+    };
+    final String? iOSSound = switch (sound) {
+      'default' => 'default',
+      'chime' => 'feed_chime.wav',
+      'alert' => 'feed_alert.wav',
+      _ => null,
+    };
+    return NotificationDetails(
+      android: AndroidNotificationDetails(
+        'feed_schedule_reminders_$sound',
+        'Feeding schedule',
+        channelDescription: 'Reminders for your scheduled feeding times.',
+        importance: Importance.high,
+        priority: Priority.high,
+        playSound: sound != 'silent',
+        sound: androidSound,
+        enableVibration: true,
+      ),
+      iOS: DarwinNotificationDetails(
+        presentSound: sound != 'silent',
+        sound: iOSSound,
+      ),
+    );
   }
 }

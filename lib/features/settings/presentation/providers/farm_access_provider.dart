@@ -88,6 +88,33 @@ class FarmAccessNotifier extends AsyncNotifier<FarmAccessState> {
     }
   }
 
+  Future<void> removeMember(String memberId) async {
+    final farmId = ref.read(authProvider).valueOrNull?.selectedFarm?.id;
+    final current = state.valueOrNull;
+    if (farmId == null || current == null) {
+      throw StateError('A selected farm and loaded member list are required.');
+    }
+    final member = current.members.where((member) => member.id == memberId);
+    if (member.isEmpty) {
+      throw StateError('The selected farm member no longer exists.');
+    }
+
+    state = AsyncData(
+      FarmAccessState(
+        members: current.members
+            .where((member) => member.id != memberId)
+            .toList(),
+      ),
+    );
+    try {
+      await ref.read(farmMembersApiProvider).removeMember(farmId, memberId);
+    } on Object {
+      state = AsyncData(current);
+      ref.invalidateSelf();
+      rethrow;
+    }
+  }
+
   bool canManageMembers(UserRole role) {
     if (role == UserRole.farmOwner) return true;
     final myId = ref.read(authProvider).valueOrNull?.user.id;

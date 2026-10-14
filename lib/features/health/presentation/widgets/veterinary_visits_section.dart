@@ -84,7 +84,6 @@ class _VetVisitCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _DetailRow(label: 'Pig ID', value: record.pigId),
-              _DetailRow(label: 'RFID', value: record.rfid),
               if (record.diagnosis != null)
                 _DetailRow(label: 'Diagnosis', value: record.diagnosis ?? ''),
               if (record.medication != null) ...[

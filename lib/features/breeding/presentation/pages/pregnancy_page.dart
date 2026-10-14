@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../app/theme/app_colors.dart';
+import '../../../herd/domain/entities/animal.dart';
 import '../../../herd/presentation/providers/herd_provider.dart';
 import '../../domain/entities/pregnancy.dart';
 import '../providers/pregnancy_provider.dart';
@@ -50,17 +51,36 @@ class PregnancyPage extends ConsumerWidget {
   }
 
   Future<void> _showAddPregnancy(BuildContext context, WidgetRef ref) async {
-    final animals = ref.read(herdProvider).valueOrNull ?? const [];
-    final sows = animals.where((animal) => animal.type == 'sow').toList();
-    if (sows.isEmpty) {
+    late final List<Animal> animals;
+    try {
+      animals = await ref.read(herdProvider.future);
+    } catch (error) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Could not load the herd: $error')),
+        );
+      }
+      return;
+    }
+    if (!context.mounted) return;
+    final femalePigs = animals
+        .where(
+          (animal) =>
+              animal.sex.trim().toLowerCase() == 'female' &&
+              animal.status == 'active',
+        )
+        .toList();
+    if (femalePigs.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Add a sow in Herd before recording pregnancy.'),
+          content: Text(
+            'Add an active female pig in Herd before recording insemination.',
+          ),
         ),
       );
       return;
     }
-    var sowId = sows.first.id;
+    var sowId = femalePigs.first.id;
     var matingDate = DateTime.now();
     var status = 'suspected';
     final semenController = TextEditingController();
@@ -90,12 +110,14 @@ class PregnancyPage extends ConsumerWidget {
                   const SizedBox(height: 16),
                   DropdownButtonFormField<String>(
                     initialValue: sowId,
-                    decoration: const InputDecoration(labelText: 'Sow'),
-                    items: sows
+                    decoration: const InputDecoration(
+                      labelText: 'Female pig (Pig ID)',
+                    ),
+                    items: femalePigs
                         .map(
-                          (sow) => DropdownMenuItem(
-                            value: sow.id,
-                            child: Text(sow.tag),
+                          (pig) => DropdownMenuItem(
+                            value: pig.id,
+                            child: Text('${pig.tag} · Pig ID ${pig.id}'),
                           ),
                         )
                         .toList(),

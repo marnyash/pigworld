@@ -180,7 +180,7 @@ class _HealthPageState extends ConsumerState<HealthPage>
                   ref.read(healthSearchProvider.notifier).state = value;
                 },
                 decoration: InputDecoration(
-                  hintText: 'Search by pig ID, RFID, or diagnosis...',
+                  hintText: 'Search by pig ID or diagnosis...',
                   prefixIcon: const Icon(Icons.search),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(AppDimensions.radius),
@@ -528,7 +528,6 @@ class _HealthRecordCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const SizedBox(height: 4),
-          Text('RFID: ${record.rfid}'),
           if (record.diagnosis != null) Text('Diagnosis: ${record.diagnosis}'),
           Text(
             'Date: ${record.visitDate.toString().split(' ')[0]}',

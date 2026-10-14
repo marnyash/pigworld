@@ -12,6 +12,7 @@ abstract interface class AuthRepository {
   Future<LoginChallenge> resendLoginOtp(String challengeId);
   Future<Session> verifyLoginOtp(String challengeId, String code);
   Future<Session> loginWithGoogle(String idToken);
+  Future<Session> loginWithApple(String idToken);
   Future<Session> register({
     required String name,
     required String email,

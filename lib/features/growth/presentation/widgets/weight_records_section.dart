@@ -76,11 +76,6 @@ class _WeightRecordTile extends StatelessWidget {
               'Pig ${record.animalId}',
               style: const TextStyle(fontWeight: FontWeight.bold),
             ),
-            if (record.rfid != null)
-              Text(
-                'RFID: ${record.rfid}',
-                style: TextStyle(fontSize: 12, color: AppColors.mutedText),
-              ),
           ],
         ),
         subtitle: Text(

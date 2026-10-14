@@ -31,7 +31,7 @@ class RegisterRequest {
     'phone': phone,
     'password': password,
     'password_confirmation': password,
-    'role': role.name,
+    'role': role.value,
     if (farmName != null) 'farm_name': farmName,
     if (inviteCode != null) 'invite_code': inviteCode,
     if (role == UserRole.farmOwner) ...{
