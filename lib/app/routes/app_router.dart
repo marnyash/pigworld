@@ -454,7 +454,7 @@ class _AppDrawer extends ConsumerWidget {
                       route: AppRoutes.medication,
                     ),
                     _ListTile(
-                      icon: Icons.monitor_weight_outlined,
+                      assetName: 'Growth',
                       title: l10n.growth,
                       route: AppRoutes.growth,
                     ),
@@ -466,14 +466,14 @@ class _AppDrawer extends ConsumerWidget {
                       route: AppRoutes.feed,
                     ),
                     _ListTile(
-                      assetName: 'Feed stock',
+                      assetName: 'inventory',
                       title: l10n.inventory,
                       route: AppRoutes.inventory,
                     ),
                   ],
                   if (allows(AppPermission.manageBreeding))
                     _ListTile(
-                      icon: Icons.favorite_outline,
+                      assetName: 'insemination',
                       title: l10n.breeding,
                       route: AppRoutes.breeding,
                     ),
@@ -486,7 +486,7 @@ class _AppDrawer extends ConsumerWidget {
                   _DrawerSectionLabel(l10n.workspace),
                   if (allows(AppPermission.viewReports))
                     _ListTile(
-                      icon: Icons.assessment_outlined,
+                      assetName: 'report',
                       title: l10n.reports,
                       route: AppRoutes.reports,
                     ),
@@ -502,12 +502,12 @@ class _AppDrawer extends ConsumerWidget {
                   ),
                   if (allows(AppPermission.manageMembers))
                     _ListTile(
-                      assetName: 'team',
+                      assetName: 'farmmembers',
                       title: l10n.myTeam,
                       route: AppRoutes.farmManagement,
                     ),
                   _ListTile(
-                    icon: Icons.settings_outlined,
+                    assetName: 'settings',
                     title: l10n.settings,
                     route: AppRoutes.settings,
                   ),

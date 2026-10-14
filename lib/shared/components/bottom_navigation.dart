@@ -39,8 +39,8 @@ class AppBottomNavigation extends StatelessWidget {
           label: AppLocalizations.of(context).feed,
         ),
       NavigationDestination(
-        icon: const Icon(Icons.person_outline),
-        selectedIcon: const Icon(Icons.person),
+        icon: const PigWorldIcon('profile'),
+        selectedIcon: const PigWorldIcon('profile', size: 26),
         label: AppLocalizations.of(context).profile,
       ),
     ],

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 
 class FarmLocationSelection {
   const FarmLocationSelection({
@@ -37,7 +38,7 @@ class _FarmLocationPickerDialogState extends State<FarmLocationPickerDialog> {
   Geocoding? _geocoding;
 
   late LatLng _selected;
-  GoogleMapController? _controller;
+  final MapController _mapController = MapController();
   late final TextEditingController _searchController;
   String _address = '';
   bool _resolvingAddress = false;
@@ -49,7 +50,8 @@ class _FarmLocationPickerDialogState extends State<FarmLocationPickerDialog> {
     if (GeocodingPlatformFactory.instance != null) {
       _geocoding = Geocoding();
     }
-    _selected = widget.initialLatitude != null && widget.initialLongitude != null
+    _selected =
+        widget.initialLatitude != null && widget.initialLongitude != null
         ? LatLng(widget.initialLatitude!, widget.initialLongitude!)
         : _defaultPosition;
     _address = widget.initialAddress ?? '';
@@ -112,21 +114,38 @@ class _FarmLocationPickerDialogState extends State<FarmLocationPickerDialog> {
             ),
           ),
           Expanded(
-            child: GoogleMap(
-              initialCameraPosition: CameraPosition(target: _selected, zoom: 14),
-              onMapCreated: (controller) => _controller = controller,
-              onTap: _selectPoint,
-              markers: {
-                Marker(
-                  markerId: const MarkerId('farm-location'),
-                  position: _selected,
-                  draggable: true,
-                  onDragEnd: _selectPoint,
+            child: FlutterMap(
+              mapController: _mapController,
+              options: MapOptions(
+                initialCenter: _selected,
+                initialZoom: 14,
+                onTap: (_, point) => _select(point),
+              ),
+              children: [
+                TileLayer(
+                  urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                  userAgentPackageName: 'pigworld.com',
                 ),
-              },
-              myLocationButtonEnabled: false,
-              mapToolbarEnabled: false,
-              compassEnabled: true,
+                MarkerLayer(
+                  markers: [
+                    Marker(
+                      point: _selected,
+                      width: 44,
+                      height: 44,
+                      child: const Icon(
+                        Icons.location_pin,
+                        color: Colors.red,
+                        size: 40,
+                      ),
+                    ),
+                  ],
+                ),
+                RichAttributionWidget(
+                  attributions: [
+                    TextSourceAttribution('OpenStreetMap contributors'),
+                  ],
+                ),
+              ],
             ),
           ),
           Container(
@@ -217,7 +236,9 @@ class _FarmLocationPickerDialogState extends State<FarmLocationPickerDialog> {
       }
       if (permission == LocationPermission.denied ||
           permission == LocationPermission.deniedForever) {
-        throw StateError('Location permission is needed to use your current location.');
+        throw StateError(
+          'Location permission is needed to use your current location.',
+        );
       }
       final position = await Geolocator.getCurrentPosition();
       await _select(LatLng(position.latitude, position.longitude));
@@ -226,15 +247,13 @@ class _FarmLocationPickerDialogState extends State<FarmLocationPickerDialog> {
     }
   }
 
-  Future<void> _selectPoint(LatLng point) => _select(point);
-
   Future<void> _select(LatLng point) async {
     setState(() {
       _selected = point;
       _address = '';
       _resolvingAddress = true;
     });
-    await _controller?.animateCamera(CameraUpdate.newLatLngZoom(point, 15));
+    _mapController.move(point, 15);
     try {
       final geocoding = _geocoding;
       if (geocoding == null) return;

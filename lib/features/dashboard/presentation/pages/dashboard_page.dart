@@ -134,11 +134,6 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
         : liveHerdCount.toInt() > registeredHerdCount
         ? liveHerdCount.toInt()
         : registeredHerdCount;
-    final healthOverview = allows(AppPermission.manageHerd)
-        ? ref.watch(healthOverviewProvider)
-        : const AsyncValue<Map<String, dynamic>>.data({});
-    final pregnantCount = session?.selectedFarm?.pregnantPigCount ?? 0;
-    final vaccinatedCount = healthOverview.valueOrNull?['vaccinated'] ?? 0;
     final notifications =
         ref.watch(notificationsProvider).valueOrNull ??
         const <FarmNotification>[];
@@ -152,31 +147,35 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
     final statCards = <Widget>[
       if (allows(AppPermission.manageHerd))
         _StatCard(
-          icon: const PigWorldIcon('Boar', size: 24),
+          icon: const PigWorldIcon('Boar', size: 32),
           label: l10n.herdSize,
           value: '$herdCount',
           color: AppColors.primaryGreen,
+          onTap: () => context.go(AppRoutes.herd),
         ),
       if (allows(AppPermission.manageFeed))
         _StatCard(
-          icon: const PigWorldIcon('Feed stock', size: 24),
+          icon: const PigWorldIcon('Feed stock', size: 32),
           label: l10n.feedStock,
           value: overview.valueOrNull?['feed_stock']?.toString() ?? '—',
           color: AppColors.warning,
+          onTap: () => context.go(AppRoutes.feed),
         ),
       if (allows(AppPermission.viewTasks))
         _StatCard(
-          icon: const PigWorldIcon('Task-Due', size: 24),
+          icon: const PigWorldIcon('Task-Due', size: 32),
           label: l10n.tasksDue,
           value: overview.valueOrNull?['tasks_due']?.toString() ?? '—',
           color: AppColors.danger,
+          onTap: () => context.go(AppRoutes.tasks),
         ),
       if (allows(AppPermission.viewSales))
         _StatCard(
-          icon: const PigWorldIcon('sales', size: 24),
+          icon: const PigWorldIcon('sales', size: 32),
           label: l10n.salesThisWeek,
           value: overview.valueOrNull?['sales_this_week']?.toString() ?? '—',
           color: AppColors.deepGreen,
+          onTap: () => context.go(AppRoutes.salesAndExpenses),
         ),
     ];
     final canViewHealth = allows(AppPermission.manageHerd);
@@ -406,13 +405,6 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                   ),
                 ],
                 const SizedBox(height: AppDimensions.spacingLarge),
-                if (allows(AppPermission.manageHerd)) ...[
-                  _HerdStatusCard(
-                    pregnant: pregnantCount,
-                    vaccinated: vaccinatedCount,
-                  ),
-                  const SizedBox(height: AppDimensions.spacingLarge),
-                ],
                 if (statCards.isNotEmpty)
                   GridView.count(
                     crossAxisCount: 2,
@@ -429,7 +421,6 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                   _RegisteredHerdBanner(
                     motherPigs: session?.selectedFarm?.motherPigCount ?? 0,
                     piglets: session?.selectedFarm?.registeredPigletCount ?? 0,
-                    pregnantPigs: session?.selectedFarm?.pregnantPigCount ?? 0,
                   ),
                 ],
               ],
@@ -445,19 +436,16 @@ class _RegisteredHerdBanner extends StatelessWidget {
   const _RegisteredHerdBanner({
     required this.motherPigs,
     required this.piglets,
-    required this.pregnantPigs,
   });
 
   final int motherPigs;
   final int piglets;
-  final int pregnantPigs;
 
   @override
   Widget build(BuildContext context) {
     final details = <String>[
       if (motherPigs > 0) '$motherPigs mother pigs',
       if (piglets > 0) '$piglets piglets',
-      if (pregnantPigs > 0) '$pregnantPigs pregnant',
     ];
     return Container(
       padding: const EdgeInsets.all(AppDimensions.spacingMedium),
@@ -505,160 +493,81 @@ class _StatCard extends StatelessWidget {
     required this.label,
     required this.value,
     required this.color,
+    required this.onTap,
   });
 
   final Widget icon;
   final String label;
   final String value;
   final Color color;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(AppDimensions.radius),
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [color.withValues(alpha: 0.08), AppColors.surface],
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppDimensions.radius),
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [color.withValues(alpha: 0.08), AppColors.surface],
+            ),
+            border: Border.all(color: color.withValues(alpha: 0.12)),
           ),
-          border: Border.all(color: color.withValues(alpha: 0.12)),
-        ),
-        padding: const EdgeInsets.all(AppDimensions.spacingMedium),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(9),
-                  decoration: BoxDecoration(
-                    color: color.withValues(alpha: 0.14),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: icon,
-                ),
-                const Spacer(),
-                Container(
-                  width: 7,
-                  height: 7,
-                  decoration: BoxDecoration(
-                    color: color,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ],
-            ),
-            const Spacer(),
-            Text(
-              value,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                fontWeight: FontWeight.w800,
-                color: AppColors.text,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: AppColors.mutedText),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _HerdStatusCard extends StatelessWidget {
-  const _HerdStatusCard({required this.pregnant, required this.vaccinated});
-
-  final int pregnant;
-  final int vaccinated;
-
-  @override
-  Widget build(BuildContext context) {
-    final metrics = [
-      _HerdStatusMetric(
-        label: AppLocalizations.of(context).pregnant,
-        value: '$pregnant',
-        color: AppColors.pigPink,
-      ),
-      _HerdStatusMetric(
-        label: AppLocalizations.of(context).vaccinated,
-        value: '$vaccinated',
-        color: AppColors.info,
-      ),
-    ];
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(AppDimensions.spacingLarge),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Pregnancy & vaccination',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: AppDimensions.spacingMedium),
-            Row(
-              children: metrics
-                  .map(
-                    (metric) => Expanded(
-                      child: Container(
-                        margin: const EdgeInsets.only(right: 8),
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: metric.color.withValues(alpha: 0.12),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              metric.label,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context).textTheme.bodySmall,
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              metric.value,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context).textTheme.headlineSmall,
-                            ),
-                          ],
-                        ),
-                      ),
+          padding: const EdgeInsets.all(AppDimensions.spacingMedium),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.14),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                  )
-                  .toList(),
-            ),
-          ],
+                    child: icon,
+                  ),
+                  const Spacer(),
+                  Container(
+                    width: 7,
+                    height: 7,
+                    decoration: BoxDecoration(
+                      color: color,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ],
+              ),
+              const Spacer(),
+              Text(
+                value,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.text,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                label,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: AppColors.mutedText),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
-}
-
-class _HerdStatusMetric {
-  const _HerdStatusMetric({
-    required this.label,
-    required this.value,
-    required this.color,
-  });
-
-  final String label;
-  final String value;
-  final Color color;
 }
 
 class _NotificationBanner extends StatelessWidget {
