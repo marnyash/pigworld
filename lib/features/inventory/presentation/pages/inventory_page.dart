@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../shared/components/bottom_navigation.dart';
-import '../../../../shared/components/bottom_navigation.dart';
 import '../../../../shared/widgets/pig_world_icon.dart';
 import 'package:proj/features/inventory/presentation/pages/sections/inventory_overview_section.dart';
 import 'package:proj/features/inventory/presentation/pages/sections/search_categories_section.dart';
@@ -45,15 +44,10 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
           ],
         ),
         elevation: 0,
-        leading: IconButton(
-          tooltip: 'Open menu',
-          icon: const PigWorldIcon('inventory', size: 24),
-          onPressed: () => navigationScaffoldKey.currentState?.openDrawer(),
-        ),
         leading: _selectedSection == null
             ? IconButton(
                 tooltip: 'Open menu',
-                icon: const Icon(Icons.menu_rounded),
+                icon: const PigWorldIcon('inventory', size: 24),
                 onPressed: () =>
                     navigationScaffoldKey.currentState?.openDrawer(),
               )
