@@ -14,7 +14,8 @@ class GoogleSignInService {
 
   static const String _defaultWebClientId = String.fromEnvironment(
     'GOOGLE_WEB_CLIENT_ID',
-    defaultValue: '',
+    defaultValue:
+        '279793601563-eh6fs875qbn6c2gvkfk29frcuqe754ri.apps.googleusercontent.com',
   );
   static Future<void>? _initialization;
 
