@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../../app/theme/app_dimensions.dart';
+import '../../../../shared/widgets/pig_world_icon.dart';
 
 class LoginForm extends StatefulWidget {
   const LoginForm({
@@ -51,7 +52,7 @@ class _LoginFormState extends State<LoginForm> {
           decoration: const InputDecoration(
             labelText: 'Email or phone number',
             hintText: 'you@example.com or phone number',
-            prefixIcon: Icon(Icons.alternate_email),
+            prefixIcon: PigWorldIcon('profile'),
           ),
           validator: (value) {
             final input = value?.trim() ?? '';
@@ -78,7 +79,7 @@ class _LoginFormState extends State<LoginForm> {
           obscureText: !passwordVisible,
           decoration: InputDecoration(
             labelText: 'Password',
-            prefixIcon: const Icon(Icons.lock_outline),
+            prefixIcon: const PigWorldIcon('lock'),
             suffixIcon: IconButton(
               tooltip: passwordVisible ? 'Hide password' : 'Show password',
               icon: Icon(
@@ -111,7 +112,7 @@ class _LoginFormState extends State<LoginForm> {
         const SizedBox(height: AppDimensions.spacingSmall),
         SizedBox(
           width: double.infinity,
-          child: FilledButton(
+          child: FilledButton.icon(
             onPressed: isLoading || !widget.canSubmit
                 ? null
                 : () async {
@@ -137,16 +138,17 @@ class _LoginFormState extends State<LoginForm> {
                       if (mounted) setState(() => isLoading = false);
                     }
                   },
-            child: isLoading
+            icon: isLoading
                 ? const SizedBox(
                     width: 22,
                     height: 22,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Text(
-                    'Sign in',
-                    style: TextStyle(fontWeight: FontWeight.w700),
-                  ),
+                : const Icon(Icons.login_rounded),
+            label: const Text(
+              'Sign in',
+              style: TextStyle(fontWeight: FontWeight.w700),
+            ),
           ),
         ),
       ],

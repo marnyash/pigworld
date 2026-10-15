@@ -3,9 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../../../../security/authorization/roles.dart';
+import '../../../../shared/widgets/pig_world_icon.dart';
 import '../providers/auth_provider.dart';
 import '../providers/auth_providers.dart';
-import '../widgets/server_settings_dialog.dart';
 import '../../../onboarding/presentation/providers/onboarding_provider.dart';
 
 class CreateAccountPage extends ConsumerStatefulWidget {
@@ -108,16 +108,7 @@ class _CreateAccountPageState extends ConsumerState<CreateAccountPage> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(
-      title: const Text('Create account'),
-      actions: [
-        IconButton(
-          tooltip: 'Server address',
-          icon: const Icon(Icons.settings_ethernet),
-          onPressed: () => showServerSettingsDialog(context, ref),
-        ),
-      ],
-    ),
+    appBar: AppBar(title: const Text('Create account')),
     body: SafeArea(
       child: Form(
         key: _formKey,
@@ -135,7 +126,7 @@ class _CreateAccountPageState extends ConsumerState<CreateAccountPage> {
               initialValue: _role,
               decoration: const InputDecoration(
                 labelText: 'Account type',
-                prefixIcon: Icon(Icons.badge_outlined),
+                prefixIcon: PigWorldIcon('team', size: 18),
               ),
               items: [
                 for (final entry in _roles)
@@ -164,7 +155,7 @@ class _CreateAccountPageState extends ConsumerState<CreateAccountPage> {
               keyboardType: TextInputType.phone,
               decoration: const InputDecoration(
                 labelText: 'Phone number',
-                prefixIcon: Icon(Icons.phone_outlined),
+                prefixIcon: PigWorldIcon('phone', size: 18),
               ),
               validator: (value) => (value == null || value.trim().length < 8)
                   ? 'Enter a valid phone number.'
@@ -175,7 +166,7 @@ class _CreateAccountPageState extends ConsumerState<CreateAccountPage> {
               controller: _name,
               decoration: const InputDecoration(
                 labelText: 'Full name',
-                prefixIcon: Icon(Icons.person_outline),
+                prefixIcon: PigWorldIcon('profile', size: 18),
               ),
               validator: (value) => (value == null || value.trim().isEmpty)
                   ? 'Enter your full name.'
@@ -187,7 +178,7 @@ class _CreateAccountPageState extends ConsumerState<CreateAccountPage> {
               keyboardType: TextInputType.emailAddress,
               decoration: const InputDecoration(
                 labelText: 'Email',
-                prefixIcon: Icon(Icons.contact_mail_outlined),
+                prefixIcon: PigWorldIcon('email', size: 18),
               ),
               validator: (value) => (value == null || !value.contains('@'))
                   ? 'Enter a valid email.'
@@ -199,7 +190,7 @@ class _CreateAccountPageState extends ConsumerState<CreateAccountPage> {
               obscureText: true,
               decoration: const InputDecoration(
                 labelText: 'Password',
-                prefixIcon: Icon(Icons.lock_outline),
+                prefixIcon: PigWorldIcon('lock', size: 18),
               ),
               validator: (value) => (value == null || value.length < 8)
                   ? 'Use at least 8 characters.'
@@ -211,7 +202,7 @@ class _CreateAccountPageState extends ConsumerState<CreateAccountPage> {
                 controller: _farmName,
                 decoration: const InputDecoration(
                   labelText: 'Farm name',
-                  prefixIcon: Icon(Icons.business_outlined),
+                  prefixIcon: PigWorldIcon('farm', size: 18),
                 ),
                 validator: (value) => (value == null || value.trim().isEmpty)
                     ? 'Name your farm.'
@@ -223,7 +214,7 @@ class _CreateAccountPageState extends ConsumerState<CreateAccountPage> {
                 textCapitalization: TextCapitalization.characters,
                 decoration: const InputDecoration(
                   labelText: 'Owner invite code',
-                  prefixIcon: Icon(Icons.link),
+                  prefixIcon: PigWorldIcon('farmmembers', size: 18),
                   helperText:
                       'Optional. You can request a farm after creating your account.',
                 ),

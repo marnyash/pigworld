@@ -8,6 +8,7 @@ import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../l10n/generated/app_localizations.dart';
 import '../../../../shared/components/bottom_navigation.dart';
+import '../../../../shared/widgets/pig_world_icon.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 import '../../../breeding/presentation/providers/pregnancy_provider.dart';
 import '../../domain/entities/animal.dart';
@@ -31,7 +32,14 @@ class HerdPage extends ConsumerWidget {
     final canAutoFillHerd = herd.hasValue && remainingRegistrationCount > 0;
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n.herdPageTitle),
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const PigWorldIcon('Boar', size: 24),
+            const SizedBox(width: 8),
+            Text(l10n.herdPageTitle),
+          ],
+        ),
         leading: IconButton(
           tooltip: l10n.openMenu,
           icon: const Icon(Icons.menu_rounded),
