@@ -1076,96 +1076,102 @@ class _AnimalCard extends StatelessWidget {
     final imageUrl = animal.imageUrl?.trim();
     final hasPhoto = imageUrl?.isNotEmpty == true;
     final photoTag = 'animal-photo-${animal.id}';
+    final photo = !hasPhoto
+        ? const ColoredBox(
+            color: AppColors.pigPink,
+            child: Center(
+              child: Icon(
+                Icons.pets_outlined,
+                size: 42,
+                color: AppColors.deepGreen,
+              ),
+            ),
+          )
+        : Image.network(
+            imageUrl!,
+            key: ValueKey(imageUrl),
+            fit: BoxFit.cover,
+            errorBuilder: (_, _, _) => const ColoredBox(
+              color: AppColors.pigPink,
+              child: Center(
+                child: Icon(
+                  Icons.broken_image_outlined,
+                  color: AppColors.deepGreen,
+                ),
+              ),
+            ),
+          );
+    final tappablePhoto = hasPhoto
+        ? Hero(
+            tag: photoTag,
+            child: Material(
+              color: AppColors.pigPink,
+              child: InkWell(
+                onTap: () => _showAnimalPhoto(context, imageUrl!, photoTag),
+                child: photo,
+              ),
+            ),
+          )
+        : photo;
+    final details = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          animal.name?.isNotEmpty == true ? animal.name! : animal.tag,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.titleSmall,
+        ),
+        if (animal.name?.isNotEmpty == true)
+          Text(
+            animal.tag,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        const SizedBox(height: 3),
+        Text(
+          '${animal.type} · ${animal.sex} · ${_ageLabel(animal.birthDate)}${animal.weightKg == null ? '' : ' · ${animal.weightKg} kg'}',
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+        ),
+        const SizedBox(height: 7),
+        Wrap(
+          spacing: 6,
+          runSpacing: 4,
+          children: [
+            _DetailChip(label: active ? 'Healthy' : animal.status),
+            const _DetailChip(label: 'Pen not set'),
+          ],
+        ),
+      ],
+    );
+
     return Card(
       clipBehavior: Clip.antiAlias,
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final horizontal = constraints.maxWidth > 280;
-          final photo = !hasPhoto
-              ? const ColoredBox(
-                  color: AppColors.pigPink,
-                  child: Center(
-                    child: Icon(
-                      Icons.pets_outlined,
-                      size: 42,
-                      color: AppColors.deepGreen,
-                    ),
-                  ),
-                )
-              : Image.network(
-                  imageUrl!,
-                  key: ValueKey(imageUrl),
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => const ColoredBox(
-                    color: AppColors.pigPink,
-                    child: Center(
-                      child: Icon(
-                        Icons.broken_image_outlined,
-                        color: AppColors.deepGreen,
-                      ),
-                    ),
-                  ),
-                );
-          final tappablePhoto = hasPhoto
-              ? Hero(
-                  tag: photoTag,
-                  child: Material(
-                    color: AppColors.pigPink,
-                    child: InkWell(
-                      onTap: () =>
-                          _showAnimalPhoto(context, imageUrl!, photoTag),
-                      child: photo,
-                    ),
-                  ),
-                )
-              : photo;
-          final details = Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                animal.name?.isNotEmpty == true ? animal.name! : animal.tag,
-                style: Theme.of(context).textTheme.titleSmall,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(6),
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: tappablePhoto,
+            ),
+          ),
+          Positioned(
+            left: 6,
+            right: 6,
+            bottom: 6,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: Theme.of(
+                  context,
+                ).colorScheme.surface.withValues(alpha: 0.94),
+                borderRadius: BorderRadius.circular(12),
               ),
-              if (animal.name?.isNotEmpty == true)
-                Text(animal.tag, style: Theme.of(context).textTheme.bodySmall),
-              const SizedBox(height: 3),
-              Text(
-                '${animal.type} · ${animal.sex} · ${_ageLabel(animal.birthDate)}${animal.weightKg == null ? '' : ' · ${animal.weightKg} kg'}',
-              ),
-              const SizedBox(height: 7),
-              Wrap(
-                spacing: 6,
-                runSpacing: 4,
-                children: [
-                  _DetailChip(label: active ? 'Healthy' : animal.status),
-                  const _DetailChip(label: 'Pen not set'),
-                ],
-              ),
-            ],
-          );
-          if (horizontal) {
-            return Row(
-              children: [
-                SizedBox(
-                  width: 112,
-                  height: double.infinity,
-                  child: tappablePhoto,
-                ),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: details,
-                  ),
-                ),
-                _AnimalActions(onEdit: onEdit, onArchive: onArchive),
-              ],
-            );
-          }
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Expanded(child: tappablePhoto),
-              Padding(
+              child: Padding(
                 padding: const EdgeInsets.fromLTRB(12, 10, 4, 10),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -1175,9 +1181,9 @@ class _AnimalCard extends StatelessWidget {
                   ],
                 ),
               ),
-            ],
-          );
-        },
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -40,7 +40,9 @@ final serverUrlProvider = FutureProvider<String>((ref) async {
     await ServerAddressStorage.write(ApiConfig.baseUrl);
     return ApiConfig.baseUrl;
   }
-  return (saved == null || saved.isEmpty) ? ApiConfig.baseUrl : saved;
+  return ApiConfig.validateBaseUrl(
+    (saved == null || saved.isEmpty) ? ApiConfig.baseUrl : saved,
+  );
 });
 
 final dioProvider = Provider<Dio>((ref) {
@@ -53,7 +55,9 @@ final dioProvider = Provider<Dio>((ref) {
     },
   );
   ref.listen(serverUrlProvider, (previous, next) {
-    next.whenData((baseUrl) => dio.options.baseUrl = baseUrl);
+    next.whenData(
+      (baseUrl) => dio.options.baseUrl = ApiConfig.validateBaseUrl(baseUrl),
+    );
   }, fireImmediately: true);
   return dio;
 });

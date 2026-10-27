@@ -24,7 +24,20 @@ abstract final class DioClient {
         contentType: 'application/json',
       ),
     );
-    dio.interceptors.addAll([authInterceptor, LoggingInterceptor()]);
+    dio.interceptors.addAll([
+      InterceptorsWrapper(
+        onRequest: (options, handler) {
+          try {
+            ApiConfig.validateRequestUri(options.uri);
+            handler.next(options);
+          } on FormatException catch (error) {
+            handler.reject(DioException(requestOptions: options, error: error));
+          }
+        },
+      ),
+      authInterceptor,
+      LoggingInterceptor(),
+    ]);
     return dio;
   }
 }

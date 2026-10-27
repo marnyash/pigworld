@@ -14,6 +14,7 @@ Future<void> showServerSettingsDialog(
   final currentUrl = await ref.read(serverUrlProvider.future);
   if (!context.mounted) return;
   final controller = TextEditingController(text: currentUrl);
+  final formKey = GlobalKey<FormState>();
   final saved = await showDialog<bool>(
     context: context,
     builder: (dialogContext) => AlertDialog(
@@ -26,12 +27,23 @@ Future<void> showServerSettingsDialog(
             'Point the app at your farm server. Use this when switching networks.',
           ),
           const SizedBox(height: 12),
-          TextField(
-            controller: controller,
-            keyboardType: TextInputType.url,
-            decoration: InputDecoration(
-              labelText: 'API base URL',
-              hintText: ApiConfig.baseUrl,
+          Form(
+            key: formKey,
+            child: TextFormField(
+              controller: controller,
+              keyboardType: TextInputType.url,
+              decoration: InputDecoration(
+                labelText: 'API base URL',
+                hintText: ApiConfig.baseUrl,
+              ),
+              validator: (value) {
+                try {
+                  ApiConfig.validateBaseUrl(value ?? '');
+                  return null;
+                } on FormatException catch (error) {
+                  return error.message.toString();
+                }
+              },
             ),
           ),
         ],
@@ -50,7 +62,10 @@ Future<void> showServerSettingsDialog(
         ),
         FilledButton(
           onPressed: () async {
-            await ServerAddressStorage.write(controller.text);
+            if (!formKey.currentState!.validate()) return;
+            await ServerAddressStorage.write(
+              ApiConfig.validateBaseUrl(controller.text),
+            );
             if (dialogContext.mounted) Navigator.pop(dialogContext, true);
           },
           child: const Text('Save'),

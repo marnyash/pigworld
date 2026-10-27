@@ -17,6 +17,47 @@ import 'package:proj/l10n/generated/app_localizations.dart';
 import 'package:proj/security/authorization/roles.dart';
 
 void main() {
+  testWidgets('herd cards overlay animal details on uploaded photos', (
+    WidgetTester tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final api = _FakeHerdApi(
+      animals: [
+        const Animal(
+          id: 'animal-photo',
+          tag: 'PIG-PHOTO',
+          type: 'sow',
+          sex: 'female',
+          status: 'active',
+          imageUrl: 'https://example.com/pig.jpg',
+        ),
+      ],
+    );
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          authProvider.overrideWith(_TestAuthNotifier.new),
+          herdApiProvider.overrideWithValue(api),
+          healthOverviewProvider.overrideWith((ref) async => {'vaccinated': 0}),
+        ],
+        child: const MaterialApp(
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: HerdPage(),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('PIG-PHOTO'), findsOneWidget);
+    expect(find.byType(Image), findsWidgets);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('adding a pig persists and refreshes the farm herd', (
     WidgetTester tester,
   ) async {

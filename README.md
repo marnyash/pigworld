@@ -141,6 +141,30 @@ session provider.
 replace cryptographic key management. Production token confidentiality is
 provided by `flutter_secure_storage`; any server-side encrypted payload needs
 to use the Laravel key-management contract before release.
+
+### Android Release Hardening
+
+Build Android release artifacts through the wrapper so both Android R8
+shrinking and Flutter Dart obfuscation are enabled:
+
+```bash
+bash scripts/build_android_release.sh appbundle
+# Or build an APK:
+bash scripts/build_android_release.sh apk
+```
+
+The Android release build enables optimized R8/ProGuard and resource shrinking.
+The wrapper also passes Flutter's `--obfuscate` flag and writes the
+`--split-debug-info` symbol files under `build/obfuscation/android`. Keep those
+files private and backed up for crash symbolication; do not ship them with the
+app or commit them. Obfuscation raises the effort required to inspect the app,
+but cannot prevent a determined person from reverse engineering a client; keep
+secrets and authorization decisions on the server.
+
+Release builds also reject non-HTTPS API URLs, including URLs supplied through
+`API_BASE_URL` or the in-app server setting. Android cleartext traffic is
+disabled by default and explicitly enabled only in the debug manifest for
+local development endpoints.
 # pigworld
 # pigworld
 # pigworld

@@ -65,7 +65,7 @@ class AuthInterceptor extends Interceptor {
     final refreshToken = await _authService.readRefreshToken();
     if (refreshToken == null) return null;
     try {
-      _refreshDio.options.baseUrl = baseUrl();
+      _refreshDio.options.baseUrl = ApiConfig.validateBaseUrl(baseUrl());
       final response = await _refreshDio.post<Map<String, dynamic>>(
         '/auth/refresh',
         data: {'refresh_token': refreshToken},
