@@ -57,10 +57,18 @@ if (isReleaseBuildRequested && keystorePropertiesFile.exists()) {
     val actualSha1 = MessageDigest.getInstance("SHA-1")
         .digest(certificate.encoded)
         .joinToString(":") { "%02X".format(it.toInt() and 0xFF) }
+    val actualSha256 = MessageDigest.getInstance("SHA-256")
+        .digest(certificate.encoded)
+        .joinToString(":") { "%02X".format(it.toInt() and 0xFF) }
     val expectedSha1 = "C4:CB:DE:41:61:71:DA:50:45:68:24:35:43:14:77:C7:C6:8E:C3:1B"
-    if (!actualSha1.equals(expectedSha1, ignoreCase = true)) {
+    val expectedSha256 =
+        "BE:53:AE:13:48:72:C0:23:96:73:82:E8:6E:79:09:33:7B:7B:E6:26:84:26:34:58:9D:D8:4A:A9:9B:AD:63:AE"
+    if (!actualSha1.equals(expectedSha1, ignoreCase = true) ||
+        !actualSha256.equals(expectedSha256, ignoreCase = true)
+    ) {
         throw GradleException(
-            "Wrong release signing certificate. Expected SHA1 $expectedSha1 but found $actualSha1."
+            "Wrong release signing certificate. Expected SHA-1 $expectedSha1 and " +
+                "SHA-256 $expectedSha256 but found SHA-1 $actualSha1 and SHA-256 $actualSha256."
         )
     }
 }
@@ -104,7 +112,10 @@ android {
             } else if (isReleaseBuildRequested) {
                 throw GradleException(
                     "Release signing is not configured. Add android/key.properties and the original upload keystore; " +
-                        "the expected upload certificate SHA1 is C4:CB:DE:41:61:71:DA:50:45:68:24:35:43:14:77:C7:C6:8E:C3:1B."
+                        "the expected upload certificate SHA-1 is " +
+                            "C4:CB:DE:41:61:71:DA:50:45:68:24:35:43:14:77:C7:C6:8E:C3:1B and " +
+                            "SHA-256 is " +
+                            "BE:53:AE:13:48:72:C0:23:96:73:82:E8:6E:79:09:33:7B:7B:E6:26:84:26:34:58:9D:D8:4A:A9:9B:AD:63:AE."
                 )
             } else {
                 signingConfigs.getByName("debug")

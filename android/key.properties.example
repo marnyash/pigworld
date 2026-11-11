@@ -1,7 +1,9 @@
 # Copy this file to key.properties and replace the placeholders with your real values.
 # Keep key.properties and the keystore private; never commit or share them.
-# The upload keystore certificate must have this SHA1:
-# C4:CB:DE:41:61:71:DA:50:45:68:24:35:43:14:77:C7:C6:8E:C3:1B
+# The upload keystore certificate must have both fingerprints:
+# SHA-1: C4:CB:DE:41:61:71:DA:50:45:68:24:35:43:14:77:C7:C6:8E:C3:1B
+# SHA-256:
+# BE:53:AE:13:48:72:C0:23:96:73:82:E8:6E:79:09:33:7B:7B:E6:26:84:26:34:58:9D:D8:4A:A9:9B:AD:63:AE
 # A relative storeFile path is resolved from the android/ directory.
 # The project keystore is kept at the repository root.
 storeFile=../upload-keystore.jks
