@@ -83,6 +83,27 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     }
   }
 
+  @override
+  Future<void> resetPassword({
+    required String token,
+    required String email,
+    required String password,
+  }) async {
+    try {
+      await _dio.post<void>(
+        '/auth/reset-password',
+        data: {
+          'token': token,
+          'email': email,
+          'password': password,
+          'password_confirmation': password,
+        },
+      );
+    } on DioException catch (error) {
+      throw ErrorHandler.from(error);
+    }
+  }
+
   Future<LoginResponse> _postForSession(
     String path,
     Map<String, dynamic> data,

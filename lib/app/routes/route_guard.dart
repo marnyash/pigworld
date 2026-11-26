@@ -11,6 +11,7 @@ abstract final class RouteGuard {
     '/pin-lock',
     '/login',
     '/forgot-password',
+    '/reset-password',
     '/otp-verification',
     '/session-expired',
     '/permissions',

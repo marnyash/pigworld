@@ -86,7 +86,7 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                     ),
                     SizedBox(height: 6),
                     Text(
-                      'If this address is registered, a password reset link is on its way. Check your inbox and spam folder.',
+                      'If this address is registered, a reset link is on its way. Open it on your phone to set a new password in Pig World Smart, then verify the sign-in code to return home.',
                     ),
                   ],
                 ),

@@ -28,6 +28,7 @@ import '../../features/notifications/presentation/pages/notifications_page.dart'
 import '../../features/support/presentation/pages/support_page.dart';
 import '../../features/crm/presentation/pages/crm_page.dart';
 import '../../features/auth/presentation/pages/forgot_password_page.dart';
+import '../../features/auth/presentation/pages/reset_password_page.dart';
 import '../../features/auth/presentation/pages/farm_selection_page.dart';
 import '../../features/auth/presentation/pages/login_page.dart';
 import '../../features/auth/presentation/pages/pin_lock_page.dart';
@@ -94,6 +95,13 @@ abstract final class AppRouter {
       GoRoute(
         path: AppRoutes.login,
         builder: (context, state) => const LoginPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.resetPassword,
+        builder: (context, state) => ResetPasswordPage(
+          token: state.uri.queryParameters['token'] ?? '',
+          email: state.uri.queryParameters['email'] ?? '',
+        ),
       ),
       GoRoute(
         path: AppRoutes.createAccount,

@@ -28,6 +28,7 @@ abstract final class AppRoutes {
   static const pinLock = '/pin-lock';
   static const login = '/login';
   static const forgotPassword = '/forgot-password';
+  static const resetPassword = '/reset-password';
   static const otpVerification = '/otp-verification';
   static const farmSelection = '/farm-selection';
   static const farmManagement = '/farm-management';

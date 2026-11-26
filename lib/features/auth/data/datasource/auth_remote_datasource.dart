@@ -13,4 +13,9 @@ abstract interface class AuthRemoteDataSource {
   Future<LoginResponse> refresh(String refreshToken);
   Future<void> logout(String accessToken);
   Future<void> forgotPassword(String email);
+  Future<void> resetPassword({
+    required String token,
+    required String email,
+    required String password,
+  });
 }

@@ -14,6 +14,7 @@ import '../features/notifications/presentation/providers/notifications_provider.
 import '../features/notifications/data/push_notification_service.dart';
 import '../features/auth/presentation/providers/auth_provider.dart';
 import '../features/auth/presentation/providers/auth_providers.dart';
+import '../features/auth/domain/entities/session.dart';
 import 'theme/app_theme.dart';
 
 class MyApp extends StatelessWidget {
@@ -34,13 +35,16 @@ class _AppRoot extends ConsumerStatefulWidget {
 
 class _AppRootState extends ConsumerState<_AppRoot> {
   late final PushNotificationService _pushNotifications;
-  late final ProviderSubscription _authSubscription;
+  late final ProviderSubscription<AsyncValue<Session?>> _authSubscription;
 
   @override
   void initState() {
     super.initState();
     _pushNotifications = PushNotificationService(ref.read(dioProvider));
-    _authSubscription = ref.listenManual(authProvider, (previous, next) {
+    _authSubscription = ref.listenManual<AsyncValue<Session?>>(authProvider, (
+      AsyncValue<Session?>? previous,
+      AsyncValue<Session?> next,
+    ) {
       if (next.valueOrNull != null) {
         unawaited(
           _pushNotifications.registerDevice().catchError((error) {
