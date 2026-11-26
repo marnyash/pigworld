@@ -86,7 +86,7 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
 
   @override
   Widget build(BuildContext context) {
-    final linkIsValid = widget.token.isNotEmpty && widget.email.isNotEmpty;
+    final resetCodeIsValid = widget.token.isNotEmpty && widget.email.isNotEmpty;
 
     return Scaffold(
       appBar: AppBar(title: const Text('Reset password')),
@@ -98,8 +98,8 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
               constraints: const BoxConstraints(maxWidth: 420),
               child: _reset
                   ? _buildSuccess(context)
-                  : !linkIsValid
-                  ? _buildInvalidLink(context)
+                  : !resetCodeIsValid
+                  ? _buildInvalidCode(context)
                   : _buildForm(context),
             ),
           ),
@@ -175,17 +175,17 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
     ],
   );
 
-  Widget _buildInvalidLink(BuildContext context) => Column(
+  Widget _buildInvalidCode(BuildContext context) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
       const Text(
-        'This password reset link is incomplete. Request a new link to continue.',
+        'This reset code is incomplete or expired. Request a new code to continue.',
         textAlign: TextAlign.center,
       ),
       const SizedBox(height: 20),
       FilledButton(
         onPressed: () => context.go(AppRoutes.forgotPassword),
-        child: const Text('Request a new link'),
+        child: const Text('Request a new code'),
       ),
     ],
   );

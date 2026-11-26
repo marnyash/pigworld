@@ -23,6 +23,7 @@ import '../../domain/usecases/reset_password.dart';
 import '../../domain/usecases/resend_login_otp.dart';
 import '../../domain/usecases/select_farm.dart';
 import '../../domain/usecases/verify_login_otp.dart';
+import '../../domain/usecases/verify_password_reset_code.dart';
 import 'auth_provider.dart';
 
 final authServiceProvider = Provider<AuthService>((ref) => AuthService());
@@ -99,6 +100,9 @@ final selectFarmUseCaseProvider = Provider(
 );
 final forgotPasswordUseCaseProvider = Provider(
   (ref) => ForgotPassword(ref.watch(authRepositoryProvider)),
+);
+final verifyPasswordResetCodeUseCaseProvider = Provider(
+  (ref) => VerifyPasswordResetCode(ref.watch(authRepositoryProvider)),
 );
 final resetPasswordUseCaseProvider = Provider(
   (ref) => ResetPassword(ref.watch(authRepositoryProvider)),

@@ -84,6 +84,21 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   }
 
   @override
+  Future<void> verifyPasswordResetCode({
+    required String email,
+    required String code,
+  }) async {
+    try {
+      await _dio.post<void>(
+        '/auth/verify-password-reset-code',
+        data: {'email': email, 'code': code},
+      );
+    } on DioException catch (error) {
+      throw ErrorHandler.from(error);
+    }
+  }
+
+  @override
   Future<void> resetPassword({
     required String token,
     required String email,

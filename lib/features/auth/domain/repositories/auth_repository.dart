@@ -29,6 +29,10 @@ abstract interface class AuthRepository {
   Future<Session?> refreshSession();
   Future<Session> selectFarm(Farm farm);
   Future<void> forgotPassword(String email);
+  Future<void> verifyPasswordResetCode({
+    required String email,
+    required String code,
+  });
   Future<void> resetPassword({
     required String token,
     required String email,

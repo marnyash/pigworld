@@ -412,7 +412,7 @@ class _DashboardPageState extends ConsumerState<DashboardPage> {
                     physics: const NeverScrollableScrollPhysics(),
                     mainAxisSpacing: AppDimensions.spacingMedium,
                     crossAxisSpacing: AppDimensions.spacingMedium,
-                    childAspectRatio: 1.08,
+                    childAspectRatio: 0.85,
                     children: statCards,
                   ),
                 if (allows(AppPermission.manageHerd) &&
