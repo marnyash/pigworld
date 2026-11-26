@@ -40,118 +40,120 @@ class _LoginFormState extends State<LoginForm> {
   }
 
   @override
-  Widget build(BuildContext context) => Form(
-    key: formKey,
-    child: Column(
-      children: [
-        TextFormField(
-          controller: emailController,
-          keyboardType: TextInputType.emailAddress,
-          textInputAction: TextInputAction.next,
-          autofillHints: const [AutofillHints.username, AutofillHints.email],
-          decoration: const InputDecoration(
-            labelText: 'Email or phone number',
-            hintText: 'you@example.com or phone number',
-            prefixIcon: PigWorldIcon('profile'),
-          ),
-          validator: (value) {
-            final input = value?.trim() ?? '';
-            if (input.isEmpty) {
-              return 'Enter your email or phone number';
-            }
+  Widget build(BuildContext context) => AutofillGroup(
+    child: Form(
+      key: formKey,
+      child: Column(
+        children: [
+          TextFormField(
+            controller: emailController,
+            keyboardType: TextInputType.emailAddress,
+            textInputAction: TextInputAction.next,
+            autofillHints: const [AutofillHints.username, AutofillHints.email],
+            decoration: const InputDecoration(
+              labelText: 'Email or phone number',
+              hintText: 'you@example.com or phone number',
+              prefixIcon: PigWorldIcon('profile'),
+            ),
+            validator: (value) {
+              final input = value?.trim() ?? '';
+              if (input.isEmpty) {
+                return 'Enter your email or phone number';
+              }
 
-            final validPhone = RegExp(r'^\+?[0-9\s-]{8,}$').hasMatch(input);
-            final validEmail = RegExp(
-              r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
-            ).hasMatch(input);
-            if (!validEmail && !validPhone) {
-              return 'Enter a valid email or phone number';
-            }
-            return null;
-          },
-        ),
-        const SizedBox(height: 16),
-        TextFormField(
-          controller: passwordController,
-          keyboardType: TextInputType.text,
-          textInputAction: TextInputAction.done,
-          autofillHints: const [AutofillHints.password],
-          obscureText: !passwordVisible,
-          decoration: InputDecoration(
-            labelText: 'Password',
-            prefixIcon: const PigWorldIcon('lock'),
-            suffixIcon: IconButton(
-              tooltip: passwordVisible ? 'Hide password' : 'Show password',
-              icon: Icon(
-                passwordVisible
-                    ? Icons.visibility_off_outlined
-                    : Icons.visibility_outlined,
+              final validPhone = RegExp(r'^\+?[0-9\s-]{8,}$').hasMatch(input);
+              final validEmail = RegExp(
+                r'^[^@\s]+@[^@\s]+\.[^@\s]+$',
+              ).hasMatch(input);
+              if (!validEmail && !validPhone) {
+                return 'Enter a valid email or phone number';
+              }
+              return null;
+            },
+          ),
+          const SizedBox(height: 16),
+          TextFormField(
+            controller: passwordController,
+            keyboardType: TextInputType.text,
+            textInputAction: TextInputAction.done,
+            autofillHints: const [AutofillHints.password],
+            obscureText: !passwordVisible,
+            decoration: InputDecoration(
+              labelText: 'Password',
+              prefixIcon: const PigWorldIcon('lock'),
+              suffixIcon: IconButton(
+                tooltip: passwordVisible ? 'Hide password' : 'Show password',
+                icon: Icon(
+                  passwordVisible
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
+                ),
+                onPressed: () =>
+                    setState(() => passwordVisible = !passwordVisible),
               ),
-              onPressed: () =>
-                  setState(() => passwordVisible = !passwordVisible),
+            ),
+            validator: (value) {
+              final input = value?.trim() ?? '';
+              if (input.isEmpty) {
+                return 'Enter your password';
+              }
+              return null;
+            },
+          ),
+          Material(
+            color: Theme.of(context).colorScheme.surface,
+            child: CheckboxListTile(
+              value: rememberMe,
+              dense: true,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 4),
+              onChanged: (value) => setState(() => rememberMe = value ?? false),
+              title: const Text('Remember me'),
             ),
           ),
-          validator: (value) {
-            final input = value?.trim() ?? '';
-            if (input.isEmpty) {
-              return 'Enter your password';
-            }
-            return null;
-          },
-        ),
-        Material(
-          color: Theme.of(context).colorScheme.surface,
-          child: CheckboxListTile(
-            value: rememberMe,
-            dense: true,
-            contentPadding: const EdgeInsets.symmetric(horizontal: 4),
-            onChanged: (value) => setState(() => rememberMe = value ?? false),
-            title: const Text('Remember me'),
-          ),
-        ),
-        const SizedBox(height: AppDimensions.spacingSmall),
-        SizedBox(
-          width: double.infinity,
-          child: FilledButton.icon(
-            onPressed: isLoading || !widget.canSubmit
-                ? null
-                : () async {
-                    if (!(formKey.currentState?.validate() ?? false)) return;
-                    setState(() => isLoading = true);
-                    try {
-                      await widget.onSubmit(
-                        emailController.text.trim(),
-                        passwordController.text,
-                        rememberMe,
-                      );
-                    } catch (_) {
-                      if (context.mounted) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Unable to sign in. Please try again.',
-                            ),
-                          ),
+          const SizedBox(height: AppDimensions.spacingSmall),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: isLoading || !widget.canSubmit
+                  ? null
+                  : () async {
+                      if (!(formKey.currentState?.validate() ?? false)) return;
+                      setState(() => isLoading = true);
+                      try {
+                        await widget.onSubmit(
+                          emailController.text.trim(),
+                          passwordController.text,
+                          rememberMe,
                         );
+                      } catch (_) {
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Unable to sign in. Please try again.',
+                              ),
+                            ),
+                          );
+                        }
+                      } finally {
+                        if (mounted) setState(() => isLoading = false);
                       }
-                    } finally {
-                      if (mounted) setState(() => isLoading = false);
-                    }
-                  },
-            icon: isLoading
-                ? const SizedBox(
-                    width: 22,
-                    height: 22,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : const Icon(Icons.login_rounded),
-            label: const Text(
-              'Sign in',
-              style: TextStyle(fontWeight: FontWeight.w700),
+                    },
+              icon: isLoading
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.login_rounded),
+              label: const Text(
+                'Sign in',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     ),
   );
 }

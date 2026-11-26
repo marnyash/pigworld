@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../../core/errors/error_handler.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../../../../app/theme/app_dimensions.dart';
 import '../../../../app/routes/app_routes.dart';
@@ -102,6 +103,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                             );
                             context.go(
                               '${AppRoutes.otpVerification}?challengeId=${Uri.encodeComponent(challenge.id)}&destination=${Uri.encodeComponent(challenge.destination)}&rememberMe=$rememberMe',
+                            );
+                          }
+                        } on ApiException catch (error) {
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(error.message)),
                             );
                           }
                         } catch (_) {

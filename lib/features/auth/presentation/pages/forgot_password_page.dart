@@ -111,24 +111,28 @@ class _ForgotPasswordPageState extends ConsumerState<ForgotPasswordPage> {
                   ),
                   if (_codeSent) ...[
                     const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _code,
-                      enabled: !_submitting,
-                      keyboardType: TextInputType.number,
-                      textInputAction: TextInputAction.done,
-                      inputFormatters: [
-                        FilteringTextInputFormatter.digitsOnly,
-                        LengthLimitingTextInputFormatter(6),
-                      ],
-                      decoration: const InputDecoration(
-                        labelText: '6-digit code',
+                    AutofillGroup(
+                      child: TextFormField(
+                        controller: _code,
+                        enabled: !_submitting,
+                        autofocus: true,
+                        keyboardType: TextInputType.number,
+                        textInputAction: TextInputAction.done,
+                        autofillHints: const [AutofillHints.oneTimeCode],
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          LengthLimitingTextInputFormatter(6),
+                        ],
+                        decoration: const InputDecoration(
+                          labelText: '6-digit code',
+                        ),
+                        validator: (value) =>
+                            value == null || !RegExp(r'^\d{6}$').hasMatch(value)
+                            ? 'Enter the 6-digit code.'
+                            : null,
+                        onFieldSubmitted: (_) =>
+                            _submitting ? null : _verifyCode(),
                       ),
-                      validator: (value) =>
-                          value == null || !RegExp(r'^\d{6}$').hasMatch(value)
-                          ? 'Enter the 6-digit code.'
-                          : null,
-                      onFieldSubmitted: (_) =>
-                          _submitting ? null : _verifyCode(),
                     ),
                     const SizedBox(height: 12),
                     const Text(

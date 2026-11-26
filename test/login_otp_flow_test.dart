@@ -82,6 +82,10 @@ void main() {
       tester.widget<EditableText>(find.byType(EditableText)).autofillHints,
       const [AutofillHints.oneTimeCode],
     );
+    expect(
+      tester.widget<EditableText>(find.byType(EditableText)).autofocus,
+      isTrue,
+    );
     await tester.enterText(codeField, '12ab3456');
     await tester.pump();
     expect(find.text('123456'), findsOneWidget);

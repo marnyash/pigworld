@@ -50,6 +50,12 @@ void main() {
       ),
     );
 
+    expect(
+      tester
+          .widget<EditableText>(find.byType(EditableText).first)
+          .autofillHints,
+      const [AutofillHints.newPassword],
+    );
     await tester.enterText(
       find.byType(TextFormField).at(0),
       'new-password-123',

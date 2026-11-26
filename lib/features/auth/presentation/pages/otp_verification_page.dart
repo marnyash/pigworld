@@ -136,6 +136,7 @@ class _OtpVerificationPageState extends ConsumerState<OtpVerificationPage> {
                 child: TextFormField(
                   key: const ValueKey('login-otp-code'),
                   controller: _otpController,
+                  autofocus: true,
                   keyboardType: TextInputType.number,
                   textInputAction: TextInputAction.done,
                   autofillHints: const [AutofillHints.oneTimeCode],

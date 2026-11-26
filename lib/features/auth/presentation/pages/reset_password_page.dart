@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -50,6 +51,7 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
         password: _password.text,
       );
       ref.read(authProvider.notifier).clearSession();
+      TextInput.finishAutofillContext(shouldSave: true);
     } on ApiException catch (error) {
       if (mounted) setState(() => _error = error.message);
       if (mounted) setState(() => _submitting = false);
@@ -100,7 +102,7 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
                   ? _buildSuccess(context)
                   : !resetCodeIsValid
                   ? _buildInvalidCode(context)
-                  : _buildForm(context),
+                  : AutofillGroup(child: _buildForm(context)),
             ),
           ),
         ),
@@ -119,6 +121,7 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
           controller: _password,
           obscureText: true,
           textInputAction: TextInputAction.next,
+          autofillHints: const [AutofillHints.newPassword],
           decoration: const InputDecoration(labelText: 'New password'),
           validator: (value) => (value == null || value.length < 8)
               ? 'Use at least 8 characters.'
@@ -129,6 +132,7 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
           controller: _confirmation,
           obscureText: true,
           textInputAction: TextInputAction.done,
+          autofillHints: const [AutofillHints.newPassword],
           decoration: const InputDecoration(labelText: 'Confirm new password'),
           validator: (value) =>
               value != _password.text ? 'Passwords do not match.' : null,

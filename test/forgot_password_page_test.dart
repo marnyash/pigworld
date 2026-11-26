@@ -58,6 +58,11 @@ void main() {
     expect(repository.requestedEmail, 'user@example.com');
     expect(find.text('Verify code'), findsOneWidget);
     expect(find.textContaining('No reset link is sent.'), findsOneWidget);
+    final resetCodeField = tester.widget<EditableText>(
+      find.byType(EditableText).last,
+    );
+    expect(resetCodeField.autofillHints, const [AutofillHints.oneTimeCode]);
+    expect(resetCodeField.autofocus, isTrue);
 
     await tester.enterText(find.byType(TextFormField).last, '123456');
     await tester.tap(find.text('Verify code'));
