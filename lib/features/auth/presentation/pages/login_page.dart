@@ -148,20 +148,20 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     ),
                     const SizedBox(height: AppDimensions.spacingSmall),
                     OutlinedButton.icon(
-                      onPressed: !_agreementAccepted
-                          ? null
-                          : defaultTargetPlatform == TargetPlatform.iOS
-                          ? _signInWithApple
-                          : _signInWithGoogle,
-                      icon: defaultTargetPlatform == TargetPlatform.iOS
-                          ? const Icon(Icons.apple)
-                          : const PigWorldIcon('google', size: 20),
-                      label: Text(
-                        defaultTargetPlatform == TargetPlatform.iOS
-                            ? 'Continue with Apple'
-                            : 'Continue with Google',
-                      ),
+                      onPressed: !_agreementAccepted ? null : _signInWithGoogle,
+                      icon: const PigWorldIcon('google', size: 20),
+                      label: const Text('Continue with Google'),
                     ),
+                    if (defaultTargetPlatform == TargetPlatform.iOS) ...[
+                      const SizedBox(height: AppDimensions.spacingSmall),
+                      OutlinedButton.icon(
+                        onPressed: !_agreementAccepted
+                            ? null
+                            : _signInWithApple,
+                        icon: const Icon(Icons.apple),
+                        label: const Text('Continue with Apple'),
+                      ),
+                    ],
                     Align(
                       alignment: Alignment.center,
                       child: TextButton(

@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../auth/data/models/farm_model.dart';
+import '../../../auth/domain/entities/session.dart';
+import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/providers/auth_providers.dart';
 import '../../../../app/routes/app_routes.dart';
 import '../../../../app/theme/app_colors.dart';
 import '../providers/onboarding_provider.dart';
@@ -8,7 +12,19 @@ import '../widgets/onboarding_header.dart';
 import '../widgets/onboarding_scaffold.dart';
 
 class HerdSetupPage extends ConsumerStatefulWidget {
-  const HerdSetupPage({super.key});
+  const HerdSetupPage({super.key, this.selectedPlan});
+
+  final Map<String, dynamic>? selectedPlan;
+
+  factory HerdSetupPage.fromExtra(Object? extra) {
+    final payload = extra is Map
+        ? Map<String, dynamic>.from(extra)
+        : <String, dynamic>{};
+    final plan = payload['selected_plan'];
+    return HerdSetupPage(
+      selectedPlan: plan is Map ? Map<String, dynamic>.from(plan) : null,
+    );
+  }
 
   @override
   ConsumerState<HerdSetupPage> createState() => _HerdSetupPageState();
@@ -21,6 +37,9 @@ class _HerdSetupPageState extends ConsumerState<HerdSetupPage> {
   final _pigletAge = TextEditingController();
   final _groups = <PigletGroup>[];
   int _step = 0;
+  bool _isSaving = false;
+
+  bool get _isPaymentResume => widget.selectedPlan != null;
 
   @override
   void dispose() {
@@ -56,6 +75,15 @@ class _HerdSetupPageState extends ConsumerState<HerdSetupPage> {
       _message('Enter how many mother pigs you have.');
       return;
     }
+    if (_isPaymentResume && _step == 0) {
+      final count = _number(_motherPigs);
+      if (count == null || count < 1) {
+        _message('Enter at least one mother pig to continue to payment.');
+        return;
+      }
+      _saveRequiredHerdCount(count);
+      return;
+    }
     if (_step == 1 &&
         (_pigletCount.text.trim().isNotEmpty ||
             _pigletAge.text.trim().isNotEmpty) &&
@@ -83,26 +111,85 @@ class _HerdSetupPageState extends ConsumerState<HerdSetupPage> {
     context.go(AppRoutes.createAccount);
   }
 
+  Future<void> _saveRequiredHerdCount(int count) async {
+    final session = ref.read(authProvider).valueOrNull;
+    final farm =
+        session?.selectedFarm ??
+        (session?.farms.isNotEmpty ?? false ? session!.farms.first : null);
+    if (session == null || farm == null || farm.id.isEmpty) {
+      _message('Select a farm before saving herd details.');
+      return;
+    }
+
+    setState(() => _isSaving = true);
+    try {
+      final response = await ref
+          .read(dioProvider)
+          .patch('/farms/${farm.id}', data: {'mother_pig_count': count});
+      final responseData = response.data;
+      final farmData = responseData is Map ? responseData['data'] : null;
+      if (farmData is! Map) {
+        throw const FormatException(
+          'The saved farm details were not returned.',
+        );
+      }
+
+      final updatedFarm = FarmModel.fromJson(
+        Map<String, dynamic>.from(farmData),
+      );
+      final updatedFarms = session.farms
+          .map((item) => item.id == updatedFarm.id ? updatedFarm : item)
+          .toList(growable: false);
+      ref
+          .read(authProvider.notifier)
+          .setSession(
+            Session(
+              accessToken: session.accessToken,
+              refreshToken: session.refreshToken,
+              user: session.user,
+              farms: updatedFarms,
+              selectedFarm: session.selectedFarm?.id == updatedFarm.id
+                  ? updatedFarm
+                  : session.selectedFarm,
+            ),
+          );
+      if (mounted) {
+        context.go(
+          AppRoutes.paymentMethod,
+          extra: {'selected_plan': widget.selectedPlan},
+        );
+      }
+    } catch (error) {
+      if (mounted) _message('Could not save herd details: $error');
+    } finally {
+      if (mounted) setState(() => _isSaving = false);
+    }
+  }
+
   void _message(String text) =>
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
 
   @override
   Widget build(BuildContext context) => OnboardingScaffold(
-    topAction: TextButton(
-      onPressed: () async {
-        await ref.read(onboardingStorageProvider).markCompleted();
-        if (!context.mounted) return;
-        context.go(AppRoutes.createAccount);
-      },
-      child: const Text('Skip'),
-    ),
+    topAction: _isPaymentResume
+        ? const SizedBox.shrink()
+        : TextButton(
+            onPressed: () async {
+              await ref.read(onboardingStorageProvider).markCompleted();
+              if (!context.mounted) return;
+              context.go(AppRoutes.createAccount);
+            },
+            child: const Text('Skip'),
+          ),
     progress: (_step + 1) / 3,
     body: OnboardingEntry(
       child: ListView(
         padding: const EdgeInsets.all(24),
         children: [
           OnboardingHeader(
-            eyebrow: 'Step 4 of 4 · Farm setup • ${_step + 1} of 3',
+            eyebrow: _isPaymentResume
+                ? 'Required before payment'
+                : 'Step 4 of 4 · Farm setup • ${_step + 1} of 3',
             title: _step == 0
                 ? 'Start with your herd'
                 : _step == 1
@@ -123,6 +210,7 @@ class _HerdSetupPageState extends ConsumerState<HerdSetupPage> {
               title: 'Mother pigs',
               description: 'Add the sows currently in your herd.',
               child: TextField(
+                key: const ValueKey('mother-pig-count-field'),
                 controller: _motherPigs,
                 keyboardType: TextInputType.number,
                 decoration: const InputDecoration(
@@ -233,14 +321,31 @@ class _HerdSetupPageState extends ConsumerState<HerdSetupPage> {
       children: [
         TextButton(
           onPressed: _step == 0
-              ? () => context.go(AppRoutes.accountType)
+              ? _isPaymentResume
+                    ? () => context.go(
+                        AppRoutes.paymentMethod,
+                        extra: {'selected_plan': widget.selectedPlan},
+                      )
+                    : () => context.go(AppRoutes.accountType)
               : () => setState(() => _step--),
           child: const Text('Back'),
         ),
         const Spacer(),
         FilledButton(
-          onPressed: _next,
-          child: Text(_step == 2 ? 'Continue to account' : 'Continue'),
+          onPressed: _isSaving ? null : _next,
+          child: _isSaving
+              ? const SizedBox(
+                  height: 18,
+                  width: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : Text(
+                  _isPaymentResume
+                      ? 'Save and return to payment'
+                      : _step == 2
+                      ? 'Continue to account'
+                      : 'Continue',
+                ),
         ),
       ],
     ),

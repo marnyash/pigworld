@@ -30,4 +30,20 @@ void main() {
       returnsNormally,
     );
   });
+
+  test('iOS Google sign-in rejects a missing iOS OAuth client ID', () {
+    expect(
+      () => GoogleSignInService.validateIosConfiguration(''),
+      throwsA(isA<GoogleSignInConfigurationException>()),
+    );
+  });
+
+  test('valid iOS OAuth client ID is accepted', () {
+    expect(
+      () => GoogleSignInService.validateIosConfiguration(
+        '1234567890-abc.apps.googleusercontent.com',
+      ),
+      returnsNormally,
+    );
+  });
 }

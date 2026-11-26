@@ -94,6 +94,16 @@ Both commands pass for the current Phase 2 foundation.
 Phase 3 adds authentication and session-management boundaries without
 implementing herd, breeding, feed, finance, or other business workflows.
 
+### Google Sign-In Configuration
+
+Android Google sign-in uses the Firebase Android app configuration in
+`android/app/google-services.json` and requires the signing certificate SHA-1
+to be registered with Firebase. iOS requires the iOS app's
+`ios/Runner/GoogleService-Info.plist`, its reversed client ID registered as a
+URL scheme in `ios/Runner/Info.plist`, and the iOS OAuth client ID supplied at
+build time with `--dart-define=GOOGLE_IOS_CLIENT_ID=<client-id>`. Do not commit
+the iOS Firebase configuration file or OAuth client ID to source control.
+
 ### Auth Architecture
 
 `lib/features/auth` follows Clean Architecture:

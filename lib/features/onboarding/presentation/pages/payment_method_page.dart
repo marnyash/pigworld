@@ -43,7 +43,8 @@ class _PaymentMethodPageState extends ConsumerState<PaymentMethodPage> {
     super.initState();
     final session = ref.read(authProvider).valueOrNull;
     final farms = session?.farms ?? const <Farm>[];
-    _selectedFarm = session?.selectedFarm ?? (farms.isNotEmpty ? farms.first : null);
+    _selectedFarm =
+        session?.selectedFarm ?? (farms.isNotEmpty ? farms.first : null);
     _phoneController = TextEditingController(
       text: ref.read(authProvider).valueOrNull?.user.phone ?? '',
     );
@@ -81,6 +82,23 @@ class _PaymentMethodPageState extends ConsumerState<PaymentMethodPage> {
         (session?.farms.isNotEmpty ?? false ? session!.farms.first : null);
     final phone = _normalizeKenyanPhone(_phoneController.text);
 
+    if (selectedFarm == null || selectedFarm.id.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Select a farm before starting the payment.'),
+        ),
+      );
+      return;
+    }
+
+    if (selectedFarm.motherPigCount <= 0) {
+      context.go(
+        AppRoutes.herdSetup,
+        extra: {'selected_plan': widget.selectedPlan},
+      );
+      return;
+    }
+
     if (_selectedMethod != 'M-Pesa') {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -95,15 +113,6 @@ class _PaymentMethodPageState extends ConsumerState<PaymentMethodPage> {
     if (phone == null || !RegExp(r'^254[17]\d{8}$').hasMatch(phone)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Enter a valid Kenyan M-Pesa number.')),
-      );
-      return;
-    }
-
-    if (selectedFarm == null || selectedFarm.id.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Select a farm before starting the payment.'),
-        ),
       );
       return;
     }
@@ -152,17 +161,21 @@ class _PaymentMethodPageState extends ConsumerState<PaymentMethodPage> {
       final data = error.response?.data is Map
           ? Map<String, dynamic>.from(error.response!.data as Map)
           : <String, dynamic>{};
-      final message = (data['message'] ?? data['error'] ??
-              'Unable to start the M-Pesa payment.')
-          .toString();
+      final message =
+          (data['message'] ??
+                  data['error'] ??
+                  'Unable to start the M-Pesa payment.')
+              .toString();
       final details = [
         if (data['provider_code'] != null) 'Code ${data['provider_code']}',
         if (data['reference'] != null) 'Reference ${data['reference']}',
       ];
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(
-        SnackBar(content: Text(details.isEmpty ? message : '$message (${details.join(', ')})')),
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            details.isEmpty ? message : '$message (${details.join(', ')})',
+          ),
+        ),
       );
     } catch (error) {
       if (!mounted) return;
@@ -225,34 +238,39 @@ class _PaymentMethodPageState extends ConsumerState<PaymentMethodPage> {
                 ),
               ),
               const SizedBox(height: 20),
-              if ((ref.watch(authProvider).valueOrNull?.farms ?? const <Farm>[]).isNotEmpty) ...[
+              if ((ref.watch(authProvider).valueOrNull?.farms ?? const <Farm>[])
+                  .isNotEmpty) ...[
                 DropdownButtonFormField<Farm>(
-                  value: _selectedFarm,
+                  initialValue: _selectedFarm,
                   decoration: const InputDecoration(
                     labelText: 'Farm',
                     prefixIcon: Icon(Icons.agriculture_outlined),
                   ),
-                  items: (ref.watch(authProvider).valueOrNull?.farms ?? const <Farm>[])
-                      .map(
-                        (farm) => DropdownMenuItem<Farm>(
-                          value: farm,
-                          child: Text(farm.name),
-                        ),
-                      )
-                      .toList(),
+                  items:
+                      (ref.watch(authProvider).valueOrNull?.farms ??
+                              const <Farm>[])
+                          .map(
+                            (farm) => DropdownMenuItem<Farm>(
+                              value: farm,
+                              child: Text(farm.name),
+                            ),
+                          )
+                          .toList(),
                   onChanged: (farm) {
                     if (farm == null) return;
                     final session = ref.read(authProvider).valueOrNull;
                     if (session == null) return;
-                    ref.read(authProvider.notifier).setSession(
-                      Session(
-                        accessToken: session.accessToken,
-                        refreshToken: session.refreshToken,
-                        user: session.user,
-                        farms: session.farms,
-                        selectedFarm: farm,
-                      ),
-                    );
+                    ref
+                        .read(authProvider.notifier)
+                        .setSession(
+                          Session(
+                            accessToken: session.accessToken,
+                            refreshToken: session.refreshToken,
+                            user: session.user,
+                            farms: session.farms,
+                            selectedFarm: farm,
+                          ),
+                        );
                     setState(() => _selectedFarm = farm);
                   },
                 ),

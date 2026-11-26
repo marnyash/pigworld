@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 
 /// Signs the user into Firebase with their Google account.
@@ -17,9 +18,13 @@ class GoogleSignInService {
     defaultValue:
         '279793601563-eh6fs875qbn6c2gvkfk29frcuqe754ri.apps.googleusercontent.com',
   );
+  static const String _defaultIosClientId = String.fromEnvironment(
+    'GOOGLE_IOS_CLIENT_ID',
+  );
   static Future<void>? _initialization;
 
   static String get webClientId => _defaultWebClientId;
+  static String get iosClientId => _defaultIosClientId;
 
   static void validateConfiguration(String clientId) {
     final normalized = clientId.trim();
@@ -32,6 +37,15 @@ class GoogleSignInService {
         'Google sign-in is not configured correctly. The Firebase web client ID must contain a googleusercontent.com domain.',
       );
     }
+  }
+
+  static void validateIosConfiguration(String clientId) {
+    if (clientId.trim().isEmpty) {
+      throw const GoogleSignInConfigurationException(
+        'Google sign-in on iOS needs the iOS OAuth client ID from Firebase. Configure GOOGLE_IOS_CLIENT_ID and its reversed client URL scheme.',
+      );
+    }
+    validateConfiguration(clientId);
   }
 
   Future<String> signIn() async {
@@ -69,6 +83,13 @@ class GoogleSignInService {
         );
       }
       rethrow;
+    } on FirebaseException catch (error) {
+      if (Firebase.apps.isEmpty) {
+        throw GoogleSignInConfigurationException(
+          'Firebase is not configured for this iOS app. Add its GoogleService-Info.plist and configure the Google sign-in URL scheme. ${error.message ?? ''}',
+        );
+      }
+      rethrow;
     }
   }
 
@@ -84,8 +105,16 @@ class GoogleSignInService {
 
   Future<void> _initialize() async {
     validateConfiguration(webClientId);
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      validateIosConfiguration(iosClientId);
+    }
     if (Firebase.apps.isEmpty) await Firebase.initializeApp();
-    if (webClientId.isNotEmpty) {
+    if (defaultTargetPlatform == TargetPlatform.iOS) {
+      await GoogleSignIn.instance.initialize(
+        clientId: iosClientId,
+        serverClientId: webClientId,
+      );
+    } else if (webClientId.isNotEmpty) {
       await GoogleSignIn.instance.initialize(serverClientId: webClientId);
     } else {
       await GoogleSignIn.instance.initialize();

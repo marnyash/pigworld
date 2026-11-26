@@ -90,7 +90,7 @@ abstract final class AppRouter {
       ),
       GoRoute(
         path: AppRoutes.herdSetup,
-        builder: (context, state) => const HerdSetupPage(),
+        builder: (context, state) => HerdSetupPage.fromExtra(state.extra),
       ),
       GoRoute(
         path: AppRoutes.login,
