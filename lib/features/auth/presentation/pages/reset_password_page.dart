@@ -58,6 +58,16 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
       return;
     }
 
+    if (!mounted) return;
+    setState(() => _reset = true);
+    await _requestSignInOtp();
+  }
+
+  Future<void> _requestSignInOtp() async {
+    setState(() {
+      _submitting = true;
+      _error = null;
+    });
     try {
       final challenge = await ref.read(loginUseCaseProvider)(
         widget.email,
@@ -76,9 +86,15 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
     } on ApiException catch (error) {
       if (mounted) {
         setState(() {
-          _reset = true;
           _error =
-              'Your password was updated, but automatic sign-in could not start: ${error.message}';
+              'Your password was updated, but the sign-in code could not be sent: ${error.message}';
+        });
+      }
+    } on Object {
+      if (mounted) {
+        setState(() {
+          _error =
+              'Your password was updated, but the sign-in code could not be requested. Please try again.';
         });
       }
     } finally {
@@ -172,6 +188,17 @@ class _ResetPasswordPageState extends ConsumerState<ResetPasswordPage> {
         textAlign: TextAlign.center,
       ),
       const SizedBox(height: 20),
+      FilledButton(
+        onPressed: _submitting ? null : _requestSignInOtp,
+        child: _submitting
+            ? const SizedBox(
+                height: 18,
+                width: 18,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : const Text('Send sign-in code again'),
+      ),
+      const SizedBox(height: 8),
       FilledButton(
         onPressed: () => context.go(AppRoutes.login),
         child: const Text('Back to sign in'),
