@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:go_router/go_router.dart';
 import 'package:proj/app/routes/app_routes.dart';
+import 'package:proj/core/errors/error_handler.dart';
 import 'package:proj/features/auth/domain/entities/login_challenge.dart';
 import 'package:proj/features/auth/domain/repositories/auth_repository.dart';
 import 'package:proj/features/auth/domain/usecases/login.dart';
@@ -79,9 +80,77 @@ void main() {
 
     router.dispose();
   });
+
+  testWidgets('can retry sign-in OTP after a mail request failure', (
+    tester,
+  ) async {
+    final repository = _FakeAuthRepository(failFirstLogin: true);
+    final router = GoRouter(
+      initialLocation:
+          '${AppRoutes.resetPassword}?token=reset-token&email=user%40example.com',
+      routes: [
+        GoRoute(
+          path: AppRoutes.resetPassword,
+          builder: (context, state) => ResetPasswordPage(
+            token: state.uri.queryParameters['token'] ?? '',
+            email: state.uri.queryParameters['email'] ?? '',
+          ),
+        ),
+        GoRoute(
+          path: AppRoutes.otpVerification,
+          builder: (context, state) => Scaffold(
+            body: Text('challenge:${state.uri.queryParameters['challengeId']}'),
+          ),
+        ),
+      ],
+    );
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          resetPasswordUseCaseProvider.overrideWithValue(
+            ResetPassword(repository),
+          ),
+          loginUseCaseProvider.overrideWithValue(Login(repository)),
+        ],
+        child: MaterialApp.router(routerConfig: router),
+      ),
+    );
+
+    await tester.enterText(
+      find.byType(TextFormField).at(0),
+      'new-password-123',
+    );
+    await tester.enterText(
+      find.byType(TextFormField).at(1),
+      'new-password-123',
+    );
+    await tester.tap(find.text('Save new password'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Your password has been updated.'), findsOneWidget);
+    expect(
+      find.textContaining('the sign-in code could not be sent'),
+      findsOneWidget,
+    );
+    expect(find.text('Send sign-in code again'), findsOneWidget);
+    expect(repository.loginAttempts, 1);
+
+    await tester.tap(find.text('Send sign-in code again'));
+    await tester.pumpAndSettle();
+
+    expect(repository.loginAttempts, 2);
+    expect(find.text('challenge:challenge-1'), findsOneWidget);
+
+    router.dispose();
+  });
 }
 
 class _FakeAuthRepository implements AuthRepository {
+  _FakeAuthRepository({this.failFirstLogin = false});
+
+  final bool failFirstLogin;
+  int loginAttempts = 0;
   String? resetToken;
   String? resetEmail;
   String? resetPasswordValue;
@@ -105,6 +174,10 @@ class _FakeAuthRepository implements AuthRepository {
     String password, {
     bool rememberMe = false,
   }) async {
+    loginAttempts++;
+    if (failFirstLogin && loginAttempts == 1) {
+      throw const ApiException('Unable to send a verification code.');
+    }
     loginEmail = email;
     loginPassword = password;
     return const LoginChallenge(
